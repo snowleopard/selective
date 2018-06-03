@@ -23,7 +23,25 @@ source-repository head
 library
     hs-source-dirs:     src
     exposed-modules:    Control.Selective
-    build-depends:      base        >= 4.7     && < 5
+    other-modules:      Control.Selective.Example
+    build-depends:      base         >= 4.7     && < 5,
+                        containers   >= 0.5.7.1,
+                        transformers >= 0.5.2.0
+    default-language:   Haskell2010
+    GHC-options:        -Wall
+                        -fno-warn-name-shadowing
+                        -Wcompat
+                        -Wincomplete-record-updates
+                        -Wincomplete-uni-patterns
+                        -Wredundant-constraints
+
+test-suite test
+    hs-source-dirs:     test
+    type:               exitcode-stdio-1.0
+    main-is:            Main.hs
+    build-depends:      selective,
+                        base       >= 4.7     && < 5,
+                        containers >= 0.5.7.1
     default-language:   Haskell2010
     GHC-options:        -Wall
                         -fno-warn-name-shadowing

@@ -1,11 +1,18 @@
+{-# LANGUAGE DeriveFunctor, RankNTypes #-}
 module Control.Selective (
     -- * Type class
     Selective (..), handleRight, apS, handleA, selectA, handleM, selectM,
 
     -- * Conditional combinators
-    ifS, whenS, fromMaybeS, whileS, (<||>), (<&&>), anyS, allS
+    ifS, whenS, fromMaybeS, whileS, (<||>), (<&&>), anyS, allS,
 
+    -- * Static analysis
+    dependencies
     ) where
+
+import Control.Monad.Trans.State
+
+import qualified Data.Set as Set
 
 -- Selective applicative functor.
 --
@@ -90,3 +97,23 @@ allS p = foldr ((<&&>) . p) (pure True)
 instance Selective IO where
     handle = handleM
     select = selectM
+
+instance Monad m => Selective (StateT s m) where
+    handle = handleM
+    select = selectM
+
+-- Static analysis of selective functors
+
+newtype Greedy a b = Greedy { getGreedy :: a } deriving (Functor)
+
+instance Monoid a => Applicative (Greedy a) where
+    pure _  = Greedy mempty
+    Greedy f <*> Greedy x = Greedy (mappend f x)
+
+-- This instance is not lawful but useful for static analysis: see 'dependencies'.
+instance Monoid a => Selective (Greedy a) where
+    handle = handleA
+    select = selectA
+
+dependencies :: Ord k => (forall f. Selective f => (k -> f v) -> f a) -> [k]
+dependencies task = Set.toList $ getGreedy $ task (Greedy . Set.singleton)
