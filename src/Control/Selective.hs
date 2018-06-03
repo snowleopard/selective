@@ -12,6 +12,7 @@ module Control.Selective (
 
 import Control.Monad.Trans.State
 import Control.Applicative
+import Data.Functor.Compose
 
 import qualified Data.Set as Set
 
@@ -87,8 +88,13 @@ allS p = foldr ((<&&>) . p) (pure True)
 
 -- Instances
 
+-- Selective functors compose!
+instance (Selective f, Selective g) => Selective (Compose f g) where
+    handle (Compose f) (Compose x) = Compose $ pure handle <*> f <*> x
+
 -- Try: ite (pure True) (print 1) (print 2)
 instance Selective IO where
+
 instance Monad m => Selective (StateT s m) where
 
 -- Static analysis of selective functors
