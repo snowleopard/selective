@@ -49,3 +49,5 @@ ite :: Selective f => f Bool -> f a -> f a -> f a
 ite i t e = eitherS (fmap const t) (fmap const e) $
     fmap (\b -> if b then Left () else Right ()) i
 ```
+
+See more examples in [src/Control/Selective.hs](src/Control/Selective.hs).
