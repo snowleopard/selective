@@ -1,0 +1,33 @@
+name:          selective
+version:       0.0.1
+synopsis:      Selective applicative functors
+license:       MIT
+license-file:  LICENSE
+author:        Andrey Mokhov <andrey.mokhov@gmail.com>, github: @snowleopard
+maintainer:    Andrey Mokhov <andrey.mokhov@gmail.com>, github: @snowleopard
+copyright:     Andrey Mokhov, 2018
+homepage:      https://github.com/snowleopard/selective
+category:      Control
+build-type:    Simple
+cabal-version: >=1.18
+stability:     experimental
+description:   Selective applicative functors
+
+extra-doc-files:
+    README.md
+
+source-repository head
+    type:     git
+    location: https://github.com/snowleopard/selective.git
+
+library
+    hs-source-dirs:     src
+    exposed-modules:    Control.Selective
+    build-depends:      base        >= 4.7     && < 5
+    default-language:   Haskell2010
+    GHC-options:        -Wall
+                        -fno-warn-name-shadowing
+                        -Wcompat
+                        -Wincomplete-record-updates
+                        -Wincomplete-uni-patterns
+                        -Wredundant-constraints
