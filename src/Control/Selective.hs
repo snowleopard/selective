@@ -1,4 +1,11 @@
-module Control.Selective where
+module Control.Selective (
+    -- * Type class
+    Selective (..), handleRight, apS, handleA, selectA, handleM, selectM,
+
+    -- * Conditional combinators
+    ifS, whenS, fromMaybeS, whileS, (<||>), (<&&>), anyS, allS
+
+    ) where
 
 -- Selective applicative functor.
 --
@@ -29,8 +36,11 @@ apS f = handle f . fmap Left
 
 -- This is the only possible implementation of 'handle' using Applicative
 -- It always performs f's effects
-selectA :: Applicative f => f (a -> b) -> f (Either a b) -> f b
-selectA f x = either <$> f <*> pure id <*> x
+handleA :: Applicative f => f (a -> b) -> f (Either a b) -> f b
+handleA f x = either <$> f <*> pure id <*> x
+
+selectA :: Applicative f => f (a -> c) -> f (b -> c) -> f (Either a b) -> f c
+selectA f g x = either <$> f <*> g <*> x
 
 -- Any Monad is Selective
 handleM :: Monad f => f (a -> b) -> f (Either a b) -> f b
@@ -38,7 +48,7 @@ handleM mf mx = do
     x <- mx
     case x of
         Left  a -> fmap ($a) mf
-        Right b -> return b
+        Right b -> pure b
 
 selectM :: Monad f => f (a -> c) -> f (b -> c) -> f (Either a b) -> f c
 selectM mf mg mx = do
@@ -62,11 +72,17 @@ fromMaybeS x = handle (fmap const x) . fmap (maybe (Left ()) Right)
 whileS :: Selective f => f Bool -> f ()
 whileS act = whenS act (whileS act)
 
-(||^) :: Selective f => f Bool -> f Bool -> f Bool
-(||^) a b = ifS a (pure True) b
+(<||>) :: Selective f => f Bool -> f Bool -> f Bool
+(<||>) a b = ifS a (pure True) b
 
-(&&^) :: Selective f => f Bool -> f Bool -> f Bool
-(&&^) a b = ifS a b (pure False)
+(<&&>) :: Selective f => f Bool -> f Bool -> f Bool
+(<&&>) a b = ifS a b (pure False)
+
+anyS :: Selective f => (a -> f Bool) -> [a] -> f Bool
+anyS p = foldr ((<||>) . p) (pure False)
+
+allS :: Selective f => (a -> f Bool) -> [a] -> f Bool
+allS p = foldr ((<&&>) . p) (pure True)
 
 -- Instances
 
