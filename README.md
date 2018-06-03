@@ -18,7 +18,7 @@ class Applicative f => Selective f where
 You can think of `handle` as a *selective function application*: you apply it
 only when given a value of type `Left a`. Otherwise, you skip it (along with all
 its effects) and return the `b` from `Right b`. Intuitively, `handle` allows
-you to efficiently handle an error (idiomatically represented by `Left a`).
+you to efficiently handle an error, which we often represent by `Left a` in Haskell.
 
 Note that you can write a function with this type signature using `Applicative`,
 but it will have different behaviour -- it will always execute the effects
@@ -34,7 +34,7 @@ application operator `<*>` as follows.
 
 ```haskell
 apS :: Selective f => f (a -> b) -> f a -> f b
-apS f x = f <?*> fmap Left x
+apS f = handle f . fmap Left
 ```
 
 The `select` method is a natural generalisation of `handle`: instead of
@@ -51,7 +51,7 @@ handleM mf mx = do
     x <- mx
     case x of
         Left  a -> fmap ($a) mf
-        Right b -> return b
+        Right b -> pure b
 ```
 
 Selective functors are sufficient for implementing many conditional constructs,
