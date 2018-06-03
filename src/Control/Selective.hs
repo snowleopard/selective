@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor, RankNTypes #-}
+{-# LANGUAGE DeriveFunctor, GeneralizedNewtypeDeriving, RankNTypes #-}
 module Control.Selective (
     -- * Type class
     Selective (..), handleRight, apS, handleA, selectA, handleM, selectM,
@@ -7,10 +7,11 @@ module Control.Selective (
     ifS, whenS, fromMaybeS, whileS, (<||>), (<&&>), anyS, allS,
 
     -- * Static analysis
-    dependencies
+    oblivious, dependencies
     ) where
 
 import Control.Monad.Trans.State
+import Control.Applicative
 
 import qualified Data.Set as Set
 
@@ -103,17 +104,20 @@ instance Monad m => Selective (StateT s m) where
     select = selectM
 
 -- Static analysis of selective functors
+newtype Illegal f a = Illegal { runIllegal :: f a } deriving (Applicative, Functor)
 
-newtype Greedy a b = Greedy { getGreedy :: a } deriving (Functor)
-
-instance Monoid a => Applicative (Greedy a) where
-    pure _  = Greedy mempty
-    Greedy f <*> Greedy x = Greedy (mappend f x)
-
--- This instance is not lawful but useful for static analysis: see 'dependencies'.
-instance Monoid a => Selective (Greedy a) where
+-- This instance is not legal but useful for static analysis: see 'dependencies'.
+instance Applicative f => Selective (Illegal f) where
     handle = handleA
     select = selectA
 
+-- Run all effects of a given selective computation. Cannot be implemented using
+-- a legal Selective instance.
+oblivious :: Applicative f => (forall s. Selective s => s a) -> f a
+oblivious = runIllegal
+
+-- Extract dependencies from a selective task
+-- See https://blogs.ncl.ac.uk/andreymokhov/the-task-abstraction/
 dependencies :: Ord k => (forall f. Selective f => (k -> f v) -> f a) -> [k]
-dependencies task = Set.toList $ getGreedy $ task (Greedy . Set.singleton)
+dependencies task =
+    Set.toList $ getConst $ runIllegal $ task (Illegal . Const . Set.singleton)
