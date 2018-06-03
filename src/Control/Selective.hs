@@ -1,7 +1,7 @@
-{-# LANGUAGE DeriveFunctor, GeneralizedNewtypeDeriving, RankNTypes #-}
+{-# LANGUAGE DefaultSignatures, GeneralizedNewtypeDeriving, RankNTypes #-}
 module Control.Selective (
     -- * Type class
-    Selective (..), handleRight, apS, handleA, selectA, handleM, selectM,
+    Selective (..), apS, handleA, selectA, handleM, selectM,
 
     -- * Conditional combinators
     ifS, whenS, fromMaybeS, whileS, (<||>), (<&&>), anyS, allS,
@@ -20,23 +20,16 @@ import qualified Data.Set as Set
 -- Laws: 1) handle f (fmap Left  x) == f <*> x  (free theorem)
 --       2) handle f (fmap Right x) == x
 --
---       3) select f g (fmap Left  x) == f <*> x
---       4) select f g (fmap Right x) == g <*> x
---
 class Applicative f => Selective f where
-    {-# MINIMAL handle | select #-}
     handle :: f (a -> b) -> f (Either a b) -> f b
-    handle f = select f (pure id)
+    default handle :: Monad f => f (a -> b) -> f (Either a b) -> f b
+    handle = handleM
 
-    select :: f (a -> c) -> f (b -> c) -> f (Either a b) -> f c
-    select l r = handle r . handle (fmap (fmap Right) l) . fmap (fmap Left)
-
--- This could be moved to the type class
-handleRight :: Selective f => f (b -> a) -> f (Either a b) -> f a
-handleRight f = handle f . fmap mirror
-  where
-    mirror (Left  x) = Right x
-    mirror (Right x) = Left  x
+-- The 'select' function is a natural generalisation of 'handle': instead of
+-- skipping unnecessary effects, it selects which of the two given effectful
+-- functions to apply to a given argument.
+select :: Selective f => f (a -> c) -> f (b -> c) -> f (Either a b) -> f c
+select l r = handle r . handle (fmap (fmap Right) l) . fmap (fmap Left)
 
 -- We can recover <*> from 'handle'
 apS :: Selective f => f (a -> b) -> f a -> f b
@@ -96,12 +89,7 @@ allS p = foldr ((<&&>) . p) (pure True)
 
 -- Try: ite (pure True) (print 1) (print 2)
 instance Selective IO where
-    handle = handleM
-    select = selectM
-
 instance Monad m => Selective (StateT s m) where
-    handle = handleM
-    select = selectM
 
 -- Static analysis of selective functors
 newtype Illegal f a = Illegal { runIllegal :: f a } deriving (Applicative, Functor)
@@ -109,7 +97,6 @@ newtype Illegal f a = Illegal { runIllegal :: f a } deriving (Applicative, Funct
 -- This instance is not legal but useful for static analysis: see 'dependencies'.
 instance Applicative f => Selective (Illegal f) where
     handle = handleA
-    select = selectA
 
 -- Run all effects of a given selective computation. Cannot be implemented using
 -- a legal Selective instance.

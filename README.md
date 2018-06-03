@@ -6,19 +6,15 @@ This is a study of *selective applicative functors*, an abstraction between `App
 -- Laws: 1) handle f (fmap Left  x) == f <*> x  (free theorem)
 --       2) handle f (fmap Right x) == x
 --
---       3) select f g (fmap Left  x) == f <*> x
---       4) select f g (fmap Right x) == g <*> x
---
 class Applicative f => Selective f where
-    {-# MINIMAL handle | select #-}
     handle :: f (a -> b) -> f (Either a b) -> f b
-    select :: f (a -> c) -> f (b -> c) -> f (Either a b) -> f c
 ```
 
-You can think of `handle` as a *selective function application*: you apply it
-only when given a value of type `Left a`. Otherwise, you skip it (along with all
-its effects) and return the `b` from `Right b`. Intuitively, `handle` allows
-you to efficiently handle an error, which we often represent by `Left a` in Haskell.
+You can think of `handle` as a *selective function application*: you apply the
+function only when given a value of type `Left a`. Otherwise, you skip it (along
+with all its effects) and return the `b` from `Right b`. Intuitively, `handle`
+allows you to *efficiently* handle an error, which we often represent by `Left a`
+in Haskell.
 
 Note that you can write a function with this type signature using `Applicative`,
 but it will have different behaviour -- it will always execute the effects
@@ -37,11 +33,15 @@ apS :: Selective f => f (a -> b) -> f a -> f b
 apS f = handle f . fmap Left
 ```
 
-The `select` method is a natural generalisation of `handle`: instead of
-skipping unnecessary effects, it selects which of the two given effectful
+The `select` function is a natural generalisation of `handle`: instead of
+skipping one unnecessary effect, it selects which of the two given effectful
 functions to apply to a given argument. It is possible to implement `select` in
-terms of `handle`, which is a good puzzle (give it a try!), and vice versa, so
-it makes sense to keep them both in the type class.
+terms of `handle`, which is a good puzzle (give it a try!):
+
+```haskell
+select :: Selective f => f (a -> c) -> f (b -> c) -> f (Either a b) -> f c
+select = ... -- Try to figure out the implementation!
+```
 
 Finally, any `Monad` is `Selective`:
 
