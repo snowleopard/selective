@@ -24,8 +24,8 @@ selectA f x = either <$> f <*> pure id <*> x
 `Selective` is more powerful than `Applicative`: you can recover the application operator `<*>` as follows.
 
 ```haskell
-applyS :: Selective f => f (a -> b) -> f a -> f b
-applyS f x = f <?*> fmap Left x
+apS :: Selective f => f (a -> b) -> f a -> f b
+apS f x = f <?*> fmap Left x
 ```
 
 Finally, any `Monad` is `Selective`: 
@@ -45,8 +45,8 @@ Selective functors are sufficient for implementing many conditional constructs, 
 eitherS :: Selective f => f (a -> c) -> f (b -> c) -> f (Either a b) -> f c
 eitherS l r x = r <?*> (fmap (fmap Right) l <?*> fmap (fmap Left) x)
 
-ite :: Selective f => f Bool -> f a -> f a -> f a
-ite i t e = eitherS (fmap const t) (fmap const e) $
+ifS :: Selective f => f Bool -> f a -> f a -> f a
+ifS i t e = eitherS (fmap const t) (fmap const e) $
     fmap (\b -> if b then Left () else Right ()) i
 ```
 
