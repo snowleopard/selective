@@ -11,9 +11,12 @@ module Control.Selective (
     oblivious, Task, dependencies
     ) where
 
+import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
+import Control.Monad.Trans.Writer
 import Control.Applicative
-import Data.Functor.Compose
+import Data.Functor.Identity
+import Data.Proxy
 
 import qualified Data.Set as Set
 
@@ -96,20 +99,20 @@ allS p = foldr ((<&&>) . p) (pure True)
 
 -- Instances
 
--- Do Selective functors compose?
--- The current implementation below is not lawful:
---
---   handle (Compose Nothing) (Compose (Just (Just (Right 8)))) == Nothing
---
--- That is, the first layer of effects is still applied.
-instance (Selective f, Selective g) => Selective (Compose f g) where
-    handle (Compose f) (Compose x) = Compose $ pure handle <*> f <*> x
-
 -- As a quick experiment, try: ifS (pure True) (print 1) (print 2)
 instance Selective IO where
 
 -- And... we need to write a lot more instances
+instance Selective [] where
+instance Selective ((->) a) where
+instance Monoid a => Selective ((,) a) where
+instance Selective Identity where
+instance Selective Maybe where
+instance Selective Proxy where
+
+instance Monad m => Selective (ReaderT s m) where
 instance Monad m => Selective (StateT s m) where
+instance (Monoid s, Monad m) => Selective (WriterT s m) where
 
 -- Static analysis of selective functors
 newtype Illegal f a = Illegal { runIllegal :: f a } deriving (Applicative, Functor)
