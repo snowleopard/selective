@@ -74,7 +74,7 @@ whenS x act = ifS x act (pure ())
 fromMaybeS :: Selective f => f a -> f (Maybe a) -> f a
 fromMaybeS x = handle (fmap const x) . fmap (maybe (Left ()) Right)
 
--- | Keep checking a given effectful condition until it holds.
+-- | Keep checking a given effectful condition while it holds.
 whileS :: Selective f => f Bool -> f ()
 whileS act = whenS act (whileS act)
 
