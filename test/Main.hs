@@ -2,12 +2,15 @@
 import Control.Selective
 import Control.Selective.Example
 
-test :: String -> (forall f. Selective f => (String -> f String) -> f String) -> IO ()
-test name x = putStrLn $ "dependencies " ++ name ++ " == " ++ show (dependencies x)
+test :: String -> IO ()
+test key = putStrLn $ "dependencies " ++ key ++ " == " ++ show (dependencies login key)
 
 main :: IO ()
 main = do
     putStrLn "Test dependencies"
-    test "hello"                    hello
-    test "helloAndWelcome"          helloAndWelcome
-    test "helloAndWelcomeSelective" helloAndWelcomeSelective
+    test "hello"
+    test "welcome"
+    test "both"
+    test "andrey"
+
+    putStrLn $ "\n\nCyclic dependency graph:\n\n" ++ draw task "B1"

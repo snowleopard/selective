@@ -1,4 +1,5 @@
-{-# LANGUAGE DefaultSignatures, GeneralizedNewtypeDeriving, RankNTypes #-}
+{-# LANGUAGE ConstraintKinds, DefaultSignatures, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RankNTypes #-}
 module Control.Selective (
     -- * Type class
     Selective (..), apS, handleA, selectA, handleM, selectM,
@@ -7,7 +8,7 @@ module Control.Selective (
     ifS, whenS, fromMaybeS, whileS, (<||>), (<&&>), anyS, allS,
 
     -- * Static analysis
-    oblivious, dependencies
+    oblivious, Task, dependencies
     ) where
 
 import Control.Monad.Trans.State
@@ -88,7 +89,12 @@ allS p = foldr ((<&&>) . p) (pure True)
 
 -- Instances
 
--- Selective functors compose!
+-- Do Selective functors compose?
+-- The implementation below is not lawful:
+--
+--   handle (Compose Nothing) (Compose (Just (Just (Right 8)))) == Nothing
+--
+-- That is, the first layer of effects is still applied.
 instance (Selective f, Selective g) => Selective (Compose f g) where
     handle (Compose f) (Compose x) = Compose $ pure handle <*> f <*> x
 
@@ -109,8 +115,11 @@ instance Applicative f => Selective (Illegal f) where
 oblivious :: Applicative f => (forall s. Selective s => s a) -> f a
 oblivious = runIllegal
 
--- Extract dependencies from a selective task
 -- See https://blogs.ncl.ac.uk/andreymokhov/the-task-abstraction/
-dependencies :: Ord k => (forall f. Selective f => (k -> f v) -> f a) -> [k]
-dependencies task =
-    Set.toList $ getConst $ runIllegal $ task (Illegal . Const . Set.singleton)
+type Task c k v = forall f. c f => (k -> f v) -> k -> Maybe (f v)
+
+-- Extract dependencies from a selective task
+dependencies :: Ord k => Task Selective k v -> k -> [k]
+dependencies task key = case task (Illegal . Const . Set.singleton) key of
+    Nothing -> []
+    Just act -> Set.toList $ getConst $ runIllegal act
