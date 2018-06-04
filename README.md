@@ -59,15 +59,26 @@ which traditionally require the (much more powerful) `Monad` type class.
 For example:
 
 ```haskell
+-- | Branch on a Boolean value, skipping unnecessary effects.
 ifS :: Selective f => f Bool -> f a -> f a -> f a
 ifS i t f = select (fmap const f) (fmap const t) $
     fmap (\b -> if b then Right () else Left ()) i
 
+-- | Conditionally apply an effect.
 whenS :: Selective f => f Bool -> f () -> f ()
 whenS x act = ifS x act (pure ())
 
+-- | Keep checking a given effectful condition while it holds.
 whileS :: Selective f => f Bool -> f ()
 whileS act = whenS act (whileS act)
+
+-- | A lifted version of lazy Boolean OR.
+(<||>) :: Selective f => f Bool -> f Bool -> f Bool
+(<||>) a b = ifS a (pure True) b
+
+-- | A lifted version of 'any'. Retains the short-circuiting behaviour.
+anyS :: Selective f => (a -> f Bool) -> [a] -> f Bool
+anyS p = foldr ((<||>) . p) (pure False)
 ```
 
 See more examples in [src/Control/Selective.hs](src/Control/Selective.hs).
