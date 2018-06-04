@@ -3,7 +3,7 @@
 This is a study of *selective applicative functors*, an abstraction between `Applicative` and `Monad`:
 
 ```haskell
--- Laws: 1) handle f (fmap Left  x) == f <*> x  (free theorem)
+-- Laws: 1) handle f (fmap Left  x) == f <*> x
 --       2) handle f (fmap Right x) == x
 --
 class Applicative f => Selective f where
