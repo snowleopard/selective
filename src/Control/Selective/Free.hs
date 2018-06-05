@@ -7,6 +7,7 @@ module Control.Selective.Free (
 import Data.Bifunctor
 
 -- Inspired by free applicative functors by Capriotti and Kaposi
+-- Beware of bugs in this code; I have only compiled it, not proved it correct.
 data Select f a where
     Pure   :: a -> Select f a
     Handle :: Select f (a -> b) -> f (Either a b) -> Select f b
