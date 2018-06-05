@@ -17,6 +17,7 @@ import Control.Monad.Trans.Writer
 import Control.Applicative
 import Data.Functor.Identity
 import Data.Proxy
+import Data.Semigroup
 
 import qualified Data.Set as Set
 
@@ -113,6 +114,26 @@ instance Selective Proxy where
 instance Monad m => Selective (ReaderT s m) where
 instance Monad m => Selective (StateT s m) where
 instance (Monoid s, Monad m) => Selective (WriterT s m) where
+
+-- Selective instance for the standard Applicative Validation
+-- This is a good example of a Selective functor which is not a Monad
+data Validation e a = Failure e | Success a deriving Show
+
+instance Functor (Validation e) where
+    fmap _ (Failure e) = Failure e
+    fmap f (Success a) = Success (f a)
+
+instance Semigroup e => Applicative (Validation e) where
+    pure = Success
+    Failure e1 <*> Failure e2 = Failure (e1 <> e2)
+    Failure e1 <*> Success _  = Failure e1
+    Success _  <*> Failure e2 = Failure e2
+    Success f  <*> Success a  = Success (f a)
+
+instance Semigroup e => Selective (Validation e) where
+    handle _ (Success (Right b)) = Success b
+    handle f (Success (Left  a)) = f <*> Success a
+    handle _ (Failure e        ) = Failure e
 
 -- Static analysis of selective functors
 newtype Illegal f a = Illegal { runIllegal :: f a } deriving (Applicative, Functor)

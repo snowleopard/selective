@@ -1,4 +1,4 @@
-{-# LANGUAGE ConstraintKinds, RankNTypes #-}
+{-# LANGUAGE ConstraintKinds, GADTs, RankNTypes #-}
 module Control.Selective.Example where
 
 import Algebra.Graph
@@ -48,3 +48,17 @@ graph deps key = transpose $ overlays [ star k (deps k) | k <- keys Set.empty [k
 
 draw :: Task Selective String v -> String -> String
 draw task = exportAsIs . graph (dependencies task)
+
+---------------------------------- Validation ----------------------------------
+
+fetch :: Read a => String -> IO a
+fetch prompt = do putStr (prompt ++ ": "); read <$> getLine
+
+type Radius = Int
+type Width  = Int
+type Height = Int
+
+data Shape = Square Radius | Rectangle Width Height deriving Show
+
+shape :: Selective f => f Bool -> f Radius -> f Width -> f Height -> f Shape
+shape s r w h = ifS s (Square <$> r) (Rectangle <$> w <*> h)
