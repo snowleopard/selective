@@ -8,7 +8,7 @@ module Control.Selective (
     ifS, whenS, fromMaybeS, whileS, (<||>), (<&&>), anyS, allS,
 
     -- * Static analysis
-    Task, dependencies
+    Validation (..), Task, dependencies
     ) where
 
 import Control.Monad.Trans.Reader
