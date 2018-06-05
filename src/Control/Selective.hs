@@ -8,7 +8,7 @@ module Control.Selective (
     ifS, whenS, fromMaybeS, whileS, (<||>), (<&&>), anyS, allS,
 
     -- * Static analysis
-    oblivious, Task, dependencies
+    Task, dependencies
     ) where
 
 import Control.Monad.Trans.Reader
@@ -143,24 +143,15 @@ instance Semigroup e => Selective (Validation e) where
     handle _ (Failure e        ) = Failure e
 
 -- Static analysis of selective functors
-newtype Illegal f a = Illegal { runIllegal :: f a } deriving (Applicative, Functor)
-
--- This instance is not legal but useful for static analysis: see 'dependencies'.
-instance Applicative f => Selective (Illegal f) where
+instance Monoid m => Selective (Const m) where
     handle = handleA
-
--- Run all effects of a given selective computation. Cannot be implemented using
--- a legal Selective instance.
-oblivious :: Applicative f => (forall s. Selective s => s a) -> f a
-oblivious = runIllegal
 
 -- | The task abstraction, as described in
 -- https://blogs.ncl.ac.uk/andreymokhov/the-task-abstraction/.
 type Task c k v = forall f. c f => (k -> f v) -> k -> Maybe (f v)
 
--- | Extract dependencies from a selective task. Probably does something illegal
--- to the given task, but you'll never know ;)
+-- | Extract dependencies from a selective task.
 dependencies :: Ord k => Task Selective k v -> k -> [k]
-dependencies task key = case task (Illegal . Const . Set.singleton) key of
+dependencies task key = case task (Const . Set.singleton) key of
     Nothing -> []
-    Just act -> Set.toList $ getConst $ runIllegal act
+    Just act -> Set.toList $ getConst act
