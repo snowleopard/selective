@@ -27,9 +27,16 @@ import qualified Data.Set as Set
 -- @b@ from @Right b@. Intuitively, 'handle' allows you to efficiently handle an
 -- error, which we often represent by @Left a@ in Haskell.
 --
--- Laws: 1) handle f (fmap Left  x) == f <*> x
---       2) handle f (fmap Right x) == x
+-- Law: If fmap Left x /= fmap Right x then
+--      * handle f (fmap Left  x) == f <*> x
+--      * handle f (fmap Right x) == x
 --
+-- For example, when f = Maybe we have:
+--    * handle f (Just (Left  a)) == f <*> x
+--    * handle f (Just (Right b)) == x
+--    * handle f Nothing is not constrained, allowing the implementation to
+--      select between the two above behaviours. The default implementation
+--      provided for a Monad f skips the effect, i.e. handle f Nothing = Nothing.
 class Applicative f => Selective f where
     handle :: f (a -> b) -> f (Either a b) -> f b
     default handle :: Monad f => f (a -> b) -> f (Either a b) -> f b

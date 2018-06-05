@@ -3,9 +3,16 @@
 This is a study of *selective applicative functors*, an abstraction between `Applicative` and `Monad`:
 
 ```haskell
--- Laws: 1) handle f (fmap Left  x) == f <*> x
---       2) handle f (fmap Right x) == x
+-- Law: If fmap Left x /= fmap Right x then
+--      * handle f (fmap Left  x) == f <*> x
+--      * handle f (fmap Right x) == x
 --
+-- For example, when f = Maybe we have:
+--      * handle f (Just (Left  a)) == f <*> x
+--      * handle f (Just (Right b)) == x
+--      * handle f Nothing is not constrained, allowing the implementation to
+--        select between the two above behaviours. The default implementation
+--        provided for a Monad f skips the effect: handle f Nothing = Nothing.
 class Applicative f => Selective f where
     handle :: f (a -> b) -> f (Either a b) -> f b
 ```
