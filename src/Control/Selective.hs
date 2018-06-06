@@ -31,11 +31,11 @@ import qualified Data.Set as Set
 -- on how to improve them yet keep Const and Validation instances are welcome!
 --
 -- Law: If fmap Left x /= fmap Right x then
---      * handle (fmap Left  x) f == ($) <$> x <*> f
+--      * handle (fmap Left  x) f == flip ($) <$> x <*> f
 --      * handle (fmap Right x) f == x
 --
 -- For example, when f = Maybe we have:
---      * handle (Just (Left  x)) f == ($) <$> x <*> f
+--      * handle (Just (Left  x)) f == flip ($) <$> x <*> f
 --      * handle (Just (Right x)) f == x
 --      * handle Nothing f is not constrained, allowing the implementation to
 --        select between the two above behaviours. The default implementation
@@ -148,7 +148,7 @@ instance Semigroup e => Applicative (Validation e) where
 
 instance Semigroup e => Selective (Validation e) where
     handle (Success (Right b)) _ = Success b
-    handle (Success (Left  a)) f = Success ($a) <*> f
+    handle (Success (Left  a)) f = flip ($) <$> Success a <*> f
     handle (Failure e        ) _ = Failure e
 
 -- Static analysis of selective functors
