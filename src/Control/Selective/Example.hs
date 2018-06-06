@@ -58,12 +58,12 @@ type Radius = Int
 type Width  = Int
 type Height = Int
 
-data Shape = Square Radius | Rectangle Width Height deriving Show
+data Shape = Circle Radius | Rectangle Width Height deriving Show
 
 -- Some validation examples:
 --
 -- > shape (Success True) (Success 10) (Failure ["no width"]) (Failure ["no height"])
--- > Success (Square 10)
+-- > Success (Circle 10)
 --
 -- > shape (Success False) (Failure ["no radius"]) (Success 20) (Success 30)
 -- > Success (Rectangle 20 30)
@@ -74,4 +74,4 @@ data Shape = Square Radius | Rectangle Width Height deriving Show
 -- > shape (Failure ["no choice"]) (Failure ["no radius"]) (Success 20) (Failure ["no height"])
 -- > Failure ["no choice"]
 shape :: Selective f => f Bool -> f Radius -> f Width -> f Height -> f Shape
-shape s r w h = ifS s (Square <$> r) (Rectangle <$> w <*> h)
+shape s r w h = ifS s (Circle <$> r) (Rectangle <$> w <*> h)
