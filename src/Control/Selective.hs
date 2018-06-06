@@ -22,52 +22,57 @@ import Data.Semigroup
 import qualified Data.Set as Set
 
 -- | Selective applicative functor. You can think of 'handle' as a selective
--- function application: you apply the function only when given a value of type
--- @Left a@. Otherwise, you skip it (along with all its effects) and return the
--- @b@ from @Right b@. Intuitively, 'handle' allows you to efficiently handle an
--- error, which we often represent by @Left a@ in Haskell.
+-- function application: you apply a handler function only when given a value of
+-- type @Left a@. Otherwise, you skip the function (along with all its effects)
+-- and return the @b@ from @Right b@. Intuitively, 'handle' allows you to
+-- efficiently handle errors that are often represented by @Left a@ in Haskell.
 --
 -- Note: the laws are still in flux. They still look unsatisfactory, so any ideas
 -- on how to improve them yet keep Const and Validation instances are welcome!
 --
 -- Law: If fmap Left x /= fmap Right x then
---      * handle f (fmap Left  x) == f <*> x
---      * handle f (fmap Right x) == x
+--      * handle (fmap Left  x) f == ($) <$> x <*> f
+--      * handle (fmap Right x) f == x
 --
 -- For example, when f = Maybe we have:
---      * handle f (Just (Left  a)) == f <*> x
---      * handle f (Just (Right b)) == x
---      * handle f Nothing is not constrained, allowing the implementation to
+--      * handle (Just (Left  x)) f == ($) <$> x <*> f
+--      * handle (Just (Right x)) f == x
+--      * handle Nothing f is not constrained, allowing the implementation to
 --        select between the two above behaviours. The default implementation
 --        provided for a Monad f skips the effect: handle f Nothing == Nothing.
 class Applicative f => Selective f where
-    handle :: f (a -> b) -> f (Either a b) -> f b
-    default handle :: Monad f => f (a -> b) -> f (Either a b) -> f b
+    handle :: f (Either a b) -> f (a -> b) -> f b
+    default handle :: Monad f => f (Either a b) -> f (a -> b) -> f b
     handle = handleM
+
+(<*?) :: Selective f => f (Either a b) -> f (a -> b) -> f b
+(<*?) = handle
+
+infixl 4 <*?
 
 -- | The 'select' function is a natural generalisation of 'handle': instead of
 -- skipping unnecessary effects, it selects which of the two given effectful
 -- functions to apply to a given argument. It is possible to implement 'select'
 -- in terms of 'handle', which is a good puzzle (give it a try!).
-select :: Selective f => f (a -> c) -> f (b -> c) -> f (Either a b) -> f c
-select l r = handle r . handle (fmap (fmap Right) l) . fmap (fmap Left)
+select :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
+select x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 
 -- | We can write a function with the type signature of 'handle' using the
 -- 'Applicative' type class, but it will have different behaviour -- it will
 --- always execute the effects associated with the handler, hence being less
 -- efficient.
-handleA :: Applicative f => f (a -> b) -> f (Either a b) -> f b
-handleA f x = either <$> f <*> pure id <*> x
+handleA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
+handleA x f = fmap (\e f -> either f id e) x <*> f
 
 -- | 'Selective' is more powerful than 'Applicative': we can recover the
 -- application operator '<*>'.
 apS :: Selective f => f (a -> b) -> f a -> f b
-apS f = handle f . fmap Left
+apS f x = fmap Left f <*? fmap (flip ($)) x
 
 -- | One can easily implement monadic 'handleM' with the right behaviour, hence
 -- any 'Monad' is 'Selective'.
-handleM :: Monad f => f (a -> b) -> f (Either a b) -> f b
-handleM mf mx = do
+handleM :: Monad f => f (Either a b) -> f (a -> b) -> f b
+handleM mx mf = do
     x <- mx
     case x of
         Left  a -> fmap ($a) mf
@@ -77,8 +82,8 @@ handleM mf mx = do
 
 -- | Branch on a Boolean value, skipping unnecessary effects.
 ifS :: Selective f => f Bool -> f a -> f a -> f a
-ifS i t f = select (fmap const f) (fmap const t) $
-    fmap (\b -> if b then Right () else Left ()) i
+ifS i t f = select (fmap (\b -> if b then Right () else Left ()) i)
+    (fmap const f) (fmap const t)
 
 -- | Conditionally apply an effect.
 whenS :: Selective f => f Bool -> f () -> f ()
@@ -86,7 +91,7 @@ whenS x act = ifS x act (pure ())
 
 -- | A lifted version of 'fromMaybe'.
 fromMaybeS :: Selective f => f a -> f (Maybe a) -> f a
-fromMaybeS x = handle (fmap const x) . fmap (maybe (Left ()) Right)
+fromMaybeS dx x = handle (fmap (maybe (Left ()) Right) x) (fmap const dx)
 
 -- | Keep checking a given effectful condition while it holds.
 whileS :: Selective f => f Bool -> f ()
@@ -141,9 +146,9 @@ instance Semigroup e => Applicative (Validation e) where
     Success f  <*> Success a  = Success (f a)
 
 instance Semigroup e => Selective (Validation e) where
-    handle _ (Success (Right b)) = Success b
-    handle f (Success (Left  a)) = f <*> Success a
-    handle _ (Failure e        ) = Failure e
+    handle (Success (Right b)) _ = Success b
+    handle (Success (Left  a)) f = f <*> Success a
+    handle (Failure e        ) _ = Failure e
 
 -- Static analysis of selective functors
 instance Monoid m => Selective (Const m) where
