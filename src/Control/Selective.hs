@@ -45,6 +45,7 @@ class Applicative f => Selective f where
     default handle :: Monad f => f (Either a b) -> f (a -> b) -> f b
     handle = handleM
 
+-- | An operator alias for 'handle'.
 (<*?) :: Selective f => f (Either a b) -> f (a -> b) -> f b
 (<*?) = handle
 
@@ -147,7 +148,7 @@ instance Semigroup e => Applicative (Validation e) where
 
 instance Semigroup e => Selective (Validation e) where
     handle (Success (Right b)) _ = Success b
-    handle (Success (Left  a)) f = f <*> Success a
+    handle (Success (Left  a)) f = Success ($a) <*> f
     handle (Failure e        ) _ = Failure e
 
 -- Static analysis of selective functors
