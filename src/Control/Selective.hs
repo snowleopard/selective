@@ -30,16 +30,13 @@ import qualified Data.Set as Set
 -- Note: the laws are still in flux. They still look unsatisfactory, so any ideas
 -- on how to improve them yet keep Const and Validation instances are welcome!
 --
--- Law: If fmap Left x /= fmap Right x then
---      * handle (fmap Left  x) f == flip ($) <$> x <*> f
---      * handle (fmap Right x) f == x
+-- Laws: 1) handle (Left <$> x) f == flip ($) <$> x <*> f
+--       2) if Left <$> x /= Right <$> x then handle (Right <$> x) f == x
 --
 -- For example, when f = Maybe we have:
---      * handle (Just (Left  x)) f == flip ($) <$> x <*> f
---      * handle (Just (Right x)) f == x
---      * handle Nothing f is not constrained, allowing the implementation to
---        select between the two above behaviours. The default implementation
---        provided for a Monad f skips the effect: handle f Nothing == Nothing.
+--       1) handle (Just (Left  x)) f == flip ($) <$> x <*> f
+--          handle Nothing          f == Nothing
+--       2) handle (Just (Right x)) f == x
 class Applicative f => Selective f where
     handle :: f (Either a b) -> f (a -> b) -> f b
     default handle :: Monad f => f (Either a b) -> f (a -> b) -> f b
