@@ -34,9 +34,9 @@ import qualified Data.Set as Set
 --       2) if Left <$> x /= Right <$> x then handle (Right <$> x) f == x
 --
 -- For example, when f = Maybe we have:
---       1) handle (Just (Left  x)) f == flip ($) <$> x <*> f
+--       1) handle (Just (Left  x)) f == flip ($) <$> Just x <*> f
 --          handle Nothing          f == Nothing
---       2) handle (Just (Right x)) f == x
+--       2) handle (Just (Right x)) f == Just x
 class Applicative f => Selective f where
     handle :: f (Either a b) -> f (a -> b) -> f b
     default handle :: Monad f => f (Either a b) -> f (a -> b) -> f b
