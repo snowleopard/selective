@@ -23,7 +23,8 @@ source-repository head
 library
     hs-source-dirs:     src
     exposed-modules:    Control.Selective,
-                        Control.Selective.Example
+                        Control.Selective.Example,
+                        Control.Selective.Free
     build-depends:      algebraic-graphs >= 0.1.1,
                         base             >= 4.7     && < 5,
                         containers       >= 0.5.7.1,
