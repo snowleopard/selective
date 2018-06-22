@@ -20,6 +20,7 @@ k :: Selective f => f (Either a b) -> f (Either c (a -> b)) -> f (c -> a -> b) -
 k x y z = fmap Right <$> x <*? ((\x a -> bimap (,a) ($a) x) <$> y) <*? (uncurry <$> z)
 
 -- Alternative definition, we could also add @pureS :: f (a -> a)@
+-- * The first effect must be evaluated.
 -- * Associativity: x .? (y .? z) == (x .? y) .? z
 -- * (f .) <$> x .? y   == (f .) <$> (x .? y)
 -- * x .? ((. f) <$> y) == (. f) <$> (x .? y)
@@ -27,6 +28,13 @@ class Applicative f => Selective2 f where
     (.?) :: f (Either e (b -> c)) -> f (Either e (a -> b)) -> f (Either e (a -> c))
 
 infixl 4 .?
+
+-- Another alternative definition, analogous to Applicative
+-- * The first effect must be evaluated.
+class Applicative f => Selective3 f where
+    (*?) :: f (Either e (a -> b)) -> f (Either e a) -> f (Either e b)
+
+infixl 4 *?
 
 -- Proving equivalence: go from Selective2 to Selective
 from2 :: Selective2 f => f (Either a b) -> f (a -> b) -> f b
