@@ -2,7 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 module Control.Selective (
     -- * Type class
-    Selective (..), select, handleA, apS, handleM,
+    Selective (..), (<*?), select, handleA, apS, handleM,
 
     -- * Conditional combinators
     ifS, whenS, fromMaybeS, whileS, (<||>), (<&&>), anyS, allS,
