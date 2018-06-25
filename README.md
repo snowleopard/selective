@@ -3,26 +3,65 @@
 This is a study of *selective applicative functors*, an abstraction between `Applicative` and `Monad`:
 
 ```haskell
--- Note: the laws are still in flux. They still look unsatisfactory, so any ideas
--- on how to improve them yet keep Const and Validation instances are welcome!
+-- Laws: (F1) Apply a pure function to the result:
 --
--- Laws: 1) handle (Left <$> x) f == flip ($) <$> x <*> f
---       2) if Left <$> x /= Right <$> x then handle (Right <$> x) f == x
+--            f <$> handle x y = handle (second f <$> x) ((f .) <$> y)
 --
--- For example, when f = Maybe we have:
---       1) handle (Just (Left  x)) f == flip ($) <$> Just x <*> f
---          handle Nothing          f == Nothing
---       2) handle (Just (Right x)) f == Just x
+--       (F2) Apply a pure function to the left (error) branch:
+--
+--            handle (first f <$> x) y = handle x ((. f) <$> y)
+--
+--       (F3) Apply a pure function to the handler:
+--
+--            handle x (f <$> y) = handle (first (flip f) <$> x) (flip ($) <$> y)
+--
+--       (P1) Apply a pure handler:
+--
+--            handle x (pure y) == either y id <$> x
+--
+--       (P2) Handle a pure error:
+--
+--            handle (pure (Left x)) y = ($x) <$> y
+--
+--       (A1) Associativity:
+--
+--            handle x (handle y z) = handle (handle (f <$> x) (g <$> y)) (h <$> z)
+--
+--            or in operator form:
+--
+--            x <*? (y <*? z) = (f <$> x) <*? (g <$> y) <*? (h <$> z)
+--
+--            where f x = Right <$> x
+--                  g y = \a -> bimap (,a) ($a) y
+--                  h z = uncurry z
+--
+--
+--       Note there is no law for handling a pure value, i.e. we do not require
+--       that the following holds:
+--
+--            handle (pure (Right x)) y = pure x
+--
+--       In particular, the following is allowed too:
+--
+--            handle (pure (Right x)) y = const x <$> y
+--
+--       We therefore allow 'handle' to be selective about effects in this case.
+--
+-- A consequence of the above laws is that 'apS' satisfies 'Applicative' laws.
+-- We choose not to require that 'apS' = '<*>', since this forbids some
+-- interesting instances, such as 'Validation'.
 class Applicative f => Selective f where
     handle :: f (Either a b) -> f (a -> b) -> f b
 
 -- | An operator alias for 'handle'.
 (<*?) :: Selective f => f (Either a b) -> f (a -> b) -> f b
 (<*?) = handle
+
+infixl 4 <*?
 ```
 
-You can think of `handle` as a *selective function application*: you apply a
-handler function only when given a value of `Left a`. Otherwise, you skip the
+Think of `handle` as a *selective function application*: you apply a handler
+function only when given a value of `Left a`. Otherwise, you skip the
 function (along with all its effects) and return the `b` from `Right b`.
 Intuitively, `handle` allows you to *efficiently* handle errors that are often
 represented by `Left a` in Haskell.
@@ -33,7 +72,7 @@ associated with the handler, hence being less efficient.
 
 ```haskell
 handleA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
-handleA x f = fmap (\e f -> either f id e) x <*> f
+handleA x f = (\e f -> either f id e) <$> x <*> f
 ```
 
 `Selective` is more powerful than `Applicative`: you can recover the
@@ -41,7 +80,7 @@ application operator `<*>` as follows.
 
 ```haskell
 apS :: Selective f => f (a -> b) -> f a -> f b
-apS f x = fmap Left f <*? fmap (flip ($)) x
+apS f x = handle (Left <$> f) (flip ($) <$> x)
 ```
 
 The `select` function is a natural generalisation of `handle`: instead of
