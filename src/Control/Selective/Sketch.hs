@@ -3,7 +3,6 @@ module Control.Selective.Sketch where
 
 import Control.Selective
 import Data.Bifunctor
-import Data.Void
 
 -------------------------------- Proof sketches --------------------------------
 
@@ -173,29 +172,64 @@ normalise2 x y z = (f <$> x) <*? (g <$> y) <*? (h <$> z)
     g y = \a -> bimap (\c f -> f c a) ($a) y
     h z = ($z) -- h = flip ($)
 
--- x .? (y .? z) == (x .? y) .? z
-(.?) :: Selective f => f (Either e (b -> c)) -> f (Either e (a -> b)) -> f (Either e (a -> c))
-f .? g = mirror <$> handle (fmap Right . mirror <$> f) ((\x bc -> first (bc.) $ mirror x) <$> g)
-  where
-    mirror (Left  x) = Right x
-    mirror (Right x) = Left  x
+-- | Selective function composition, where the first effect is always evaluated,
+-- but the second one is skipped if the first value is @Nothing@.
+-- Thanks to the 'Selective' laws, this operator is associative, and has
+-- identity @pure (Just id)@.
+(.?) :: Selective f => f (Maybe (b -> c)) -> f (Maybe (a -> b)) -> f (Maybe (a -> c))
+x .? y = handle (maybe (Right Nothing) Left <$> x) ((\ab bc -> (bc .) <$> ab) <$> y)
 
 infixl 4 .?
 
-a2 :: Selective f => f (Either e (c -> d)) -> f (Either e (b -> c)) -> f (Either e (a -> b)) -> f (Either e (a -> d))
-a2 x y z = lhs === rhs
-  where
-    lhs = (x .? y) .? z
-    rhs = x .? (y .? z)
+-- Proposition A2: (x .? y) .? z = x .? (y .? z)
+a2 :: Selective f => f (Maybe (c -> d)) -> f (Maybe (b -> c)) -> f (Maybe (a -> b)) -> f (Maybe (a -> d))
+a2 x y z = ((x .? y) .? z) === (x .? (y .? z))
 
--- x .* (y .* z) == (x .* y) .* z
-(.*) :: Selective f => f (b -> c) -> f (a -> b) -> f (a -> c)
-f .* g = either absurd id <$> (Right <$> f .? (Right <$> g))
+-- Proof of A2
+t5 :: Selective f => f (Maybe (c -> d)) -> f (Maybe (b -> c)) -> f (Maybe (a -> b)) -> f (Maybe (a -> d))
+t5 x y z =
+    -- Express the lefthand side by expanding the definition of '.?'
+    handle (maybe (Right Nothing) Left <$> (handle (maybe (Right Nothing) Left <$> x)
+        ((\ab bc -> (bc .) <$> ab) <$> y)))
+        ((\ab bc -> (bc .) <$> ab) <$> z)
+    === -- Apply F3 to move the rightmost pure function into the outer 'handle'
+    handle (first (flip $ (\ab bc -> (bc .) <$> ab)) <$> maybe (Right Nothing) Left <$> (handle (maybe (Right Nothing) Left <$> x)
+        ((\ab bc -> (bc .) <$> ab) <$> y)))
+        (flip ($) <$> z)
+    === -- Simplify
+    handle (maybe (Right Nothing) (\bc -> Left $ fmap $ (bc .)) <$> (handle (maybe (Right Nothing) Left <$> x)
+        ((\ab bc -> (bc .) <$> ab) <$> y)))
+        (flip ($) <$> z)
+    === -- Apply F1 to move the pure function into the inner 'handle'
+    handle (handle (second (maybe (Right Nothing) (\bc -> Left $ fmap $ (bc .))) <$> maybe (Right Nothing) Left <$> x)
+        (((maybe (Right Nothing) (\bc -> Left $ fmap $ (bc .))).) <$> (\ab bc -> (bc .) <$> ab) <$> y))
+        (flip ($) <$> z)
+    === -- Simplify, obtaining (#)
+    handle (handle (maybe (Right (Right Nothing)) Left <$> x)
+        ((\mbc cd -> maybe (Right Nothing) (\bc -> Left $ fmap ((cd . bc) .)) mbc) <$> y))
+        (flip ($) <$> z)
 
-infixl 4 .*
-
-a3 :: Selective f => f (c -> d) -> f (b -> c) -> f (a -> b) -> f (a -> d)
-a3 x y z = lhs === rhs
-  where
-    lhs = (x .* y) .* z
-    rhs = x .* (y .* z)
+    === -- Express the righthand side by expanding the definition of '.?'
+    handle (maybe (Right Nothing) Left <$> x)
+        ((\ab bc -> (bc .) <$> ab) <$> (handle (maybe (Right Nothing) Left <$> y)
+        ((\ab bc -> (bc .) <$> ab) <$> z)))
+    === -- Apply F1 to move the pure function into the inner 'handle'
+    handle (maybe (Right Nothing) Left <$> x)
+        (handle (second ((\ab bc -> (bc .) <$> ab)) <$> maybe (Right Nothing) Left <$> y)
+        ((((\ab bc -> (bc .) <$> ab)).) <$> (\ab bc -> (bc .) <$> ab) <$> z))
+    === -- Apply A1 to reassociate to the left
+    handle (handle (fmap Right <$> maybe (Right Nothing) Left <$> x)
+        ((\y a -> bimap (,a) ($a) y) <$> second ((\ab bc -> (bc .) <$> ab)) <$> maybe (Right Nothing) Left <$> y))
+        (uncurry <$> (((\ab bc -> (bc .) <$> ab)).) <$> (\ab bc -> (bc .) <$> ab) <$> z)
+    === -- Simplify
+    handle (handle (maybe (Right (Right Nothing)) Left <$> x)
+        ((\m a -> maybe (Right Nothing) (Left . (,a)) m) <$> y))
+        ((\ab (bc, cd) -> ((cd . bc) .) <$> ab) <$> z)
+    === -- Apply F3 to move the rightmost pure function into the outer 'handle'
+    handle (first (flip $ \ab (bc, cd) -> ((cd . bc) .) <$> ab) <$> handle (maybe (Right (Right Nothing)) Left <$> x)
+        ((\m a -> maybe (Right Nothing) (Left . (,a)) m) <$> y))
+        (flip ($) <$> z)
+    === -- Apply F1 to move the pure function into the inner 'handle', obtaining (#)
+    handle (handle (maybe (Right (Right Nothing)) Left <$> x)
+        ((\mbc cd -> maybe (Right Nothing) (\bc -> Left $ fmap ((cd . bc) .)) mbc) <$> y))
+        (flip ($) <$> z)
