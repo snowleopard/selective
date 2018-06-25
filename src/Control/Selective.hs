@@ -46,7 +46,7 @@ import qualified Data.Set as Set
 --
 --       (P1) Apply a pure handler:
 --
---            handle x (pure y) == either y id <$> x
+--            handle x (pure y) = either y id <$> x
 --
 --       (P2) Handle a pure error:
 --
@@ -143,7 +143,7 @@ handleM mx mf = do
 
 -- | Branch on a Boolean value, skipping unnecessary effects.
 ifS :: Selective f => f Bool -> f a -> f a -> f a
-ifS i t f = select (bool (Right ()) (Left ()) <$> i) (const <$> f) (const <$> t)
+ifS i t e = select (bool (Left ()) (Right ()) <$> i) (const <$> t) (const <$> e)
 
 -- | Conditionally apply an effect.
 whenS :: Selective f => f Bool -> f () -> f ()

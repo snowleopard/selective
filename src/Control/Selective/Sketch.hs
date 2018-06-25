@@ -172,6 +172,23 @@ normalise2 x y z = (f <$> x) <*? (g <$> y) <*? (h <$> z)
     g y = \a -> bimap (\c f -> f c a) ($a) y
     h z = ($z) -- h = flip ($)
 
+-- Alternative type classes for selective functors. They all come with an
+-- additional requirement that we run effects from left to right.
+
+-- Composition of Applicative and Either monad
+class Applicative f => SelectiveA f where
+    sa :: f (Either e (a -> b)) -> f (Either e a) -> f (Either e b)
+
+-- Composition of Starry and Either monad
+-- See: https://duplode.github.io/posts/applicative-archery.html
+class Applicative f => SelectiveS f where
+    ss :: f (Either e (b -> c)) -> f (Either e (a -> b)) -> f (Either e (a -> c))
+
+-- Composition of Monoidal and Either monad
+-- See: http://blog.ezyang.com/2012/08/applicative-functors/
+class Applicative f => SelectiveM f where
+    sm :: f (Either e a) -> f (Either e b) -> f (Either e (a, b))
+
 -- | Selective function composition, where the first effect is always evaluated,
 -- but the second one can be skipped if the first value is @Nothing@.
 -- Thanks to the laws of 'Selective', this operator is associative, and has
