@@ -61,7 +61,7 @@ t1 v =
     ($id) <$> (flip ($) <$> v)
     === -- Simplify
     id <$> v
-    === -- Functor identity: fmap id = id
+    === -- Functor identity: -- Functor identity: fmap id = id
     v
 
 -- Homomorphism: pure f <*> pure x = pure (f x)
@@ -181,14 +181,52 @@ x .? y = handle (maybe (Right Nothing) Left <$> x) ((\ab bc -> (bc .) <$> ab) <$
 
 infixl 4 .?
 
--- Proposition A2: (x .? y) .? z = x .? (y .? z)
+--
 a2 :: Selective f => f (Maybe (c -> d)) -> f (Maybe (b -> c)) -> f (Maybe (a -> b)) -> f (Maybe (a -> d))
 a2 x y z = ((x .? y) .? z) === (x .? (y .? z))
 
--- Proof of A2
-t5 :: Selective f => f (Maybe (c -> d)) -> f (Maybe (b -> c)) -> f (Maybe (a -> b)) -> f (Maybe (a -> d))
-t5 x y z =
-    -- Express the lefthand side by expanding the definition of '.?'
+-- Proof of left identity: pure (Just id) .? x = x
+t5 :: Selective f => f (Maybe (a -> b)) -> f (Maybe (a -> b))
+t5 x =
+    --- Lefthand side
+    pure (Just id) .? x
+    === -- Express the lefthand side by expanding the definition of '.?'
+    handle (maybe (Right Nothing) Left <$> pure (Just id))
+        ((\ab bc -> (bc .) <$> ab) <$> x)
+    === -- Simplify
+    handle (pure $ Left id) ((\ab bc -> (bc .) <$> ab) <$> x)
+    === -- Apply P2
+    ($id) <$> ((\ab bc -> (bc .) <$> ab) <$> x)
+    === -- Simplify
+    (($id) <$> (\ab bc -> (bc .) <$> ab) <$> x)
+    === -- Functor identity: fmap id = id
+    id <$> x
+    ===
+    x
+
+-- Proof of right identity: x .? pure (Just id) = x
+t6 :: Selective f => f (Maybe (a -> b)) -> f (Maybe (a -> b))
+t6 x =
+    --- Lefthand side
+    x .? pure (Just id)
+    === -- Express the lefthand side by expanding the definition of '.?'
+    handle (maybe (Right Nothing) Left <$> x)
+        ((\ab bc -> (bc .) <$> ab) <$> pure (Just id))
+    === -- Simplify
+    handle (maybe (Right Nothing) Left <$> x) (pure Just)
+    === -- Apply P1
+    either Just id <$> (maybe (Right Nothing) Left <$> x)
+    === -- Functor identity: fmap id = id
+    id <$> x
+    ===
+    x
+
+-- Proof of associativity: (x .? y) .? z = x .? (y .? z)
+t7 :: Selective f => f (Maybe (c -> d)) -> f (Maybe (b -> c)) -> f (Maybe (a -> b)) -> f (Maybe (a -> d))
+t7 x y z =
+    -- Lefthand side
+    (x .? y) .? z
+    === -- Express the lefthand side by expanding the definition of '.?'
     handle (maybe (Right Nothing) Left <$> (handle (maybe (Right Nothing) Left <$> x)
         ((\ab bc -> (bc .) <$> ab) <$> y)))
         ((\ab bc -> (bc .) <$> ab) <$> z)
@@ -209,6 +247,8 @@ t5 x y z =
         ((\mbc cd -> maybe (Right Nothing) (\bc -> Left $ fmap ((cd . bc) .)) mbc) <$> y))
         (flip ($) <$> z)
 
+    === -- Righthand side
+    x .? (y .? z)
     === -- Express the righthand side by expanding the definition of '.?'
     handle (maybe (Right Nothing) Left <$> x)
         ((\ab bc -> (bc .) <$> ab) <$> (handle (maybe (Right Nothing) Left <$> y)
