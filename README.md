@@ -50,6 +50,8 @@ This is a study of *selective applicative functors*, an abstraction between `App
 -- A consequence of the above laws is that 'apS' satisfies 'Applicative' laws.
 -- We choose not to require that 'apS' = '<*>', since this forbids some
 -- interesting instances, such as 'Validation'.
+--
+-- If f is also a 'Monad', we require that 'handle' = 'handleM'.
 class Applicative f => Selective f where
     handle :: f (Either a b) -> f (a -> b) -> f b
 
@@ -111,8 +113,7 @@ For example:
 ```haskell
 -- | Branch on a Boolean value, skipping unnecessary effects.
 ifS :: Selective f => f Bool -> f a -> f a -> f a
-ifS i t f = select (fmap (\b -> if b then Right () else Left ()) i)
-    (fmap const f) (fmap const t)
+ifS i t f = select (bool (Right ()) (Left ()) <$> i) (const <$> f) (const <$> t)
 
 -- | Conditionally apply an effect.
 whenS :: Selective f => f Bool -> f () -> f ()

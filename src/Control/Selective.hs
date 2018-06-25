@@ -15,6 +15,7 @@ import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
 import Control.Applicative
+import Data.Bool
 import Data.Functor.Identity
 import Data.Proxy
 import Data.Semigroup
@@ -79,6 +80,8 @@ import qualified Data.Set as Set
 -- We choose not to require that 'apS' = '<*>', since this forbids some
 -- interesting instances, such as 'Validation'.
 --
+-- If f is also a 'Monad', we require that 'handle' = 'handleM'.
+--
 -- We can rewrite any selective expression in the following canonical form:
 --
 --          f (a + ... + z)    -- A value to be handled (+ denotes a sum type)
@@ -114,7 +117,7 @@ select x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 -- 'Applicative' type class, but it will always execute the effects associated
 -- with the handler, hence being potentially less efficient.
 handleA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
-handleA x f = fmap (\e f -> either f id e) x <*> f
+handleA x f = (\e f -> either f id e) <$> x <*> f
 
 -- | 'Selective' is more powerful than 'Applicative': we can recover the
 -- application operator '<*>'. In particular, the following 'Applicative' laws
@@ -140,8 +143,7 @@ handleM mx mf = do
 
 -- | Branch on a Boolean value, skipping unnecessary effects.
 ifS :: Selective f => f Bool -> f a -> f a -> f a
-ifS i t f = select (fmap (\b -> if b then Right () else Left ()) i)
-    (fmap const f) (fmap const t)
+ifS i t f = select (bool (Right ()) (Left ()) <$> i) (const <$> f) (const <$> t)
 
 -- | Conditionally apply an effect.
 whenS :: Selective f => f Bool -> f () -> f ()
