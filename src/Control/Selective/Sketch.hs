@@ -177,17 +177,17 @@ normalise2 x y z = (f <$> x) <*? (g <$> y) <*? (h <$> z)
 
 -- Composition of Applicative and Either monad
 class Applicative f => SelectiveA f where
-    sa :: f (Either e (a -> b)) -> f (Either e a) -> f (Either e b)
+    (|*|) :: f (Either e (a -> b)) -> f (Either e a) -> f (Either e b)
 
 -- Composition of Starry and Either monad
 -- See: https://duplode.github.io/posts/applicative-archery.html
 class Applicative f => SelectiveS f where
-    ss :: f (Either e (b -> c)) -> f (Either e (a -> b)) -> f (Either e (a -> c))
+    (|.|) :: f (Either e (b -> c)) -> f (Either e (a -> b)) -> f (Either e (a -> c))
 
 -- Composition of Monoidal and Either monad
 -- See: http://blog.ezyang.com/2012/08/applicative-functors/
 class Applicative f => SelectiveM f where
-    sm :: f (Either e a) -> f (Either e b) -> f (Either e (a, b))
+    (|**|) :: f (Either e a) -> f (Either e b) -> f (Either e (a, b))
 
 -- | Selective function composition, where the first effect is always evaluated,
 -- but the second one can be skipped if the first value is @Nothing@.
