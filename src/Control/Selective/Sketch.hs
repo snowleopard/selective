@@ -173,17 +173,13 @@ normalise2 x y z = (f <$> x) <*? (g <$> y) <*? (h <$> z)
     h z = ($z) -- h = flip ($)
 
 -- | Selective function composition, where the first effect is always evaluated,
--- but the second one is skipped if the first value is @Nothing@.
--- Thanks to the 'Selective' laws, this operator is associative, and has
+-- but the second one can be skipped if the first value is @Nothing@.
+-- Thanks to the laws of 'Selective', this operator is associative, and has
 -- identity @pure (Just id)@.
 (.?) :: Selective f => f (Maybe (b -> c)) -> f (Maybe (a -> b)) -> f (Maybe (a -> c))
 x .? y = handle (maybe (Right Nothing) Left <$> x) ((\ab bc -> (bc .) <$> ab) <$> y)
 
 infixl 4 .?
-
---
-a2 :: Selective f => f (Maybe (c -> d)) -> f (Maybe (b -> c)) -> f (Maybe (a -> b)) -> f (Maybe (a -> d))
-a2 x y z = ((x .? y) .? z) === (x .? (y .? z))
 
 -- Proof of left identity: pure (Just id) .? x = x
 t5 :: Selective f => f (Maybe (a -> b)) -> f (Maybe (a -> b))
