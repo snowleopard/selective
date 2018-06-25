@@ -53,11 +53,11 @@ import qualified Data.Set as Set
 --
 --       (A1) Associativity:
 --
---                handle x (handle y z) = handle (handle (f <$> x) (g <$> y)) (h <$> z)
+--            handle x (handle y z) = handle (handle (f <$> x) (g <$> y)) (h <$> z)
 --
 --            or in operator form:
 --
---                x <*? (y <*? z) = (f <$> x) <*? (g <$> y) <*? (h <$> z)
+--            x <*? (y <*? z) = (f <$> x) <*? (g <$> y) <*? (h <$> z)
 --
 --            where f x = Right <$> x
 --                  g y = \a -> bimap (,a) ($a) y
@@ -71,7 +71,7 @@ import qualified Data.Set as Set
 --
 --       In particular, the following is allowed too:
 --
---                handle (pure (Right x)) y = const x <$> y
+--            handle (pure (Right x)) y = const x <$> y
 --
 --       We therefore allow 'handle' to be selective about effects in this case.
 --
