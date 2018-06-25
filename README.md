@@ -144,9 +144,11 @@ instance Monoid m => Selective (Const m) where
     handle = handleA
 ```
 
-This might look suspicious, but since `Const m a` has no `a`, it is not
-required to skip any effects. Therefore, you can use it to extract the
-static structure of a given selective computation.
+Although we don't need the handler `Const m (a -> b)` (note that
+`Const m (Either a b)` holds no values of type `a`), we choose to
+accumulate the effects associated with it. This allows us to extract
+the static structure of any selective computation very similarly
+to how this is done with applicative computations.
 
 The `Validation` instance is perhaps a bit more interesting.
 
