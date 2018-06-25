@@ -7,8 +7,8 @@ import Data.Void
 
 -------------------------------- Proof sketches --------------------------------
 
--- A convenient primitive checking that the types of two given values coincide
--- and returns the first value.
+-- A convenient primitive which checks that the types of two given values
+-- coincide and returns the first value.
 (===) :: a -> a -> a
 x === y = if True then x else y
 
@@ -173,35 +173,29 @@ normalise2 x y z = (f <$> x) <*? (g <$> y) <*? (h <$> z)
     g y = \a -> bimap (\c f -> f c a) ($a) y
     h z = ($z) -- h = flip ($)
 
--- Alternative definition, we could also add @pureS :: f (a -> a)@
--- * The first effect must be evaluated.
--- * Associativity: x .? (y .? z) == (x .? y) .? z
--- * (f .) <$> x .? y   == (f .) <$> (x .? y)
--- * x .? ((. f) <$> y) == (. f) <$> (x .? y)
-class Applicative f => Selective2 f where
-    (.?) :: f (Either e (b -> c)) -> f (Either e (a -> b)) -> f (Either e (a -> c))
+-- x .? (y .? z) == (x .? y) .? z
+(.?) :: Selective f => f (Either e (b -> c)) -> f (Either e (a -> b)) -> f (Either e (a -> c))
+f .? g = mirror <$> handle (fmap Right . mirror <$> f) ((\x bc -> first (bc.) $ mirror x) <$> g)
+  where
+    mirror (Left  x) = Right x
+    mirror (Right x) = Left  x
 
 infixl 4 .?
 
--- Another alternative definition, analogous to Applicative
--- * The first effect must be evaluated.
-class Applicative f => Selective3 f where
-    (*?) :: f (Either e (a -> b)) -> f (Either e a) -> f (Either e b)
-
-infixl 4 *?
-
--- Proving equivalence: go from Selective2 to Selective
-from2 :: Selective2 f => f (Either a b) -> f (a -> b) -> f b
-from2 x f = either id ($()) <$> (Right <$> f .? (fmap const . mirror <$> x))
-
--- Proving equivalence: go from Selective to Selective2
-to2 :: Selective f => f (Either e (b -> c)) -> f (Either e (a -> b)) -> f (Either e (a -> c))
-to2 f g = mirror <$> handle (fmap Right . mirror <$> f) ((\x bc -> first (bc.) $ mirror x) <$> g)
-
-mirror :: Either a b -> Either b a
-mirror (Left  x) = Right x
-mirror (Right x) = Left  x
+a2 :: Selective f => f (Either e (c -> d)) -> f (Either e (b -> c)) -> f (Either e (a -> b)) -> f (Either e (a -> d))
+a2 x y z = lhs === rhs
+  where
+    lhs = (x .? y) .? z
+    rhs = x .? (y .? z)
 
 -- x .* (y .* z) == (x .* y) .* z
-(.*) :: Selective2 f => f (b -> c) -> f (a -> b) -> f (a -> c)
+(.*) :: Selective f => f (b -> c) -> f (a -> b) -> f (a -> c)
 f .* g = either absurd id <$> (Right <$> f .? (Right <$> g))
+
+infixl 4 .*
+
+a3 :: Selective f => f (c -> d) -> f (b -> c) -> f (a -> b) -> f (a -> d)
+a3 x y z = lhs === rhs
+  where
+    lhs = (x .* y) .* z
+    rhs = x .* (y .* z)
