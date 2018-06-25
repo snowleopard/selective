@@ -3,55 +3,6 @@
 This is a study of *selective applicative functors*, an abstraction between `Applicative` and `Monad`:
 
 ```haskell
--- Laws: (F1) Apply a pure function to the result:
---
---            f <$> handle x y = handle (second f <$> x) ((f .) <$> y)
---
---       (F2) Apply a pure function to the left (error) branch:
---
---            handle (first f <$> x) y = handle x ((. f) <$> y)
---
---       (F3) Apply a pure function to the handler:
---
---            handle x (f <$> y) = handle (first (flip f) <$> x) (flip ($) <$> y)
---
---       (P1) Apply a pure handler:
---
---            handle x (pure y) == either y id <$> x
---
---       (P2) Handle a pure error:
---
---            handle (pure (Left x)) y = ($x) <$> y
---
---       (A1) Associativity:
---
---            handle x (handle y z) = handle (handle (f <$> x) (g <$> y)) (h <$> z)
---
---            or in operator form:
---
---            x <*? (y <*? z) = (f <$> x) <*? (g <$> y) <*? (h <$> z)
---
---            where f x = Right <$> x
---                  g y = \a -> bimap (,a) ($a) y
---                  h z = uncurry z
---
---
---       Note there is no law for handling a pure value, i.e. we do not require
---       that the following holds:
---
---            handle (pure (Right x)) y = pure x
---
---       In particular, the following is allowed too:
---
---            handle (pure (Right x)) y = const x <$> y
---
---       We therefore allow 'handle' to be selective about effects in this case.
---
--- A consequence of the above laws is that 'apS' satisfies 'Applicative' laws.
--- We choose not to require that 'apS' = '<*>', since this forbids some
--- interesting instances, such as 'Validation'.
---
--- If f is also a 'Monad', we require that 'handle' = 'handleM'.
 class Applicative f => Selective f where
     handle :: f (Either a b) -> f (a -> b) -> f b
 
@@ -63,10 +14,10 @@ infixl 4 <*?
 ```
 
 Think of `handle` as a *selective function application*: you apply a handler
-function only when given a value of `Left a`. Otherwise, you skip the
+function only when given a value of `Left a`. Otherwise, you can skip the
 function (along with all its effects) and return the `b` from `Right b`.
 Intuitively, `handle` allows you to *efficiently* handle errors that are often
-represented by `Left a` in Haskell.
+represented by `Left a` in Haskell. 
 
 Note that you can write a function with this type signature using `Applicative`,
 but it will have different behaviour -- it will always execute the effects
@@ -84,6 +35,9 @@ application operator `<*>` as follows.
 apS :: Selective f => f (a -> b) -> f a -> f b
 apS f x = handle (Left <$> f) (flip ($) <$> x)
 ```
+
+Note: `apS` satisfies the laws dictated by the `Applicative` type class
+as long as [the laws](#laws) of the `Selective` type class hold.
 
 The `select` function is a natural generalisation of `handle`: instead of
 skipping one unnecessary effect, it selects which of the two given effectful
@@ -113,7 +67,7 @@ For example:
 ```haskell
 -- | Branch on a Boolean value, skipping unnecessary effects.
 ifS :: Selective f => f Bool -> f a -> f a -> f a
-ifS i t f = select (bool (Right ()) (Left ()) <$> i) (const <$> f) (const <$> t)
+ifS i t e = select (bool (Left ()) (Right ()) <$> i) (const <$> t) (const <$> e)
 
 -- | Conditionally apply an effect.
 whenS :: Selective f => f Bool -> f () -> f ()
@@ -133,6 +87,72 @@ anyS p = foldr ((<||>) . p) (pure False)
 ```
 
 See more examples in [src/Control/Selective.hs](src/Control/Selective.hs).
+
+## Laws
+
+Instances of the `Selective` type class must satisfy a few laws to make
+it possible to refactor selective computations. These laws also allow us
+to establish a formal relation with the `Applicative` and `Monad` type
+classes. The laws are complex, but I couldn't figure out how to simplify
+them. Please let me know if you find an improvement.
+
+* (F1) Apply a pure function to the result:
+    ```haskell
+    f <$> handle x y = handle (second f <$> x) ((f .) <$> y)
+    ```
+
+* (F2) Apply a pure function to the left (error) branch:
+    ```haskell
+    handle (first f <$> x) y = handle x ((. f) <$> y)
+    ```
+
+* (F3) Apply a pure function to the handler:
+    ```haskell
+    handle x (f <$> y) = handle (first (flip f) <$> x) (flip ($) <$> y)
+    ```
+
+* (P1) Apply a pure handler:
+    ```haskell
+    handle x (pure y) = either y id <$> x
+    ```
+
+* (P2) Handle a pure error:
+    ```haskell
+    handle (pure (Left x)) y = ($x) <$> y
+    ```
+
+* (A1) Associativity:
+    ```haskell
+    handle x (handle y z) = handle (handle (f <$> x) (g <$> y)) (h <$> z)
+      where
+        f x = Right <$> x
+        g y = \a -> bimap (,a) ($a) y
+        h z = uncurry z      
+
+    -- or in operator form:
+    
+    x <*? (y <*? z) = (f <$> x) <*? (g <$> y) <*? (h <$> z)
+    ```
+
+Note that there is no law for handling a pure value, i.e. we do not require
+that the following holds:
+
+```haskell
+handle (pure (Right x)) y = pure x
+```
+
+In particular, the following is allowed too:
+
+```haskell
+handle (pure (Right x)) y = const x <$> y
+```
+
+We therefore allow `handle` to be selective about effects in this case.
+A consequence of the above laws is that `apS` satisfies `Applicative` laws.
+However, we choose not to require that `apS = <*>`, since this forbids some
+interesting instances, such as `Validation` defined below.
+
+If `f` is also a `Monad`, we require that `handle = handleM`.
 
 ## Static analysis of selective functors
 
