@@ -248,3 +248,32 @@ twoShapes s1 s2 = (,) <$> s1 <*> s2
 > twoShapes s1 s2
 > Failure ["no choice 1","no height 2"]
 ```
+
+## Alternative formulations
+
+There are other ways of expressing selective functors in Haskell and most of them are
+compositions of applicative functors and the `Either` monad. Below I list a few 
+examples:
+
+```haskell
+-- Composition of Applicative and Either monad
+class Applicative f => SelectiveA f where
+    (|*|) :: f (Either e (a -> b)) -> f (Either e a) -> f (Either e b)
+
+-- Composition of Starry and Either monad
+-- See: https://duplode.github.io/posts/applicative-archery.html
+class Applicative f => SelectiveS f where
+    (|.|) :: f (Either e (b -> c)) -> f (Either e (a -> b)) -> f (Either e (a -> c))
+
+-- Composition of Monoidal and Either monad
+-- See: http://blog.ezyang.com/2012/08/applicative-functors/
+class Applicative f => SelectiveM f where
+    (|**|) :: f (Either e a) -> f (Either e b) -> f (Either e (a, b))
+```
+
+I believe these formulations are equivalent to `Selective` defined above,
+but I have not proved the equivalence formally. I chose the most
+minimalistic definition of the type class, but the above alternatives
+are worth consideration too. In particular, `SelectiveS` has a much nicer
+associativity law, which is just `(x |.| y) |.| z = x |.| (y |.| z)`.
+
