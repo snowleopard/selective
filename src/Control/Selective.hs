@@ -143,7 +143,7 @@ handleM mx mf = do
 
 -- | Branch on a Boolean value, skipping unnecessary effects.
 ifS :: Selective f => f Bool -> f a -> f a -> f a
-ifS i t e = select (bool (Left ()) (Right ()) <$> i) (const <$> t) (const <$> e)
+ifS i t e = select (bool (Right ()) (Left ()) <$> i) (const <$> t) (const <$> e)
 
 -- | Conditionally apply an effect.
 whenS :: Selective f => f Bool -> f () -> f ()

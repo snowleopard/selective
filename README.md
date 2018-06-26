@@ -17,7 +17,7 @@ Think of `handle` as a *selective function application*: you apply a handler
 function only when given a value of `Left a`. Otherwise, you can skip the
 function (along with all its effects) and return the `b` from `Right b`.
 Intuitively, `handle` allows you to *efficiently* handle errors that are often
-represented by `Left a` in Haskell. 
+represented by `Left a` in Haskell.
 
 Note that you can write a function with this type signature using `Applicative`,
 but it will have different behaviour -- it will always execute the effects
@@ -67,7 +67,7 @@ For example:
 ```haskell
 -- | Branch on a Boolean value, skipping unnecessary effects.
 ifS :: Selective f => f Bool -> f a -> f a -> f a
-ifS i t e = select (bool (Left ()) (Right ()) <$> i) (const <$> t) (const <$> e)
+ifS i t e = select (bool (Right ()) (Left ()) <$> i) (const <$> t) (const <$> e)
 
 -- | Conditionally apply an effect.
 whenS :: Selective f => f Bool -> f () -> f ()
@@ -127,10 +127,10 @@ them. Please let me know if you find an improvement.
       where
         f x = Right <$> x
         g y = \a -> bimap (,a) ($a) y
-        h z = uncurry z      
+        h z = uncurry z
 
     -- or in operator form:
-    
+
     x <*? (y <*? z) = (f <$> x) <*? (g <$> y) <*? (h <$> z)
     ```
 
@@ -252,7 +252,7 @@ twoShapes s1 s2 = (,) <$> s1 <*> s2
 ## Alternative formulations
 
 There are other ways of expressing selective functors in Haskell and most of them are
-compositions of applicative functors and the `Either` monad. Below I list a few 
+compositions of applicative functors and the `Either` monad. Below I list a few
 examples:
 
 ```haskell
