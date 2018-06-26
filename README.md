@@ -87,6 +87,10 @@ whileS act = whenS act (whileS act)
 -- | A lifted version of 'any'. Retains the short-circuiting behaviour.
 anyS :: Selective f => (a -> f Bool) -> [a] -> f Bool
 anyS p = foldr ((<||>) . p) (pure False)
+
+-- | Return the first @Right@ value. If both are @Left@'s, accumulate errors.
+orElse :: (Selective f, Semigroup e) => f (Either e a) -> f (Either e a) -> f (Either e a)
+orElse x = handle (Right <$> x) . fmap (\y e -> first (e <>) y)
 ```
 
 See more examples in [src/Control/Selective.hs](src/Control/Selective.hs).
