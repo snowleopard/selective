@@ -1,20 +1,21 @@
 {-# LANGUAGE ConstraintKinds, DefaultSignatures, GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes, ScopedTypeVariables #-}
 module Control.Selective (
     -- * Type class
     Selective (..), (<*?), select, handleA, apS, handleM,
 
     -- * Conditional combinators
-    ifS, whenS, fromMaybeS, whileS, (<||>), (<&&>), anyS, allS,
+    ifS, whenS, fromMaybeS, orElse, untilRight, whileS, (<||>), (<&&>), anyS, allS,
 
     -- * Static analysis
     Validation (..), Task, dependencies
     ) where
 
+import Control.Applicative
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
-import Control.Applicative
+import Data.Bifunctor
 import Data.Bool
 import Data.Functor.Identity
 import Data.Proxy
@@ -151,11 +152,19 @@ whenS x act = ifS x act (pure ())
 
 -- | A lifted version of 'fromMaybe'.
 fromMaybeS :: Selective f => f a -> f (Maybe a) -> f a
-fromMaybeS dx x = handle (fmap (maybe (Left ()) Right) x) (fmap const dx)
+fromMaybeS dx x = handle (maybe (Left ()) Right <$> x) (const <$> dx)
+
+-- | Return the first @Right@ value. If both are @Left@'s, accumulate errors.
+orElse :: (Selective f, Semigroup e) => f (Either e a) -> f (Either e a) -> f (Either e a)
+orElse x = handle (Right <$> x) . fmap (\y e -> first (e <>) y)
 
 -- | Keep checking a given effectful condition while it holds.
 whileS :: Selective f => f Bool -> f ()
 whileS act = whenS act (whileS act)
+
+-- | Keep running a given effectful computation until it returns a @Right@ value.
+untilRight :: Selective f => f (Either a b) -> f b
+untilRight x = handle x $ (const <$> untilRight x)
 
 -- | A lifted version of lazy Boolean OR.
 (<||>) :: Selective f => f Bool -> f Bool -> f Bool
