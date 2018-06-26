@@ -14,14 +14,14 @@ infixl 4 <*?
 ```
 
 Think of `handle` as a *selective function application*: you apply a handler
-function only when given a value of `Left a`. Otherwise, you can skip the
-function (along with all its effects) and return the `b` from `Right b`.
-Intuitively, `handle` allows you to *efficiently* handle errors that are often
-represented by `Left a` in Haskell.
+function of type `a -> b` when given a value `Left a`, but can skip the
+handler (along with its effects) in the case of `Right b`. Intuitively,
+`handle` allows you to *efficiently* handle errors, i.e. perform the
+error-handling effects only when needed.
 
-Note that you can write a function with this type signature using `Applicative`,
-but it will have different behaviour -- it will always execute the effects
-associated with the handler, hence being less efficient.
+Note that you can write a function with this type signature using
+`Applicative` functors, but it will always execute the effects
+associated with the handler, hence being less efficient:
 
 ```haskell
 handleA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
@@ -36,8 +36,12 @@ apS :: Selective f => f (a -> b) -> f a -> f b
 apS f x = handle (Left <$> f) (flip ($) <$> x)
 ```
 
-Note: `apS` satisfies the laws dictated by the `Applicative` type class
-as long as [the laws](#laws) of the `Selective` type class hold.
+Here we tag a given function `a -> b` as an error and turn a value `a`
+into an error-handling function `($a)`, which simply applies itself to the
+error `a -> b` yielding `b` as desired. Note: `apS` is a perfectly legal
+application operator `<*>`, i.e. it satisfies the laws dictated by the
+`Applicative` type class as long as [the laws](#laws) of the `Selective`
+type class hold.
 
 The `select` function is a natural generalisation of `handle`: instead of
 skipping one unnecessary effect, it selects which of the two given effectful
@@ -61,8 +65,7 @@ handleM mx mf = do
 ```
 
 Selective functors are sufficient for implementing many conditional constructs,
-which traditionally require the (much more powerful) `Monad` type class.
-For example:
+which traditionally require the (more powerful) `Monad` type class. For example:
 
 ```haskell
 -- | Branch on a Boolean value, skipping unnecessary effects.
@@ -280,3 +283,6 @@ minimalistic definition of the type class, but the above alternatives
 are worth consideration too. In particular, `SelectiveS` has a much nicer
 associativity law, which is just `(x |.| y) |.| z = x |.| (y |.| z)`.
 
+## Do we still need monads?
+
+Yes! Here is what selective functors cannot do: `join :: Selective f => f (f a) -> f a`.
