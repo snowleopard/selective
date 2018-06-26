@@ -256,6 +256,9 @@ compositions of applicative functors and the `Either` monad. Below I list a few
 examples:
 
 ```haskell
+-- Alternative type classes for selective functors. They all come with an
+-- additional requirement that we run effects from left to right.
+
 -- Composition of Applicative and Either monad
 class Applicative f => SelectiveA f where
     (|*|) :: f (Either e (a -> b)) -> f (Either e a) -> f (Either e b)
