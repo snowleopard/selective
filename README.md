@@ -29,7 +29,8 @@ handleA x f = (\e f -> either f id e) <$> x <*> f
 ```
 
 `Selective` is more powerful than `Applicative`: you can recover the
-application operator `<*>` as follows.
+application operator `<*>` as follows (I'll use the suffix `S` to
+denote `Selective` equivalents of commonly known functions).
 
 ```haskell
 apS :: Selective f => f (a -> b) -> f a -> f b
