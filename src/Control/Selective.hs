@@ -1,5 +1,5 @@
 {-# LANGUAGE ConstraintKinds, DefaultSignatures, GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE RankNTypes, ScopedTypeVariables #-}
+{-# LANGUAGE DeriveFunctor, RankNTypes, ScopedTypeVariables #-}
 module Control.Selective (
     -- * Type class
     Selective (..), (<*?), select, handleA, apS, handleM,
@@ -146,7 +146,7 @@ handleM mx mf = do
 ifS :: Selective f => f Bool -> f a -> f a -> f a
 ifS i t e = select (bool (Right ()) (Left ()) <$> i) (const <$> t) (const <$> e)
 
--- | Conditionally apply an effect.
+-- | Conditionally perform an effect.
 whenS :: Selective f => f Bool -> f () -> f ()
 whenS x act = ifS x act (pure ())
 
@@ -158,11 +158,11 @@ fromMaybeS dx x = handle (maybe (Left ()) Right <$> x) (const <$> dx)
 orElse :: (Selective f, Semigroup e) => f (Either e a) -> f (Either e a) -> f (Either e a)
 orElse x = handle (Right <$> x) . fmap (\y e -> first (e <>) y)
 
--- | Keep checking a given effectful condition while it holds.
+-- | Keep checking an effectful condition while it holds.
 whileS :: Selective f => f Bool -> f ()
 whileS act = whenS act (whileS act)
 
--- | Keep running a given effectful computation until it returns a @Right@ value.
+-- | Keep running an effectful computation until it returns a @Right@ value.
 untilRight :: Selective f => f (Either a b) -> f b
 untilRight x = handle x $ (const <$> untilRight x)
 
@@ -201,11 +201,7 @@ instance (Monoid s, Monad m) => Selective (WriterT s m) where
 
 -- Selective instance for the standard Applicative Validation
 -- This is a good example of a Selective functor which is not a Monad
-data Validation e a = Failure e | Success a deriving Show
-
-instance Functor (Validation e) where
-    fmap _ (Failure e) = Failure e
-    fmap f (Success a) = Success (f a)
+data Validation e a = Failure e | Success a deriving (Functor, Show)
 
 instance Semigroup e => Applicative (Validation e) where
     pure = Success
@@ -216,7 +212,7 @@ instance Semigroup e => Applicative (Validation e) where
 
 instance Semigroup e => Selective (Validation e) where
     handle (Success (Right b)) _ = Success b
-    handle (Success (Left  a)) f = flip ($) <$> Success a <*> f
+    handle (Success (Left  a)) f = Success ($a) <*> f
     handle (Failure e        ) _ = Failure e
 
 -- Static analysis of selective functors

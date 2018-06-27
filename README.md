@@ -73,11 +73,11 @@ which traditionally require the (more powerful) `Monad` type class. For example:
 ifS :: Selective f => f Bool -> f a -> f a -> f a
 ifS i t e = select (bool (Right ()) (Left ()) <$> i) (const <$> t) (const <$> e)
 
--- | Conditionally apply an effect.
+-- | Conditionally perform an effect.
 whenS :: Selective f => f Bool -> f () -> f ()
 whenS x act = ifS x act (pure ())
 
--- | Keep checking a given effectful condition while it holds.
+-- | Keep checking an effectful condition while it holds.
 whileS :: Selective f => f Bool -> f ()
 whileS act = whenS act (whileS act)
 
@@ -181,11 +181,7 @@ to how this is done with applicative computations.
 The `Validation` instance is perhaps a bit more interesting.
 
 ```haskell
-data Validation e a = Failure e | Success a
-
-instance Functor (Validation e) where
-    fmap _ (Failure e) = Failure e
-    fmap f (Success a) = Success (f a)
+data Validation e a = Failure e | Success a deriving (Functor, Show)
 
 instance Semigroup e => Applicative (Validation e) where
     pure = Success
@@ -196,7 +192,7 @@ instance Semigroup e => Applicative (Validation e) where
 
 instance Semigroup e => Selective (Validation e) where
     handle (Success (Right b)) _ = Success b
-    handle (Success (Left  a)) f = flip ($) <$> Success a <*> f
+    handle (Success (Left  a)) f = Success ($a) <*> f
     handle (Failure e        ) _ = Failure e
 ```
 
@@ -226,24 +222,24 @@ when parsing a value. Let's see how it works.
 
 ```haskell
 > shape (Success True) (Success 10) (Failure ["no width"]) (Failure ["no height"])
-> Success (Circle 10)
+Success (Circle 10)
 
 > shape (Success False) (Failure ["no radius"]) (Success 20) (Success 30)
-> Success (Rectangle 20 30)
+Success (Rectangle 20 30)
 
 > shape (Success False) (Failure ["no radius"]) (Success 20) (Failure ["no height"])
-> Failure ["no height"]
+Failure ["no height"]
 
 > shape (Success False) (Failure ["no radius"]) (Failure ["no width"]) (Failure ["no height"])
-> Failure ["no width","no height"]
+Failure ["no width","no height"]
 
 > shape (Failure ["no choice"]) (Failure ["no radius"]) (Success 20) (Failure ["no height"])
-> Failure ["no choice"]
+Failure ["no choice"]
 ```
 
 In the last example, since we failed to parse which shape has been chosen,
 we do not report any subsequent errors. But it doesn't mean we are short-circuiting
-the validation. We will keep accumulating errors as soon as we get out of the
+the validation. We will continue accumulating errors as soon as we get out of the
 opaque conditional, as demonstrated below.
 
 
@@ -254,7 +250,7 @@ twoShapes s1 s2 = (,) <$> s1 <*> s2
 > s1 = shape (Failure ["no choice 1"]) (Failure ["no radius 1"]) (Success 20) (Failure ["no height 1"])
 > s2 = shape (Success False) (Failure ["no radius 2"]) (Success 20) (Failure ["no height 2"])
 > twoShapes s1 s2
-> Failure ["no choice 1","no height 2"]
+Failure ["no choice 1","no height 2"]
 ```
 
 ## Alternative formulations
