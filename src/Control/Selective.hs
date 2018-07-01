@@ -5,7 +5,8 @@ module Control.Selective (
     Selective (..), (<*?), select, handleA, apS, handleM,
 
     -- * Conditional combinators
-    ifS, whenS, fromMaybeS, orElse, untilRight, whileS, (<||>), (<&&>), anyS, allS,
+    ifS, whenS, fromMaybeS, orElse, untilRight, whileS, (<||>), (<&&>), anyS,
+    allS, bindBool,
 
     -- * Static analysis
     Validation (..), Task, dependencies
@@ -145,6 +146,10 @@ handleM mx mf = do
 -- | Branch on a Boolean value, skipping unnecessary effects.
 ifS :: Selective f => f Bool -> f a -> f a -> f a
 ifS i t e = select (bool (Right ()) (Left ()) <$> i) (const <$> t) (const <$> e)
+
+-- | The simplest form of monadic bind. Can be generalised to any @Binary a@.
+bindBool :: Selective f => f Bool -> (Bool -> f a) -> f a
+bindBool x f = ifS x (f True) (f False)
 
 -- | Conditionally perform an effect.
 whenS :: Selective f => f Bool -> f () -> f ()
