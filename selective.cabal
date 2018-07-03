@@ -28,6 +28,7 @@ library
                         Control.Selective.Sketch
     build-depends:      algebraic-graphs >= 0.1.1,
                         base             >= 4.7     && < 5,
+                        binary           >= 0.8.5.1,
                         containers       >= 0.5.7.1,
                         transformers     >= 0.5.2.0
     default-language:   Haskell2010

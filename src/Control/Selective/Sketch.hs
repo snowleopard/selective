@@ -286,3 +286,43 @@ t7 x y z =
     handle (handle (maybe (Right (Right Nothing)) Left <$> x)
         ((\mbc cd -> maybe (Right Nothing) (\bc -> Left $ fmap ((cd . bc) .)) mbc) <$> y))
         (flip ($) <$> z)
+
+-- Various generalised versions of handle and select
+
+handle2 :: Selective f => f (Either a (Either b r)) -> f (a -> r) -> f (b -> r) -> f r
+handle2 x ar br = handle (handle x ((Right.) <$> ar)) br
+
+handle3 :: Selective f => f (Either a (Either b (Either c r)))
+        -> f (a -> r) -> f (b -> r) -> f (c -> r) -> f r
+handle3 x ar = handle2 (handle x (((Right . Right).) <$> ar))
+
+handle4 :: Selective f => f (Either a (Either b (Either c (Either d r))))
+        -> f (a -> r) -> f (b -> r) -> f (c -> r) -> f (d -> r) -> f r
+handle4 x ar = handle3 (handle x (((Right . Right . Right).) <$> ar))
+
+select4 :: Selective f => f (Either (Either a b) (Either c d))
+        -> f (a -> e) -> f (b -> e) -> f (c -> e) -> f (d -> e) -> f e
+select4 x = handle4 (rotateEither <$> x)
+
+rotateEither :: Either (Either a b) (Either c d)
+             -> Either a (Either b (Either c (Either d e)))
+rotateEither (Left (Left a)) = Left a
+rotateEither (Left (Right b)) = Right (Left b)
+rotateEither (Right (Left c)) = Right (Right (Left c))
+rotateEither (Right (Right d)) = Right (Right (Right (Left d)))
+
+bindTwoBools :: Selective f => f (Bool, Bool) -> ((Bool, Bool) -> f a) -> f a
+bindTwoBools xy f = select4 (toEither2 <$> xy) (const <$> f (False, False))
+                                               (const <$> f (False,  True))
+                                               (const <$> f (True , False))
+                                               (const <$> f (True ,  True))
+  where
+    toEither2 (x, y) = toEither x $ toEither y ()
+
+toEither :: Bool -> a -> Either a a
+toEither True  = Right
+toEither False = Left
+
+-- Goals:
+-- bindBools :: Selective f => f [Bool] -> ([Bool] -> f a) -> f a
+-- bindS :: (Binary a, Selective f) => f a -> (a -> f b) -> f b
