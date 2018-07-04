@@ -1,4 +1,4 @@
-{-# LANGUAGE TupleSections, ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleInstances, TypeFamilies, TupleSections, ScopedTypeVariables #-}
 module Control.Selective.Sketch where
 
 import Control.Selective
@@ -323,6 +323,28 @@ toEither :: Bool -> a -> Either a a
 toEither True  = Right
 toEither False = Left
 
--- Goals:
--- bindBools :: Selective f => f [Bool] -> ([Bool] -> f a) -> f a
--- bindS :: (Binary a, Selective f) => f a -> (a -> f b) -> f b
+class Branching a where
+    type L a
+    type R a
+    branch :: a -> Either (L a) (R a)
+
+instance Branching Bool where
+    type L Bool = ()
+    type R Bool = ()
+    branch True  = Left ()
+    branch False = Right ()
+
+instance (Branching a, Branching b) => Branching (Either a b) where
+    type L (Either a b) = Either (L a) (R a)
+    type R (Either a b) = Either (L b) (R b)
+    branch (Left  a) = Left  (branch a)
+    branch (Right b) = Right (branch b)
+
+instance Branching a => Branching (Bool, a) where
+    type L (Bool, a) = Either (L a) (R a)
+    type R (Bool, a) = Either (L a) (R a)
+    branch (False, a) = Left  (branch a)
+    branch (True , a) = Right (branch a)
+
+-- Goal:
+-- bindS :: (Branching a, Selective f) => f a -> (a -> f b) -> f b
