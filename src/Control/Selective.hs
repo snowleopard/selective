@@ -6,7 +6,7 @@ module Control.Selective (
 
     -- * Conditional combinators
     ifS, whenS, fromMaybeS, orElse, untilRight, whileS, (<||>), (<&&>), anyS,
-    allS, bindBool,
+    allS, bindS,
 
     -- * Static analysis
     Validation (..), Task, dependencies
@@ -147,9 +147,28 @@ handleM mx mf = do
 ifS :: Selective f => f Bool -> f a -> f a -> f a
 ifS i t e = select (bool (Right ()) (Left ()) <$> i) (const <$> t) (const <$> e)
 
--- | The simplest form of monadic bind. Can be generalised to any @Binary a@.
-bindBool :: Selective f => f Bool -> (Bool -> f a) -> f a
-bindBool x f = ifS x (f True) (f False)
+-- | Eliminate a specified value @a@ from @f (Either a b)@ by replacing it
+-- with a given @f b@.
+eliminate :: (Eq a, Selective f) => a -> f b -> f (Either a b) -> f (Either a b)
+eliminate x fb fa = handle (match x <$> fa) (const . Right <$> fb)
+  where
+    match _ (Right y) = Right (Right y)
+    match x (Left  y) = if x == y then Left () else Right (Left y)
+
+-- | Eliminate all specified values @a@ from @f (Either a b)@ by replacing each
+-- of them with a given @f a@.
+eliminateAll :: (Eq a, Selective f) => [a] -> (a -> f b) -> f (Either a b) -> f (Either a b)
+eliminateAll []     _ = id
+eliminateAll (x:xs) f = eliminateAll xs f . eliminate x (f x)
+
+-- TODO: Add a type-safe version based on @KnownNat@.
+-- | A restricted version of monadic bind. Fails with an error if the 'Bounded'
+-- and 'Enum' instances for @a@ do not cover all values of @a@.
+bindS :: (Bounded a, Enum a, Eq a, Selective f) => f a -> (a -> f b) -> f b
+bindS x f = fromRight <$> eliminateAll [minBound..maxBound] f (Left <$> x)
+  where
+    fromRight (Right b) = b
+    fromRight _ = error "Selective.bindS: incorrect Bounded and/or Enum instance"
 
 -- | Conditionally perform an effect.
 whenS :: Selective f => f Bool -> f () -> f ()
