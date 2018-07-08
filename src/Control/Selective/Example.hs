@@ -11,10 +11,22 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+-- dependencies task "B1" = ["A2","B2","C1"]
+-- dependencies task "B2" = ["A1","B1","C1"]
+-- dependencies task "A1" = []
 task :: Task Selective String Integer
 task fetch "B1" = Just $ ifS ((1==) <$> fetch "C1") (fetch "B2") (fetch "A2")
 task fetch "B2" = Just $ ifS ((1==) <$> fetch "C1") (fetch "A1") (fetch "B1")
 task _     _    = Nothing
+
+-- dependencies task2 "B1" == ["A1","A2","C5","C6","D5","D6"]
+task2 :: Task Selective String Integer
+task2 fetch "B1" = Just $ (odd <$> fetch "A1") `bindS` \x ->
+                          (odd <$> fetch "A2") `bindS` \y ->
+                             let c = if x then "C" else "D"
+                                 n = if y then "5" else "6"
+                             in fetch (c ++ n)
+task2 _     _    = Nothing
 
 -- dependencies login "hello"   == ["username"]
 -- dependencies login "welcome" == ["hostname"]
