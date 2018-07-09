@@ -9,9 +9,10 @@ module Control.Selective (
     allS, bindS,
 
     -- * Static analysis
-    Validation (..), Task, dependencies
+    Validation (..), dependencies
     ) where
 
+import Build.Task
 import Control.Applicative
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
@@ -21,8 +22,6 @@ import Data.Bool
 import Data.Functor.Identity
 import Data.Proxy
 import Data.Semigroup
-
-import qualified Data.Set as Set
 
 -- | Selective applicative functors. You can think of 'handle' as a selective
 -- function application: you apply a handler function only when given a value of
@@ -243,12 +242,6 @@ instance Semigroup e => Selective (Validation e) where
 instance Monoid m => Selective (Const m) where
     handle = handleA
 
--- | The task abstraction, as described in
--- https://blogs.ncl.ac.uk/andreymokhov/the-task-abstraction/.
-type Task c k v = forall f. c f => (k -> f v) -> k -> Maybe (f v)
-
 -- | Extract dependencies from a selective task.
-dependencies :: Ord k => Task Selective k v -> k -> [k]
-dependencies task key = case task (Const . Set.singleton) key of
-    Nothing -> []
-    Just act -> Set.toList $ getConst act
+dependencies :: Task Selective k v -> [k]
+dependencies task = getConst $ run task (\k -> Const [k])

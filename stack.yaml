@@ -1,3 +1,5 @@
 packages:
 - '.'
 resolver: lts-11.8
+extra-deps:
+  - build-1.0

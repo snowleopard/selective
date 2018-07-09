@@ -3,52 +3,42 @@ module Control.Selective.Example where
 
 import Algebra.Graph
 import Algebra.Graph.Export.Dot
-import Control.Monad.Trans.Class
-import Control.Monad.Trans.State
+import Build.Task
 import Control.Selective
-import Data.Map (Map)
 
-import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 -- dependencies task "B1" = ["A2","B2","C1"]
 -- dependencies task "B2" = ["A1","B1","C1"]
 -- dependencies task "A1" = []
-task :: Task Selective String Integer
-task fetch "B1" = Just $ ifS ((1==) <$> fetch "C1") (fetch "B2") (fetch "A2")
-task fetch "B2" = Just $ ifS ((1==) <$> fetch "C1") (fetch "A1") (fetch "B1")
-task _     _    = Nothing
+task :: Tasks Selective String Integer
+task "B1" = Just $ Task $ \fetch -> ifS ((1==) <$> fetch "C1") (fetch "B2") (fetch "A2")
+task "B2" = Just $ Task $ \fetch -> ifS ((1==) <$> fetch "C1") (fetch "A1") (fetch "B1")
+task _    = Nothing
 
 -- dependencies task2 "B1" == ["A1","A2","C5","C6","D5","D6"]
-task2 :: Task Selective String Integer
-task2 fetch "B1" = Just $ (odd <$> fetch "A1") `bindS` \x ->
-                          (odd <$> fetch "A2") `bindS` \y ->
-                             let c = if x then "C" else "D"
-                                 n = if y then "5" else "6"
-                             in fetch (c ++ n)
-task2 _     _    = Nothing
+task2 :: Tasks Selective String Integer
+task2 "B1" = Just $ Task $ \fetch -> (odd <$> fetch "A1") `bindS` \x ->
+                                     (odd <$> fetch "A2") `bindS` \y ->
+                                        let c = if x then "C" else "D"
+                                            n = if y then "5" else "6"
+                                        in fetch (c ++ n)
+task2 _    = Nothing
 
--- dependencies login "hello"   == ["username"]
--- dependencies login "welcome" == ["hostname"]
--- dependencies login "both"    == ["hostname", "username"]
--- dependencies login "andrey"  == ["andrey-message", "hostname", "username"]
-login :: Task Selective String String
-login fetch "hello"   = Just $ (\name -> "Hello, " ++ name ++ ".\n") <$> fetch "username"
-login fetch "welcome" = Just $ (\name -> "Welcome to " ++ name ++ "!\n") <$> fetch "hostname"
-login fetch "both"    = Just $ (++) <$> fetch "hello" <*> fetch "welcome"
-login fetch "andrey"  = Just $ ifS (("Andrey" ==) <$> fetch "username")
-    ((++) <$> fetch "both" <*> fetch "andrey-message") (fetch "both")
-login _ _ = Nothing
+data Key = A Int | B Int | C Int Int deriving (Eq, Show)
 
-fetchIO :: String -> StateT (Map String String) IO String
-fetchIO key = do
-    maybeValue <- gets (Map.lookup key)
-    case maybeValue of
-        Nothing -> do
-            value <- lift $ do putStr (show key ++ ": "); getLine
-            modify $ Map.insert key value
-            return value
-        Just value -> return value
+editDistance :: Tasks Selective Key Int
+editDistance (C i 0) = Just $ Task $ const $ pure i
+editDistance (C 0 j) = Just $ Task $ const $ pure j
+editDistance (C i j) = Just $ Task $ \fetch ->
+    ((==) <$> fetch (A i) <*> fetch (B j)) `bindS` \equals ->
+        if equals
+            then fetch (C (i - 1) (j - 1))
+            else (\insert delete replace -> 1 + minimum [insert, delete, replace])
+                 <$> fetch (C  i      (j - 1))
+                 <*> fetch (C (i - 1)  j     )
+                 <*> fetch (C (i - 1) (j - 1))
+editDistance _ = Nothing
 
 graph :: Ord k => (k -> [k]) -> k -> Graph k
 graph deps key = transpose $ overlays [ star k (deps k) | k <- keys Set.empty [key] ]
@@ -58,8 +48,10 @@ graph deps key = transpose $ overlays [ star k (deps k) | k <- keys Set.empty [k
         | x `Set.member` seen = keys seen xs
         | otherwise           = keys (Set.insert x seen) (deps x ++ xs)
 
-draw :: Task Selective String v -> String -> String
-draw task = exportAsIs . graph (dependencies task)
+draw :: Tasks Selective String v -> String -> String
+draw tasks = exportAsIs . graph deps
+  where
+    deps k = maybe [] dependencies $ tasks k
 
 ---------------------------------- Validation ----------------------------------
 
