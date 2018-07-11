@@ -3,10 +3,11 @@
 module Control.Selective (
     -- * Type class
     Selective (..), (<*?), select, handleA, apS, handleM,
+    Cases (..), casesEnum, cases,
 
     -- * Conditional combinators
     ifS, whenS, fromMaybeS, orElse, untilRight, whileS, (<||>), (<&&>), anyS,
-    allS, bindS,
+    allS, matchS, bindS,
 
     -- * Static analysis
     Validation (..), dependencies
@@ -98,6 +99,22 @@ class Applicative f => Selective f where
     default handle :: Monad f => f (Either a b) -> f (a -> b) -> f b
     handle = handleM
 
+    loop :: Semigroup a => f a -> f (a -> Either a b) -> f (a, b)
+    loop = undefined
+
+    match  :: Eq a => Cases a -> f a -> (a -> f b) -> f (Either a b)
+    default match :: Monad f => Cases a -> f a -> (a -> f b) -> f (Either a b)
+    match = matchM
+
+
+data Cases a = Cases [a] (a -> Bool)
+
+casesEnum :: (Bounded a, Enum a) => Cases a
+casesEnum = Cases [minBound..maxBound] (const True)
+
+cases :: Eq a => [a] -> Cases a
+cases as = Cases as (`elem` as)
+
 -- | An operator alias for 'handle', which is sometimes convenient. It tries to
 -- follow the notational convention for 'Applicative' operators. The angle
 -- bracket pointing to the left means we always use the corresponding value.
@@ -156,15 +173,21 @@ eliminate x fb fa = handle (match x <$> fa) (const . Right <$> fb)
 
 -- | Eliminate all specified values @a@ from @f (Either a b)@ by replacing each
 -- of them with a given @f a@.
-eliminateAll :: (Eq a, Selective f) => [a] -> (a -> f b) -> f (Either a b) -> f (Either a b)
-eliminateAll []     _ = id
-eliminateAll (x:xs) f = eliminateAll xs f . eliminate x (f x)
+matchS :: (Eq a, Selective f) => Cases a -> f a -> (a -> f b) -> f (Either a b)
+matchS (Cases cs _) x f = foldr (\c -> eliminate c (f c)) (Left <$> x) cs
+
+-- | Eliminate all specified values @a@ from @f (Either a b)@ by replacing each
+-- of them with a given @f a@.
+matchM :: Monad m => Cases a -> m a -> (a -> m b) -> m (Either a b)
+matchM (Cases _ p) mx f = do
+    x <- mx
+    if p x then Right <$> (f x) else return (Left x)
 
 -- TODO: Add a type-safe version based on @KnownNat@.
 -- | A restricted version of monadic bind. Fails with an error if the 'Bounded'
 -- and 'Enum' instances for @a@ do not cover all values of @a@.
 bindS :: (Bounded a, Enum a, Eq a, Selective f) => f a -> (a -> f b) -> f b
-bindS x f = fromRight <$> eliminateAll [minBound..maxBound] f (Left <$> x)
+bindS x f = fromRight <$> match casesEnum x f
   where
     fromRight (Right b) = b
     fromRight _ = error "Selective.bindS: incorrect Bounded and/or Enum instance"
@@ -227,21 +250,24 @@ instance (Monoid s, Monad m) => Selective (WriterT s m) where
 data Validation e a = Failure e | Success a deriving (Functor, Show)
 
 instance Semigroup e => Applicative (Validation e) where
-    pure = Success
+    pure  = Success
     Failure e1 <*> Failure e2 = Failure (e1 <> e2)
     Failure e1 <*> Success _  = Failure e1
     Success _  <*> Failure e2 = Failure e2
     Success f  <*> Success a  = Success (f a)
 
 instance Semigroup e => Selective (Validation e) where
-    handle (Success (Right b)) _ = Success b
+    handle (Success (Right b)) _           = Success b
     handle (Success (Left  _)) (Failure e) = Failure e
     handle (Success (Left  a)) (Success f) = Success (f a)
-    handle (Failure e        ) _ = Failure e
+    handle (Failure e        ) _           = Failure e
+
+    match = matchS
 
 -- Static analysis of selective functors
 instance Monoid m => Selective (Const m) where
     handle = handleA
+    match  = matchS
 
 -- | Extract dependencies from a selective task.
 dependencies :: Task Selective k v -> [k]
