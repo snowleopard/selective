@@ -235,7 +235,8 @@ instance Semigroup e => Applicative (Validation e) where
 
 instance Semigroup e => Selective (Validation e) where
     handle (Success (Right b)) _ = Success b
-    handle (Success (Left  a)) f = Success ($a) <*> f
+    handle (Success (Left  _)) (Failure e) = Failure e
+    handle (Success (Left  a)) (Success f) = Success (f a)
     handle (Failure e        ) _ = Failure e
 
 -- Static analysis of selective functors
