@@ -1,11 +1,11 @@
-{-# LANGUAGE FlexibleInstances, TypeFamilies, TupleSections, ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections, ScopedTypeVariables #-}
 module Control.Selective.Sketch where
 
-import Control.Selective
+import Control.Selective.Free
 import Data.Bifunctor
+import Data.Functor
 
 -------------------------------- Proof sketches --------------------------------
-
 -- A convenient primitive which checks that the types of two given values
 -- coincide and returns the first value.
 (===) :: a -> a -> a
@@ -286,3 +286,93 @@ t7 x y z =
     handle (handle (maybe (Right (Right Nothing)) Left <$> x)
         ((\mbc cd -> maybe (Right Nothing) (\bc -> Left $ fmap ((cd . bc) .)) mbc) <$> y))
         (flip ($) <$> z)
+
+-- Proof sketches for free selective functors
+
+-- Detect an unnecessary effect
+ft1 :: Functor f => f (Char -> Int) -> Select f Int
+ft1 f = handle (Pure (Right 8)) (liftSelect f)
+    ===
+    handle (Pure (Right 8)) (Handle (Pure (Left ())) (const <$> f))
+    ===
+    Handle (handle (fmap Right <$> Pure (Right 8))
+        ((\k a -> bimap (,a) ($a) k) <$> Pure (Left ())))
+        (uncurry <$> (const <$> f))
+    ===
+    Handle (handle (Pure (Right (Right 8)))
+        (Pure (\a -> Left ((), a))))
+        (uncurry . const <$> f)
+    ===
+    Handle (Pure (Right 8)) (uncurry . const <$> f)
+    ===
+    Effect (Pure 8) (void f)
+
+-- Detect two unnecessary effects
+ft2 :: Functor f => f (Either a (b -> Int)) -> f (a -> b -> Int) -> Select f Int
+ft2 f g = handle (Pure (Right 8)) (Handle (liftSelect f) g)
+    ===
+    handle (Pure (Right 8)) (Handle (Handle (Pure (Left ())) (const <$> f)) g)
+    ===
+    Handle (handle (fmap Right <$> Pure (Right 8))
+        ((\k a -> bimap (,a) ($a) k) <$> (Handle (Pure (Left ())) (const <$> f))))
+        (uncurry <$> g)
+    ===
+    Handle (handle (Pure (Right (Right 8)))
+        (Handle (Pure (Left ())) ((((\k a -> bimap (,a) ($a) k).) <$> const <$> f))))
+        (uncurry <$> g)
+    ===
+    Handle (Handle (handle (Pure (Right (Right (Right 8))))
+                (Pure (\a -> Left ((), a))))
+            (uncurry <$> ((\k a -> bimap (,a) ($a) k).) <$> const <$> f))
+        (uncurry <$> g)
+    ===
+    Handle (Handle (Pure (Right (Right 8)))
+            (uncurry <$> ((\k a -> bimap (,a) ($a) k).) <$> const <$> f))
+        (uncurry <$> g)
+    ===
+    Effect (Effect (Pure 8) (void f)) (void g)
+
+-- Detect unnecessary effect and collapse
+ft3 :: Functor f => f (a -> () -> Int) -> Select f Int
+ft3 f = handle (Pure (Left ())) (Handle (Pure (Right (const 8))) f)
+    ===
+    Handle
+        (handle (fmap Right <$> Pure (Left ()))
+            ((\k a -> bimap (,a) ($a) k) <$> Pure (Right (const 8))))
+        (uncurry <$> f)
+    ===
+    Handle
+        (handle (Pure (Left ()))
+            (Pure ((\k a -> fmap ($a) k) $ Right (const 8))))
+        (uncurry <$> f)
+    ===
+    Handle (handle (Pure (Left ())) (Pure (const $ Right 8)))
+        (uncurry <$> f)
+    ===
+    Handle (either (const $ Right 8) id <$> Pure (Left ()))
+        (uncurry <$> f)
+    ===
+    Handle (Pure (Right 8)) (uncurry <$> f)
+    ===
+    Effect (Pure 8) (void f)
+
+-- Losing knowledge about unnecessary effect without intermediate Effect constructor
+ft4 :: Functor f => f (Either a Int) -> f (b -> a -> Int) -> Select f Int
+ft4 f g = handle (liftSelect f) (Handle (Pure (Right (const 8))) g)
+    ===
+    handle (Handle (Pure (Left ())) (const <$> f)) (Handle (Pure (Right (const 8))) g)
+    ===
+    Handle (handle (fmap Right <$> Handle (Pure (Left ())) (const <$> f))
+        ((\k a -> bimap (,a) ($a) k) <$> Pure (Right (const 8))))
+        (uncurry <$> g)
+    ===
+    Handle (handle (Handle (Pure (Left ())) (((fmap Right) .) <$> const <$> f))
+        (Pure (const $ Right 8)))
+        (uncurry <$> g)
+    ===
+    Handle (either (const $ Right 8) id <$> Handle (Pure (Left ())) (((fmap Right) .) <$> const <$> f))
+        (uncurry <$> g)
+    ===
+    Handle (Handle (Pure (Left ()))
+        (((either (const $ Right 8) id) .) . ((fmap Right) .) . const <$> f))
+        (uncurry <$> g)

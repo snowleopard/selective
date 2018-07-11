@@ -1,10 +1,10 @@
-{-# LANGUAGE ConstraintKinds, GADTs, RankNTypes #-}
+{-# LANGUAGE ConstraintKinds, DeriveFunctor, GADTs, RankNTypes #-}
 module Control.Selective.Example where
 
 import Algebra.Graph
 import Algebra.Graph.Export.Dot
 import Build.Task
-import Control.Selective
+import Control.Selective.Free
 
 import qualified Data.Set as Set
 
@@ -40,6 +40,35 @@ editDistance (C i j) = Just $ Task $ \fetch ->
                  <*> fetch (C (i - 1) (j - 1))
 editDistance _ = Nothing
 
+sprsh1 :: Tasks Applicative String Int
+sprsh1 "B1" = Just $ Task $ \fetch -> ((+)  <$> fetch "A1" <*> fetch "A2")
+sprsh1 "B2" = Just $ Task $ \fetch -> ((*2) <$> fetch "B1")
+sprsh1 "C8" = Just $ Task $ \_ -> pure 8
+sprsh1 _    = Nothing
+
+data F k v a = Fetch k (v -> a)
+    deriving Functor
+
+instance Show k => Show (F k v a) where
+    show (Fetch k _) = "(Fetch " ++ show k ++ ")"
+
+fetch :: k -> Select (F k v) v
+fetch key = liftSelect $ Fetch key id
+
+data GP k v a = Get k (v -> a)
+              | Put k v a
+    deriving Functor
+
+instance (Show k, Show v) => Show (GP k v a) where
+    show (Get k   _) = "(Get " ++ show k ++ ")"
+    show (Put k v _) = "(Put " ++ show k ++ " " ++ show v ++ ")"
+
+get :: k -> Select (GP k v) v
+get key = liftSelect $ Get key id
+
+put :: k -> v -> Select (GP k v) ()
+put key value = liftSelect $ Put key value ()
+
 graph :: Ord k => (k -> [k]) -> k -> Graph k
 graph deps key = transpose $ overlays [ star k (deps k) | k <- keys Set.empty [key] ]
   where
@@ -55,8 +84,8 @@ draw tasks = exportAsIs . graph deps
 
 ---------------------------------- Validation ----------------------------------
 
-fetch :: Read a => String -> IO a
-fetch prompt = do putStr (prompt ++ ": "); read <$> getLine
+fetchIO :: Read a => String -> IO a
+fetchIO prompt = do putStr (prompt ++ ": "); read <$> getLine
 
 type Radius = Int
 type Width  = Int
