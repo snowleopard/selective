@@ -1,5 +1,5 @@
 {-# LANGUAGE ConstraintKinds, DefaultSignatures, GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DeriveFunctor, RankNTypes, ScopedTypeVariables #-}
+{-# LANGUAGE DeriveFunctor, RankNTypes, ScopedTypeVariables, TupleSections #-}
 module Control.Selective (
     -- * Type class
     Selective (..), (<*?), select, handleA, apS, handleM,
@@ -106,7 +106,6 @@ class Applicative f => Selective f where
     default match :: Monad f => Cases a -> f a -> (a -> f b) -> f (Either a b)
     match = matchM
 
-
 data Cases a = Cases [a] (a -> Bool)
 
 casesEnum :: (Bounded a, Enum a) => Cases a
@@ -208,9 +207,15 @@ orElse x = handle (Right <$> x) . fmap (\y e -> first (e <>) y)
 whileS :: Selective f => f Bool -> f ()
 whileS act = whenS act (whileS act)
 
--- | Keep running an effectful computation until it returns a @Right@ value.
-untilRight :: Selective f => f (Either a b) -> f b
-untilRight x = handle x $ (const <$> untilRight x)
+-- | Keep running an effectful computation until it returns a @Right@ value,
+-- collecting the @Left@'s using a supplied @Monoid@ instance.
+untilRight :: forall a b f. (Monoid a, Selective f) => f (Either a b) -> f (a, b)
+untilRight x = handle y h
+  where
+    y :: f (Either a (a, b))
+    y = fmap (mempty,) <$> x
+    h :: f (a -> (a, b))
+    h = (\(as, b) a -> (mappend a as, b)) <$> untilRight x
 
 -- | A lifted version of lazy Boolean OR.
 (<||>) :: Selective f => f Bool -> f Bool -> f Bool
