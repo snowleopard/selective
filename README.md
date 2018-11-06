@@ -287,3 +287,7 @@ associativity law, which is just `(x |.| y) |.| z = x |.| (y |.| z)`.
 ## Do we still need monads?
 
 Yes! Here is what selective functors cannot do: `join :: Selective f => f (f a) -> f a`.
+
+## Further reading
+
+* A blog post introducing selective applicative functors: https://blogs.ncl.ac.uk/andreymokhov/selective.
