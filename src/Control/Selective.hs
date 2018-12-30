@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveFunctor, RankNTypes, ScopedTypeVariables, TupleSections #-}
 module Control.Selective (
     -- * Type class
-    Selective (..), (<*?), select, handleA, apS, handleM,
+    Selective (..), (<*?), branch, selectA, apS, selectM,
     Cases (..), casesEnum, cases,
 
     -- * Conditional combinators
@@ -24,39 +24,46 @@ import Data.Functor.Identity
 import Data.Proxy
 import Data.Semigroup
 
--- | Selective applicative functors. You can think of 'handle' as a selective
--- function application: you apply a handler function only when given a value of
--- type @Left a@. Otherwise, you can skip the function and associted effects
--- and return the @b@ from @Right b@. Intuitively, 'handle' allows you to
--- efficiently handle errors that are often represented by @Left a@ in Haskell.
+-- | Selective applicative functors. You can think of 'select' as a selective
+-- function application: you apply a function only when given a value of
+-- type @Left a@. Otherwise, you can skip the function and associated effects,
+-- and return the @b@ from @Right b@.
 --
--- The type signature of 'handle' is reminiscent of both '<*>' and '>>=', and
+-- Note that it is not a requirement for selective functors to skip unnecessary
+-- effects. It may be counterintuitive, but this makes them more useful. Why?
+-- Typically, when executing a selective computation, you would want to skip the
+-- effects (saving work); but on the other hand, if your goal is to statically
+-- analyse a given selective computation and extract the set of all possible
+-- effects (without actually executing them), then you do not want to skip any
+-- effects, because that defeats the purpose of static analysis.
+--
+-- The type signature of 'select' is reminiscent of both '<*>' and '>>=', and
 -- indeed a selective functor is in some sense a composition of an applicative
 -- functor and the 'Either' monad.
 --
 -- Laws: (F1) Apply a pure function to the result:
 --
---            f <$> handle x y = handle (second f <$> x) ((f .) <$> y)
+--            f <$> select x y = select (second f <$> x) ((f .) <$> y)
 --
---       (F2) Apply a pure function to the left (error) branch:
+--       (F2) Apply a pure function to the 'Left' case of the first argument:
 --
---            handle (first f <$> x) y = handle x ((. f) <$> y)
+--            select (first f <$> x) y = select x ((. f) <$> y)
 --
---       (F3) Apply a pure function to the handler:
+--       (F3) Apply a pure function to the second argument:
 --
---            handle x (f <$> y) = handle (first (flip f) <$> x) (flip ($) <$> y)
+--            select x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
 --
---       (P1) Apply a pure handler:
+--       (P1) Selective application of a pure function:
 --
---            handle x (pure y) = either y id <$> x
+--            select x (pure y) = either y id <$> x
 --
---       (P2) Handle a pure error:
+--       (P2) Selective application of a function to a pure 'Left' value:
 --
---            handle (pure (Left x)) y = ($x) <$> y
+--            select (pure (Left x)) y = ($x) <$> y
 --
 --       (A1) Associativity:
 --
---            handle x (handle y z) = handle (handle (f <$> x) (g <$> y)) (h <$> z)
+--            select x (select y z) = select (select (f <$> x) (g <$> y)) (h <$> z)
 --
 --            or in operator form:
 --
@@ -67,37 +74,37 @@ import Data.Semigroup
 --                  h z = uncurry z
 --
 --
---       Note there is no law for handling a pure value, i.e. we do not require
---       that the following holds:
+--       Note that there is no law for selective application of a function to a
+--       pure 'Right' value, i.e. we do not require that the following holds:
 --
---            handle (pure (Right x)) y = pure x
+--            select (pure (Right x)) y = pure x
 --
 --       In particular, the following is allowed too:
 --
---            handle (pure (Right x)) y = const x <$> y
+--            select (pure (Right x)) y = const x <$> y
 --
---       We therefore allow 'handle' to be selective about effects in this case.
+--       We therefore allow 'select' to be selective about effects in this case.
 --
 -- A consequence of the above laws is that 'apS' satisfies 'Applicative' laws.
 -- We choose not to require that 'apS' = '<*>', since this forbids some
 -- interesting instances, such as 'Validation'.
 --
--- If f is also a 'Monad', we require that 'handle' = 'handleM'.
+-- If f is also a 'Monad', we require that 'select' = 'selectM'.
 --
 -- We can rewrite any selective expression in the following canonical form:
 --
---          f (a + ... + z)    -- A value to be handled (+ denotes a sum type)
---       -> f (a -> (b + ...)) -- How to handle a's
---       -> f (b -> (c + ...)) -- How to handle b's
+--          f (a + ... + z)    -- A value to be processed (+ denotes a sum type)
+--       -> f (a -> (b + ...)) -- How to process a's
+--       -> f (b -> (c + ...)) -- How to process b's
 --       ...
---       -> f (y -> z)         -- How to handle y's
+--       -> f (y -> z)         -- How to process y's
 --       -> f z                -- The resulting z
 --
 -- See "Control.Selective.Sketch" for proof sketches.
 class Applicative f => Selective f where
-    handle :: f (Either a b) -> f (a -> b) -> f b
-    default handle :: Monad f => f (Either a b) -> f (a -> b) -> f b
-    handle = handleM
+    select :: f (Either a b) -> f (a -> b) -> f b
+    default select :: Monad f => f (Either a b) -> f (a -> b) -> f b
+    select = selectM
 
     loop :: Semigroup a => f a -> f (a -> Either a b) -> f (a, b)
     loop = undefined
@@ -114,27 +121,28 @@ casesEnum = Cases [minBound..maxBound] (const True)
 cases :: Eq a => [a] -> Cases a
 cases as = Cases as (`elem` as)
 
--- | An operator alias for 'handle', which is sometimes convenient. It tries to
+-- | An operator alias for 'select', which is sometimes convenient. It tries to
 -- follow the notational convention for 'Applicative' operators. The angle
 -- bracket pointing to the left means we always use the corresponding value.
--- The value on the right, however, can be skipped, hence the question mark.
+-- The value on the right, however, may be skipped, hence the question mark.
 (<*?) :: Selective f => f (Either a b) -> f (a -> b) -> f b
-(<*?) = handle
+(<*?) = select
 
 infixl 4 <*?
 
--- | The 'select' function is a natural generalisation of 'handle': instead of
--- skipping an unnecessary effect, it selects which of the two given effectful
--- functions to apply to a given argument. It is possible to implement 'select'
--- in terms of 'handle', which is a good puzzle (give it a try!).
-select :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
-select x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
+-- | The 'branch' function is a natural generalisation of 'select': instead of
+-- skipping an unnecessary effect, it chooses which of the two given effectful
+-- functions to apply to a given argument; the other effect is unnecessary. It
+-- is possible to implement 'branch' in terms of 'select', which is a good
+-- puzzle (give it a try!).
+branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
+branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 
--- | We can write a function with the type signature of 'handle' using the
+-- | We can write a function with the type signature of 'select' using the
 -- 'Applicative' type class, but it will always execute the effects associated
--- with the handler, hence being potentially less efficient.
-handleA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
-handleA x f = (\e f -> either f id e) <$> x <*> f
+-- with the second argument, hence being potentially less efficient.
+selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
+selectA x f = (\e f -> either f id e) <$> x <*> f
 
 -- | 'Selective' is more powerful than 'Applicative': we can recover the
 -- application operator '<*>'. In particular, the following 'Applicative' laws
@@ -145,12 +153,12 @@ handleA x f = (\e f -> either f id e) <$> x <*> f
 -- * Interchange  : u <*> pure y = pure ($y) <*> u
 -- * Composition  : (.) <$> u <*> v <*> w = u <*> (v <*> w)
 apS :: Selective f => f (a -> b) -> f a -> f b
-apS f x = handle (Left <$> f) (flip ($) <$> x)
+apS f x = select (Left <$> f) (flip ($) <$> x)
 
--- | One can easily implement a monadic 'handleM' that satisfies the laws,
+-- | One can easily implement a monadic 'selectM' that satisfies the laws,
 -- hence any 'Monad' is 'Selective'.
-handleM :: Monad f => f (Either a b) -> f (a -> b) -> f b
-handleM mx mf = do
+selectM :: Monad f => f (Either a b) -> f (a -> b) -> f b
+selectM mx mf = do
     x <- mx
     case x of
         Left  a -> fmap ($a) mf
@@ -160,12 +168,12 @@ handleM mx mf = do
 
 -- | Branch on a Boolean value, skipping unnecessary effects.
 ifS :: Selective f => f Bool -> f a -> f a -> f a
-ifS i t e = select (bool (Right ()) (Left ()) <$> i) (const <$> t) (const <$> e)
+ifS i t e = branch (bool (Right ()) (Left ()) <$> i) (const <$> t) (const <$> e)
 
 -- | Eliminate a specified value @a@ from @f (Either a b)@ by replacing it
 -- with a given @f b@.
 eliminate :: (Eq a, Selective f) => a -> f b -> f (Either a b) -> f (Either a b)
-eliminate x fb fa = handle (match x <$> fa) (const . Right <$> fb)
+eliminate x fb fa = select (match x <$> fa) (const . Right <$> fb)
   where
     match _ (Right y) = Right (Right y)
     match x (Left  y) = if x == y then Left () else Right (Left y)
@@ -197,11 +205,11 @@ whenS x act = ifS x act (pure ())
 
 -- | A lifted version of 'fromMaybe'.
 fromMaybeS :: Selective f => f a -> f (Maybe a) -> f a
-fromMaybeS dx x = handle (maybe (Left ()) Right <$> x) (const <$> dx)
+fromMaybeS dx x = select (maybe (Left ()) Right <$> x) (const <$> dx)
 
 -- | Return the first @Right@ value. If both are @Left@'s, accumulate errors.
 orElse :: (Selective f, Semigroup e) => f (Either e a) -> f (Either e a) -> f (Either e a)
-orElse x = handle (Right <$> x) . fmap (\y e -> first (e <>) y)
+orElse x = select (Right <$> x) . fmap (\y e -> first (e <>) y)
 
 -- | Keep checking an effectful condition while it holds.
 whileS :: Selective f => f Bool -> f ()
@@ -210,7 +218,7 @@ whileS act = whenS act (whileS act)
 -- | Keep running an effectful computation until it returns a @Right@ value,
 -- collecting the @Left@'s using a supplied @Monoid@ instance.
 untilRight :: forall a b f. (Monoid a, Selective f) => f (Either a b) -> f (a, b)
-untilRight x = handle y h
+untilRight x = select y h
   where
     y :: f (Either a (a, b))
     y = fmap (mempty,) <$> x
@@ -262,16 +270,16 @@ instance Semigroup e => Applicative (Validation e) where
     Success f  <*> Success a  = Success (f a)
 
 instance Semigroup e => Selective (Validation e) where
-    handle (Success (Right b)) _           = Success b
-    handle (Success (Left  _)) (Failure e) = Failure e
-    handle (Success (Left  a)) (Success f) = Success (f a)
-    handle (Failure e        ) _           = Failure e
+    select (Success (Right b)) _           = Success b
+    select (Success (Left  _)) (Failure e) = Failure e
+    select (Success (Left  a)) (Success f) = Success (f a)
+    select (Failure e        ) _           = Failure e
 
     match = matchS
 
 -- Static analysis of selective functors
 instance Monoid m => Selective (Const m) where
-    handle = handleA
+    select = selectA
     match  = matchS
 
 -- | Extract dependencies from a selective task.

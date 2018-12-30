@@ -1,31 +1,30 @@
 # Selective applicative functors
 
-This is a study of *selective applicative functors*, an abstraction between `Applicative` and `Monad`:
+This is a study of *selective applicative functors*, an abstraction between
+`Applicative` and `Monad`:
 
 ```haskell
 class Applicative f => Selective f where
-    handle :: f (Either a b) -> f (a -> b) -> f b
+    select :: f (Either a b) -> f (a -> b) -> f b
 
--- | An operator alias for 'handle'.
+-- | An operator alias for 'select'.
 (<*?) :: Selective f => f (Either a b) -> f (a -> b) -> f b
-(<*?) = handle
+(<*?) = select
 
 infixl 4 <*?
 ```
 
-Think of `handle` as a *selective function application*: you apply a handler
-function of type `a -> b` when given a value `Left a`, but can skip the
-handler (along with its effects) in the case of `Right b`. Intuitively,
-`handle` allows you to *efficiently* handle errors, i.e. perform the
-error-handling effects only when needed.
+Think of `select` as a *selective function application*: you apply a function
+of type `a -> b` only when given a value of type `Left a`. Otherwise, you can
+skip the function and associated effects, and return the `b` from `Right b`.
 
 Note that you can write a function with this type signature using
-`Applicative` functors, but it will always execute the effects
-associated with the handler, hence being less efficient:
+`Applicative` functors, but it will always execute the effects associated
+with the second argument, hence being potentially less efficient:
 
 ```haskell
-handleA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
-handleA x f = (\e f -> either f id e) <$> x <*> f
+selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
+selectA x f = (\e f -> either f id e) <$> x <*> f
 ```
 
 `Selective` is more powerful than `Applicative`: you can recover the
@@ -34,31 +33,32 @@ denote `Selective` equivalents of commonly known functions).
 
 ```haskell
 apS :: Selective f => f (a -> b) -> f a -> f b
-apS f x = handle (Left <$> f) (flip ($) <$> x)
+apS f x = select (Left <$> f) (flip ($) <$> x)
 ```
 
-Here we tag a given function `a -> b` as an error and turn a value `a`
-into an error-handling function `($a)`, which simply applies itself to the
-error `a -> b` yielding `b` as desired. Note: `apS` is a perfectly legal
+Here we wrap a given function `a -> b` into `Left` and turn the value `a`
+into a function `($a)`, which simply feeds itself to the function `a -> b`
+yielding `b` as desired. Note: `apS` is a perfectly legal
 application operator `<*>`, i.e. it satisfies the laws dictated by the
 `Applicative` type class as long as [the laws](#laws) of the `Selective`
 type class hold.
 
-The `select` function is a natural generalisation of `handle`: instead of
-skipping one unnecessary effect, it selects which of the two given effectful
-functions to apply to a given argument. It is possible to implement `select` in
-terms of `handle`, which is a good puzzle (give it a try!):
+The `branch` function is a natural generalisation of `select`: instead of
+skipping an unnecessary effect, it chooses which of the two given effectful
+functions to apply to a given argument; the other effect is unnecessary. It
+is possible to implement `branch` in terms of `select`, which is a good
+puzzle (give it a try!).
 
 ```haskell
-select :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
-select = ... -- Try to figure out the implementation!
+branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
+branch = ... -- Try to figure out the implementation!
 ```
 
 Finally, any `Monad` is `Selective`:
 
 ```haskell
-handleM :: Monad f => f (Either a b) -> f (a -> b) -> f b
-handleM mx mf = do
+selectM :: Monad f => f (Either a b) -> f (a -> b) -> f b
+selectM mx mf = do
     x <- mx
     case x of
         Left  a -> fmap ($a) mf
@@ -71,7 +71,7 @@ which traditionally require the (more powerful) `Monad` type class. For example:
 ```haskell
 -- | Branch on a Boolean value, skipping unnecessary effects.
 ifS :: Selective f => f Bool -> f a -> f a -> f a
-ifS i t e = select (bool (Right ()) (Left ()) <$> i) (const <$> t) (const <$> e)
+ifS i t e = branch (bool (Right ()) (Left ()) <$> i) (const <$> t) (const <$> e)
 
 -- | Conditionally perform an effect.
 whenS :: Selective f => f Bool -> f () -> f ()
@@ -91,7 +91,7 @@ anyS p = foldr ((<||>) . p) (pure False)
 
 -- | Return the first @Right@ value. If both are @Left@'s, accumulate errors.
 orElse :: (Selective f, Semigroup e) => f (Either e a) -> f (Either e a) -> f (Either e a)
-orElse x = handle (Right <$> x) . fmap (\y e -> first (e <>) y)
+orElse x = select (Right <$> x) . fmap (\y e -> first (e <>) y)
 ```
 
 See more examples in [src/Control/Selective.hs](src/Control/Selective.hs).
@@ -106,32 +106,32 @@ them. Please let me know if you find an improvement.
 
 * (F1) Apply a pure function to the result:
     ```haskell
-    f <$> handle x y = handle (second f <$> x) ((f .) <$> y)
+    f <$> select x y = select (second f <$> x) ((f .) <$> y)
     ```
 
-* (F2) Apply a pure function to the left (error) branch:
+* (F2) Apply a pure function to the `Left` case of the first argument:
     ```haskell
-    handle (first f <$> x) y = handle x ((. f) <$> y)
+    select (first f <$> x) y = select x ((. f) <$> y)
     ```
 
-* (F3) Apply a pure function to the handler:
+* (F3) Apply a pure function to the second argument:
     ```haskell
-    handle x (f <$> y) = handle (first (flip f) <$> x) (flip ($) <$> y)
+    select x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
     ```
 
-* (P1) Apply a pure handler:
+* (P1) Selective application of a pure function:
     ```haskell
-    handle x (pure y) = either y id <$> x
+    select x (pure y) = either y id <$> x
     ```
 
-* (P2) Handle a pure error:
+* (P2) Selective application of a function to a pure 'Left' value:
     ```haskell
-    handle (pure (Left x)) y = ($x) <$> y
+    select (pure (Left x)) y = ($x) <$> y
     ```
 
 * (A1) Associativity:
     ```haskell
-    handle x (handle y z) = handle (handle (f <$> x) (g <$> y)) (h <$> z)
+    select x (select y z) = select (select (f <$> x) (g <$> y)) (h <$> z)
       where
         f x = Right <$> x
         g y = \a -> bimap (,a) ($a) y
@@ -142,25 +142,25 @@ them. Please let me know if you find an improvement.
     x <*? (y <*? z) = (f <$> x) <*? (g <$> y) <*? (h <$> z)
     ```
 
-Note that there is no law for handling a pure value, i.e. we do not require
-that the following holds:
+Note that there is no law for selective application of a function to a
+pure `Right` value, i.e. we do not require that the following holds:
 
 ```haskell
-handle (pure (Right x)) y = pure x
+select (pure (Right x)) y = pure x
 ```
 
 In particular, the following is allowed too:
 
 ```haskell
-handle (pure (Right x)) y = const x <$> y
+select (pure (Right x)) y = const x <$> y
 ```
 
-We therefore allow `handle` to be selective about effects in this case.
+We therefore allow `select` to be selective about effects in this case.
 A consequence of the above laws is that `apS` satisfies `Applicative` laws.
 However, we choose not to require that `apS = <*>`, since this forbids some
 interesting instances, such as `Validation` defined below.
 
-If `f` is also a `Monad`, we require that `handle = handleM`.
+If `f` is also a `Monad`, we require that `select = selectM`.
 
 ## Static analysis of selective functors
 
@@ -169,10 +169,10 @@ We can make the `Const` functor an instance of `Selective` as follows.
 
 ```haskell
 instance Monoid m => Selective (Const m) where
-    handle = handleA
+    select = selectA
 ```
 
-Although we don't need the handler `Const m (a -> b)` (note that
+Although we don't need the function `Const m (a -> b)` (note that
 `Const m (Either a b)` holds no values of type `a`), we choose to
 accumulate the effects associated with it. This allows us to extract
 the static structure of any selective computation very similarly
@@ -191,13 +191,13 @@ instance Semigroup e => Applicative (Validation e) where
     Success f  <*> Success a  = Success (f a)
 
 instance Semigroup e => Selective (Validation e) where
-    handle (Success (Right b)) _ = Success b
-    handle (Success (Left  a)) f = Success ($a) <*> f
-    handle (Failure e        ) _ = Failure e
+    select (Success (Right b)) _ = Success b
+    select (Success (Left  a)) f = Success ($a) <*> f
+    select (Failure e        ) _ = Failure e
 ```
 
 Here, the last line is particularly interesting: unlike the `Const`
-instance, we choose to actually skip the handler effect in case of
+instance, we choose to actually skip the function effect in case of
 `Failure`. This allows us not to report any validation errors which
 are hidden behind a failed conditional.
 
