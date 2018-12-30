@@ -14,9 +14,9 @@ class Applicative f => Selective f where
 infixl 4 <*?
 ```
 
-Think of `select` as a *selective function application*: you apply a function
-of type `a -> b` only when given a value of type `Left a`. Otherwise, you can
-skip the function and associated effects, and return the `b` from `Right b`.
+Think of `select` as a *selective function application*: you **must apply** the function
+of type `a -> b` when given a value of type `Left a`, but you **may skip** the
+function and associated effects, and simply return `b` when given `Right b`.
 
 Note that you can write a function with this type signature using
 `Applicative` functors, but it will always execute the effects associated
