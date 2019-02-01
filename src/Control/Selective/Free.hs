@@ -5,7 +5,7 @@ module Control.Selective.Free (
     module Control.Selective,
 
     -- * Free functors
-    FreeA, FreeS, FreeM, analyse, liftS, runS
+    Select (..), analyse, liftS, runS
     ) where
 
 import Data.Bifunctor
@@ -13,55 +13,32 @@ import Data.Functor
 import Data.List.NonEmpty
 import Control.Selective
 
--- Three ways of composing functors, whose definitions mirror the type
--- signatures of the Applicative's (<*>), Selective's (<*?>) and Monad's (>>=)
--- operators.
--- Inspired by these awesome blog posts by Bartosz Milewski and Oleg Grenrus:
--- https://bartoszmilewski.com/2018/02/17/free-monoidal-functors/
--- http://oleg.fi/gists/posts/2018-02-21-single-free.html
-data (:+:) f g a where
-    (:+:) :: f x -> g (x -> a) -> (f :+: g) a
-
-data (:|:) f g a where
-    (:|:) :: f (x -> a) -> g (Either x a) -> (:|:) f g a
-
-data (:*:) f g a where
-    (:*:) :: f x -> (x -> g a) -> (:*:) f g a
-
-data Free (p :: (* -> *) -> (* -> *) -> (* -> *)) f a
-    = Done a
-    | More (p f (Free p f) a)
-
-type FreeA = Free (:+:)
-type FreeS = Free (:|:)
-type FreeM = Free (:*:)
-
-instance Functor g => Functor (f :+: g) where
-    fmap k (f :+: g) = f :+: fmap (fmap k) g
-
-instance (Functor f, Functor g) => Functor (f :|: g) where
-    fmap k (f :|: g) = fmap (fmap k) f :|: fmap (fmap k) g
-
-instance Functor g => Functor (f :*: g) where
-    fmap k (f :*: g) = f :*: fmap (fmap k) g
-
-instance Functor f => Functor (Free (:|:) f) where
-    fmap k (Done a) = Done (k a)
-    fmap k (More f) = More (fmap k f)
-
-instance Functor f => Applicative (Free (:|:) f) where
-    pure  = Done
-    (<*>) = apS
-
 -- Inspired by free applicative functors by Capriotti and Kaposi.
+-- See: https://arxiv.org/pdf/1403.0749.pdf
 -- TODO: This implementation is slow, but we could optimise it similarly to
 -- http://hackage.haskell.org/package/free/docs/Control-Applicative-Free-Fast.html
-instance Functor f => Selective (FreeS f) where
+-- | Free selective functors.
+data Select f a where
+    Pure   :: a -> Select f a
+    Select :: Select f (Either a b) -> f (a -> b) -> Select f b
+
+-- TODO: Verify that this is a lawful 'Functor'.
+instance Functor f => Functor (Select f) where
+    fmap k (Pure a)     = Pure (k a)
+    fmap k (Select x f) = Select (fmap k <$> x) (fmap k <$>  f)
+
+-- TODO: Verify that this is a lawful 'Applicative'.
+instance Functor f => Applicative (Select f) where
+    pure  = Pure
+    (<*>) = apS
+
+-- TODO: Verify that this is a lawful 'Applicative'.
+instance Functor f => Selective (Select f) where
     -- Law P1
-    select x (Done f) = either f id <$> x
+    select x (Pure f) = either f id <$> x
 
     -- Law A1
-    select x (More (z :|: y)) = More ((h <$> z) :|: select (f <$> x) (g <$> y))
+    select x (Select y z) = Select (select (f <$> x) (g <$> y)) (h <$> z)
       where
         f x = Right <$> x
         g y = \a -> bimap (,a) ($a) y
@@ -74,19 +51,19 @@ instance Functor f => Selective (FreeS f) where
 --   - The non-empty list of remaining effects @gs@, first of which is
 --     statically known to be necessary; or
 --   - The resulting value, in which case there are no necessary effects.
-analyse :: Functor f => FreeS f a -> ([f ()], Either (NonEmpty (f ())) a)
-analyse (Done a)         = ([], Right a)
-analyse (More (f :|: x)) = case analyse x of
+analyse :: Functor f => Select f a -> ([f ()], Either (NonEmpty (f ())) a)
+analyse (Pure a)     = ([], Right a)
+analyse (Select x f) = case analyse x of
     (fs, Right (Right x)) -> (void f : fs, Right x )
     (fs, Right (Left  _)) -> (fs         , Left (void f :| []))
     (fs, Left gs        ) -> (fs         , Left (void f <| gs))
 
 -- | Lift a functor into a free selective computation.
-liftS :: Functor f => f a -> FreeS f a
-liftS f = More $ fmap const f :|: Done (Left ())
+liftS :: Functor f => f a -> Select f a
+liftS f = Select (Pure (Left ())) (const <$> f)
 
 -- | Given a natural transformation from @f@ to @g@, this gives a canonical
--- natural transformation from @FreeS f@ to @g@.
-runS :: Selective g => (forall a. f a -> g a) -> FreeS f a -> g a
-runS _ (Done a)         = pure a
-runS t (More (f :|: x)) = select (runS t x) (t f)
+-- natural transformation from @Select f@ to @g@.
+runS :: Selective g => (forall a. f a -> g a) -> Select f a -> g a
+runS _ (Pure a)     = pure a
+runS t (Select x f) = select (runS t x) (t f)

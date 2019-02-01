@@ -52,7 +52,7 @@ data F k v a = Fetch k (v -> a)
 instance Show k => Show (F k v a) where
     show (Fetch k _) = "(Fetch " ++ show k ++ ")"
 
-fetch :: k -> FreeS (F k v) v
+fetch :: k -> Select (F k v) v
 fetch key = liftS $ Fetch key id
 
 data GP k v a = Get k (v -> a)
@@ -63,10 +63,10 @@ instance (Show k, Show v) => Show (GP k v a) where
     show (Get k   _) = "(Get " ++ show k ++ ")"
     show (Put k v _) = "(Put " ++ show k ++ " " ++ show v ++ ")"
 
-get :: k -> FreeS (GP k v) v
+get :: k -> Select (GP k v) v
 get key = liftS $ Get key id
 
-put :: k -> v -> FreeS (GP k v) ()
+put :: k -> v -> Select (GP k v) ()
 put key value = liftS $ Put key value ()
 
 graph :: Ord k => (k -> [k]) -> k -> Graph k

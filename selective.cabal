@@ -25,6 +25,7 @@ library
     exposed-modules:    Control.Selective,
                         Control.Selective.Example,
                         Control.Selective.Free,
+                        Control.Selective.Free.Generalised,
                         Control.Selective.Sketch
     build-depends:      algebraic-graphs >= 0.1.1,
                         base             >= 4.7     && < 5,
