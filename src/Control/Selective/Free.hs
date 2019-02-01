@@ -10,6 +10,7 @@ module Control.Selective.Free (
 
 import Data.Bifunctor
 import Data.Functor
+import Data.List.NonEmpty
 import Control.Selective
 
 -- Three ways of composing functors, whose definitions mirror the type
@@ -66,16 +67,19 @@ instance Functor f => Selective (FreeS f) where
         g y = \a -> bimap (,a) ($a) y
         h z = uncurry z
 
-data Effect f = Necessary (f ()) | Unnecessary (f ())
-
--- | Statically analyse a given selective computation and return:
--- * The list of all effects, tagging them as 'Necessary' or 'Unnecessary'.
--- * The resulting value, in the case when all effects are 'Unnecessary'.
-analyse :: Functor f => FreeS f a -> ([Effect f], Maybe a)
-analyse (Done a)         = ([], Just a)
+-- | Statically analyse a given selective computation and return a pair (fs, x)
+-- comprising:
+-- * The list of effects @fs@ that are statically known as unnecessary.
+-- * Either
+--   - The non-empty list of remaining effects @gs@, first of which is
+--     statically known to be necessary; or
+--   - The resulting value, in which case there are no necessary effects.
+analyse :: Functor f => FreeS f a -> ([f ()], Either (NonEmpty (f ())) a)
+analyse (Done a)         = ([], Right a)
 analyse (More (f :|: x)) = case analyse x of
-    (fs, Just (Right x)) -> (Unnecessary (void f) : fs, Just x )
-    (fs, _             ) -> (  Necessary (void f) : fs, Nothing)
+    (fs, Right (Right x)) -> (void f : fs, Right x )
+    (fs, Right (Left  _)) -> (fs         , Left (void f :| []))
+    (fs, Left gs        ) -> (fs         , Left (void f <| gs))
 
 -- | Lift a functor into a free selective computation.
 liftS :: Functor f => f a -> FreeS f a
