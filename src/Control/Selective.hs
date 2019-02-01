@@ -1,4 +1,3 @@
-{-# LANGUAGE ConstraintKinds, DefaultSignatures, GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveFunctor, RankNTypes, ScopedTypeVariables, TupleSections #-}
 module Control.Selective (
     -- * Type class
@@ -7,7 +6,7 @@ module Control.Selective (
 
     -- * Conditional combinators
     ifS, whenS, fromMaybeS, orElse, untilRight, whileS, (<||>), (<&&>), anyS,
-    allS, matchS, bindS,
+    allS, matchS, bindS, matchM,
 
     -- * Static analysis
     Validation (..), dependencies
@@ -25,9 +24,9 @@ import Data.Proxy
 import Data.Semigroup
 
 -- | Selective applicative functors. You can think of 'select' as a selective
--- function application: you apply a function only when given a value of
--- type @Left a@. Otherwise, you can skip the function and associated effects,
--- and return the @b@ from @Right b@.
+-- function application: when given a value of type @Left a@, you __must apply__
+-- the given function, but when given a @Right b@, you __may skip__ the function
+-- and associated effects, and simply return the @b@.
 --
 -- Note that it is not a requirement for selective functors to skip unnecessary
 -- effects. It may be counterintuitive, but this makes them more useful. Why?
@@ -103,15 +102,6 @@ import Data.Semigroup
 -- See "Control.Selective.Sketch" for proof sketches.
 class Applicative f => Selective f where
     select :: f (Either a b) -> f (a -> b) -> f b
-    default select :: Monad f => f (Either a b) -> f (a -> b) -> f b
-    select = selectM
-
-    loop :: Semigroup a => f a -> f (a -> Either a b) -> f (a, b)
-    loop = undefined
-
-    match  :: Eq a => Cases a -> f a -> (a -> f b) -> f (Either a b)
-    default match :: Monad f => Cases a -> f a -> (a -> f b) -> f (Either a b)
-    match = matchM
 
 data Cases a = Cases [a] (a -> Bool)
 
@@ -194,7 +184,7 @@ matchM (Cases _ p) mx f = do
 -- | A restricted version of monadic bind. Fails with an error if the 'Bounded'
 -- and 'Enum' instances for @a@ do not cover all values of @a@.
 bindS :: (Bounded a, Enum a, Eq a, Selective f) => f a -> (a -> f b) -> f b
-bindS x f = fromRight <$> match casesEnum x f
+bindS x f = fromRight <$> matchS casesEnum x f
   where
     fromRight (Right b) = b
     fromRight _ = error "Selective.bindS: incorrect Bounded and/or Enum instance"
@@ -244,19 +234,19 @@ allS p = foldr ((<&&>) . p) (pure True)
 -- Instances
 
 -- As a quick experiment, try: ifS (pure True) (print 1) (print 2)
-instance Selective IO where
+instance Selective IO where select = selectM
 
 -- And... we need to write a lot more instances
-instance Selective [] where
-instance Selective ((->) a) where
-instance Monoid a => Selective ((,) a) where
-instance Selective Identity where
-instance Selective Maybe where
-instance Selective Proxy where
+instance Selective [] where select = selectM
+instance Selective ((->) a) where select = selectM
+instance Monoid a => Selective ((,) a) where select = selectM
+instance Selective Identity where select = selectM
+instance Selective Maybe where select = selectM
+instance Selective Proxy where select = selectM
 
-instance Monad m => Selective (ReaderT s m) where
-instance Monad m => Selective (StateT s m) where
-instance (Monoid s, Monad m) => Selective (WriterT s m) where
+instance Monad m => Selective (ReaderT s m) where select = selectM
+instance Monad m => Selective (StateT s m) where select = selectM
+instance (Monoid s, Monad m) => Selective (WriterT s m) where select = selectM
 
 -- Selective instance for the standard Applicative Validation
 -- This is a good example of a Selective functor which is not a Monad
@@ -275,12 +265,9 @@ instance Semigroup e => Selective (Validation e) where
     select (Success (Left  a)) (Success f) = Success (f a)
     select (Failure e        ) _           = Failure e
 
-    match = matchS
-
 -- Static analysis of selective functors
 instance Monoid m => Selective (Const m) where
     select = selectA
-    match  = matchS
 
 -- | Extract dependencies from a selective task.
 dependencies :: Task Selective k v -> [k]
