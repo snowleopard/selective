@@ -13,6 +13,10 @@ import Data.Functor
 import Data.List.NonEmpty
 import Control.Selective
 
+-- This is a generalised free construction that works for free applicative and
+-- selective functors, as well as monads. See "Control.Selective.Free" for a
+-- non-generalised version.
+
 -- Three ways of composing functors, whose definitions mirror the type
 -- signatures of the Applicative's (<*>), Selective's (<*?>) and Monad's (>>=)
 -- operators.

@@ -1,15 +1,15 @@
-{-# LANGUAGE FlexibleInstances, GADTs, KindSignatures, RankNTypes #-}
-{-# LANGUAGE TupleSections, TypeOperators #-}
+{-# LANGUAGE FlexibleInstances, GADTs, RankNTypes, TupleSections #-}
 module Control.Selective.Free (
     -- * Re-exports
     module Control.Selective,
 
     -- * Free functors
-    Select (..), analyse, liftS, runS
+    Select (..), analyse, getPure, liftSelect, runSelect, foldSelect, getEffects
     ) where
 
 import Data.Bifunctor
 import Data.Functor
+import Data.Functor.Const
 import Data.List.NonEmpty
 import Control.Selective
 
@@ -44,13 +44,12 @@ instance Functor f => Selective (Select f) where
         g y = \a -> bimap (,a) ($a) y
         h z = uncurry z
 
--- | Statically analyse a given selective computation and return a pair (fs, x)
--- comprising:
--- * The list of effects @fs@ that are statically known as unnecessary.
+-- | Statically analyse a given selective computation and return a pair:
+-- * The list of effects @fs@ that are statically known as /unnecessary/.
 -- * Either
---   - The non-empty list of remaining effects @gs@, first of which is
---     statically known to be necessary; or
---   - The resulting value, in which case there are no necessary effects.
+--   + The non-empty list of remaining effects @gs@, first of which is
+--     statically known to be /necessary/; or
+--   + The resulting value, in which case there are no necessary effects.
 analyse :: Functor f => Select f a -> ([f ()], Either (NonEmpty (f ())) a)
 analyse (Pure a)     = ([], Right a)
 analyse (Select x f) = case analyse x of
@@ -59,11 +58,25 @@ analyse (Select x f) = case analyse x of
     (fs, Left gs        ) -> (fs         , Left (void f <| gs))
 
 -- | Lift a functor into a free selective computation.
-liftS :: Functor f => f a -> Select f a
-liftS f = Select (Pure (Left ())) (const <$> f)
+liftSelect :: Functor f => f a -> Select f a
+liftSelect f = Select (Pure (Left ())) (const <$> f)
 
 -- | Given a natural transformation from @f@ to @g@, this gives a canonical
 -- natural transformation from @Select f@ to @g@.
-runS :: Selective g => (forall a. f a -> g a) -> Select f a -> g a
-runS _ (Pure a)     = pure a
-runS t (Select x f) = select (runS t x) (t f)
+runSelect :: Selective g => (forall a. f a -> g a) -> Select f a -> g a
+runSelect _ (Pure a)     = pure a
+runSelect t (Select x f) = select (runSelect t x) (t f)
+
+-- | Concatenate all effects of a free selective computation.
+foldSelect :: Monoid m => (forall a. f a -> m) -> Select f a -> m
+foldSelect f = getConst . runSelect (Const . f)
+
+-- | Extract the resulting value if there are no necessary effects. This is
+-- equivalent to @eitherToMaybe . snd . analyse@ but has no 'Functor' constraint.
+getPure :: Select f a -> Maybe a
+getPure = runSelect (const Nothing)
+
+-- | Collect all possible effects in the order they appear in a free selective
+-- computation
+getEffects :: Functor f => Select f a -> [f ()]
+getEffects = foldSelect (pure . void)

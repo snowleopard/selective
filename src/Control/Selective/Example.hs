@@ -53,7 +53,7 @@ instance Show k => Show (F k v a) where
     show (Fetch k _) = "(Fetch " ++ show k ++ ")"
 
 fetch :: k -> Select (F k v) v
-fetch key = liftS $ Fetch key id
+fetch key = liftSelect $ Fetch key id
 
 data GP k v a = Get k (v -> a)
               | Put k v a
@@ -64,10 +64,10 @@ instance (Show k, Show v) => Show (GP k v a) where
     show (Put k v _) = "(Put " ++ show k ++ " " ++ show v ++ ")"
 
 get :: k -> Select (GP k v) v
-get key = liftS $ Get key id
+get key = liftSelect $ Get key id
 
 put :: k -> v -> Select (GP k v) ()
-put key value = liftS $ Put key value ()
+put key value = liftSelect $ Put key value ()
 
 graph :: Ord k => (k -> [k]) -> k -> Graph k
 graph deps key = transpose $ overlays [ star k (deps k) | k <- keys Set.empty [key] ]
