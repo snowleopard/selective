@@ -4,9 +4,11 @@ module Control.Selective.Free (
     module Control.Selective,
 
     -- * Free functors
-    Select (..), analyse, getPure, liftSelect, runSelect, foldSelect, getEffects
+    Select (..), analyse, getPure, liftSelect, runSelect, foldSelect,
+    getEffects, getNecessaryEffect
     ) where
 
+import Control.Monad.Trans.Except
 import Data.Bifunctor
 import Data.Functor
 import Data.Functor.Const
@@ -48,7 +50,7 @@ instance Functor f => Selective (Select f) where
 -- * The list of effects @fs@ that are statically known as /unnecessary/.
 -- * Either
 --   + The non-empty list of remaining effects @gs@, first of which is
---     statically known to be /necessary/; or
+--     statically guaranteed to be /necessary/; or
 --   + The resulting value, in which case there are no necessary effects.
 analyse :: Functor f => Select f a -> ([f ()], Either (NonEmpty (f ())) a)
 analyse (Pure a)     = ([], Right a)
@@ -77,6 +79,15 @@ getPure :: Select f a -> Maybe a
 getPure = runSelect (const Nothing)
 
 -- | Collect all possible effects in the order they appear in a free selective
--- computation
+-- computation.
 getEffects :: Functor f => Select f a -> [f ()]
 getEffects = foldSelect (pure . void)
+
+-- | Extract the necessary effect from a free selective computation. Note: there
+-- can be at most one effect that is statically guaranteed to be necessary.
+getNecessaryEffect :: Functor f => Select f a -> Maybe (f ())
+getNecessaryEffect = leftToMaybe . runExcept . runSelect (throwE . void)
+
+leftToMaybe :: Either a b -> Maybe a
+leftToMaybe (Left a) = Just a
+leftToMaybe _        = Nothing

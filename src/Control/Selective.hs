@@ -14,6 +14,7 @@ module Control.Selective (
 
 import Build.Task
 import Control.Applicative
+import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
@@ -244,6 +245,7 @@ instance Selective Identity where select = selectM
 instance Selective Maybe where select = selectM
 instance Selective Proxy where select = selectM
 
+instance Monad m => Selective (ExceptT s m) where select = selectM
 instance Monad m => Selective (ReaderT s m) where select = selectM
 instance Monad m => Selective (StateT s m) where select = selectM
 instance (Monoid s, Monad m) => Selective (WriterT s m) where select = selectM
