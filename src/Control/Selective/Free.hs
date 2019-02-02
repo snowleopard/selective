@@ -3,7 +3,7 @@ module Control.Selective.Free (
     -- * Re-exports
     module Control.Selective,
 
-    -- * Free functors
+    -- * Free selective functors
     Select (..), analyse, getPure, liftSelect, runSelect, foldSelect,
     getEffects, getNecessaryEffect
     ) where
@@ -17,7 +17,13 @@ import Control.Selective
 
 -- Inspired by free applicative functors by Capriotti and Kaposi.
 -- See: https://arxiv.org/pdf/1403.0749.pdf
--- TODO: This implementation is slow, but we could optimise it similarly to
+
+-- TODO: The current approach is simple but very slow: 'fmap' costs O(N), where
+-- N is the number of effects, and 'select' is even worse -- O(N^2). It is
+-- possible to improve both bounds to O(1) by using the idea developed for free
+-- applicative functors by Dave Menendez. See this blog post:
+-- https://www.eyrie.org/~zednenem/2013/05/27/freeapp
+-- An example implementation can be found here:
 -- http://hackage.haskell.org/package/free/docs/Control-Applicative-Free-Fast.html
 -- | Free selective functors.
 data Select f a where
@@ -27,14 +33,14 @@ data Select f a where
 -- TODO: Verify that this is a lawful 'Functor'.
 instance Functor f => Functor (Select f) where
     fmap k (Pure a)     = Pure (k a)
-    fmap k (Select x f) = Select (fmap k <$> x) (fmap k <$>  f)
+    fmap k (Select x f) = Select (fmap k <$> x) (fmap k <$> f)
 
 -- TODO: Verify that this is a lawful 'Applicative'.
 instance Functor f => Applicative (Select f) where
     pure  = Pure
     (<*>) = apS
 
--- TODO: Verify that this is a lawful 'Applicative'.
+-- TODO: Verify that this is a lawful 'Selective'.
 instance Functor f => Selective (Select f) where
     -- Law P1
     select x (Pure f) = either f id <$> x
