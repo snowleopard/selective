@@ -1,5 +1,6 @@
 packages:
 - '.'
-resolver: lts-11.8
+resolver: lts-13.8
 extra-deps:
-  - build-1.0
+  - git: https://github.com/snowleopard/build.git
+    commit: 7c83c4deb567bedbe96b6509351c5a2b1c234256
