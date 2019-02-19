@@ -1,0 +1,9 @@
+\section{Selective functors}\label{sec-selective}
+
+...
+
+
+\begin{minted}[xleftmargin=10pt]{haskell}
+class Applicative f => Selective f where
+    select :: f (Either a b) -> f (a -> b) -> f b
+\end{minted}
