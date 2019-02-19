@@ -5,8 +5,8 @@ module Control.Selective (
     Cases (..), casesEnum, cases,
 
     -- * Conditional combinators
-    ifS, whenS, fromMaybeS, orElse, untilRight, whileS, (<||>), (<&&>), anyS,
-    allS, matchS, bindS, matchM,
+    ifS, whenS, fromMaybeS, orElse, andAlso, untilRight, whileS, (<||>), (<&&>),
+    foldS, anyS, allS, matchS, bindS, matchM,
 
     -- * Static analysis
     Validation (..), dependencies
@@ -18,11 +18,9 @@ import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
-import Data.Bifunctor
 import Data.Bool
 import Data.Functor.Identity
 import Data.Proxy
-import Data.Semigroup
 
 -- | Selective applicative functors. You can think of 'select' as a selective
 -- function application: when given a value of type @Left a@, you __must apply__
@@ -200,7 +198,21 @@ fromMaybeS dx x = select (maybe (Left ()) Right <$> x) (const <$> dx)
 
 -- | Return the first @Right@ value. If both are @Left@'s, accumulate errors.
 orElse :: (Selective f, Semigroup e) => f (Either e a) -> f (Either e a) -> f (Either e a)
-orElse x = select (Right <$> x) . fmap (\y e -> first (e <>) y)
+orElse x y = branch x (flip appendLeft <$> y) (pure Right)
+
+-- | Accumulate the @Right@ values, or return the first @Left@.
+andAlso :: (Selective f, Semigroup a) => f (Either e a) -> f (Either e a) -> f (Either e a)
+andAlso x y = swap <$> orElse (swap <$> x) (swap <$> y)
+
+-- | Swap left and right.
+swap :: Either a b -> Either b a
+swap (Left  a) = Right a
+swap (Right b) = Left  b
+
+-- | Append two semigroup values or return the @Right@ one.
+appendLeft :: Semigroup a => a -> Either a b -> Either a b
+appendLeft a1 (Left a2) = Left (a1 <> a2)
+appendLeft _  (Right b) = Right b
 
 -- | Keep checking an effectful condition while it holds.
 whileS :: Selective f => f Bool -> f ()
@@ -231,6 +243,10 @@ anyS p = foldr ((<||>) . p) (pure False)
 -- | A lifted version of 'all'. Retains the short-circuiting behaviour.
 allS :: Selective f => (a -> f Bool) -> [a] -> f Bool
 allS p = foldr ((<&&>) . p) (pure True)
+
+-- | Generalised folding with the short-circuiting behaviour.
+foldS :: (Selective f, Foldable t, Monoid m) => t (f (Either e m)) -> f (Either e m)
+foldS = foldr andAlso (pure (Right mempty))
 
 -- Instances
 
