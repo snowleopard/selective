@@ -1,9 +1,50 @@
+\newpage
+
 \section{Selective functors}\label{sec-selective}
 
-...
+\begin{figure}
+\begin{minted}[fontsize=\small]{haskell}
+class Functor f where
+    fmap :: (a -> b) -> f a -> f b
 
+-- An infix synonym for fmap
+(<$>) :: Functor f => (a -> b) -> f a -> f b       -- (<$>) is pronounced as "map"
 
-\begin{minted}[xleftmargin=10pt]{haskell}
+class Functor f => Applicative f where
+    pure  :: a -> f a
+    (<*>) :: f (a -> b) -> f a -> f b              -- (<*>) is pronounced as "apply"
+
+-- A variant of <*> with the arguments reversed
+(<**>) :: Applicative f => f a -> f (a -> b) -> f b
+
 class Applicative f => Selective f where
     select :: f (Either a b) -> f (a -> b) -> f b
+
+-- An infix synonym for select
+(<*?) :: f (Either a b) -> f (a -> b) -> f b       -- (<*?) is pronounced as "select"
+
+class Selective f => Monad f where
+    return :: a -> f a
+    (>>=)  :: f a -> (a -> f b) -> f b             -- (>>=) is pronounced as "bind"
 \end{minted}
+\caption{The proposed type class hierarchy, where \hs{Functor}, \hs{Applicative}
+and \hs{Monad} are standard Haskell type classes, and \hs{Selective} is
+a new intermediate abstraction introduced between \hs{Applicative} and
+\hs{Monad}.}\label{fig-types}
+\end{figure}
+
+See Fig.~\ref{fig-types}.
+
+It may be illuminating to compare the following type signatures:
+
+\begin{minted}[xleftmargin=10pt]{haskell}
+(<**>) :: Applicative f => f a            -> f (a -> b) -> f b
+select :: Selective   f => f (Either a b) -> f (a -> b) -> f b
+(>>=)  :: Monad       f => f a            -> (a -> f b) -> f b
+\end{minted}
+
+\subsection{Basic examples}
+
+Const
+
+Validation
