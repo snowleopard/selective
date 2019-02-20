@@ -217,7 +217,7 @@ shape :: Selective f => f Bool -> f Radius -> f Width -> f Height -> f Shape
 shape s r w h = ifS s (Circle <$> r) (Rectangle <$> w <*> h)
 ```
 
-We choose `f = Validation [String]` to reports the errors that occurred
+We choose `f = Validation [String]` to report the errors that occurred
 when parsing a value. Let's see how it works.
 
 ```haskell
