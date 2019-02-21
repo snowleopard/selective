@@ -23,8 +23,8 @@ The operator takes two arguments: an effectful computation \hs{f}~\hs{a}, which
 yields a value of type~\hs{a} when executed, and a recipe, i.e. a pure function
 of type \hs{a}~\hs{->}~\hs{f}~\hs{b}, for turning~\hs{a} into a subsequent
 computation of type \hs{f}~\hs{b}. This approach to composing effectful
-computations is inherently sequential: until you execute the effects in
-\hs{f}~\hs{a}, you have no way of obtaining the continuation \hs{f}~\hs{b},
+computations is inherently sequential: until we execute the effects in
+\hs{f}~\hs{a}, there is no way of obtaining the computation \hs{f}~\hs{b},
 i.e. these computations can only be performed in sequence.
 
 Consider a simple example, where we use the monad \hs{f}~\hs{=}~\hs{IO} to
@@ -69,8 +69,8 @@ values of types \hs{a}~\hs{->}~\hs{b} and \hs{a}, and returns their composition
 that performs both computations, and applies the obtained function to the
 obtained value producing the result of type \hs{b}. Crucially, both arguments
 and associated effects are known statically, which, for example, allows us to
-allocate all necessary resources upfront (\S\ref{sec-static}) or execute both
-computations in parallel (\S\ref{sec-haxl}).
+pre-allocate all necessary resources upfront (\S\ref{sec-static}) and execute
+both computations in parallel (\S\ref{sec-haxl}).
 
 Alas, our ping-pong example cannot be expressed using applicative functors.
 Since the two computations must be independent, the best we can do is to print
@@ -79,14 +79,74 @@ Since the two computations must be independent, the best we can do is to print
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 pingPongA :: IO ()
-pingPongA = fmap (const id) getLine
+pingPongA = fmap (\s -> id) getLine
             <*>
             putStrLn "pong"
 \end{minted}
 \vspace{1mm}
 
 \noindent
-We use \hs{fmap}~\hs{(}\hs{const}~\hs{id)} to replace the input string, which we
-now have no need for, with the identity function to match the return type of
-\hs{putStrLn}~\hs{::}~\hs{IO}~\hs{()}.
+We use \hs{fmap}~\hs{(\s}~\hs{->}~\hs{id)} to replace the input string \hs{s},
+which we now have no need for, with the identity function \hs{id}, thus matching
+the return type of \hs{putStrLn}~\hs{::}~\hs{IO}~\hs{()}. We cannot execute the
+\hs{putStrLn} effect conditionally but, on the positive side, the effects are no
+longer hidden behind opaque effect-generating functions, which makes it possible
+for the applicative functor \hs{f}~\hs{=}~\hs{IO} to statically know all effects
+embedded in \hs{pingPongA}.
 
+At this point the reader is hopefully wondering: can we combine the advantages
+of applicative functors and monads, i.e. allow for conditional execution of some
+effects while retaining the ability to statically know all effects embedded in
+a computation? It will hardly be a surprise that the answer is positive, but it
+is far from obvious what the right abstraction should be. For example, one might
+consider adding a new primitive called \hs{whenS} to \hs{IO}:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+whenS :: IO Bool -> IO () -> IO ()
+\end{minted}
+\vspace{1mm}
+
+\noindent
+This primitive executes the first computation and then uses the obtained
+\hs{Bool} to \emph{select} whether to execute the second computation or not.
+With this primitive, the ping-pong example can be rewritten as follows:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+pingPongS :: IO ()
+pingPongS = whenS (fmap (=="ping") getLine) (putStrLn "pong")
+\end{minted}
+\vspace{1mm}
+
+\noindent
+This gives us both conditional execution of \hs{putStrLn}~\hs{"pong"}, and
+static visibility of both effects. Crucially, \hs{whenS} must be a primitive
+instead of being implemented in terms of \hs{>>=}, because the latter would
+result in wrapping \hs{putStrLn} into an opaque function, as in \hs{pingPongM}.
+
+In this paper we show that \hs{whenS}, as well as many other similar combinators,
+are special cases of a new general abstraction, which we call \emph{selective
+applicative functors}, whose main operator is called \emph{select}:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+select :: Selective f => f (Either a b) -> f (a -> b) -> f b
+\end{minted}
+\vspace{1mm}
+
+Specifically, we make the following contributions:
+
+\begin{itemize}
+    \item We introduce \emph{selective applicative functors} as a general
+    abstraction situated between applicative functors and monads
+    (\S\ref{sec-selective}).
+    \item We discuss applications of the abstraction on two real-life case
+    studies: the OCaml build system Dune (\S\ref{sec-static}) and Facebook's
+    Haxl framework (\S\ref{sec-haxl}).
+    \item We present \emph{free selective applicative functors}
+    in~\S\ref{sec-free}.
+\end{itemize}
+
+We discuss numerous alternatives and related work in
+sections~\S\ref{sec-alternatives} and \S\ref{sec-related}.
