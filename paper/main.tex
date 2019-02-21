@@ -77,7 +77,8 @@
 %% Title information
 \title{Selective Applicative Functors}
 % \titlenote{with title note}
-\subtitle{Declare Your Effects Statically, Select Which to Execute Dynamically}
+\subtitle{Declare Your Effects Statically, Select Which to Execute Dynamically\\
+(Under review, feedback is sought)}
 
 %% Author with single affiliation.
 \author{First1 Last1}
@@ -101,8 +102,9 @@ Applicative functors and monads have conquered the world of functional
 programming by providing general and powerful ways of describing effectful
 computations using pure functions. Applicative functors compose
 \emph{independent effects}, which are declared statically and whose order of
-execution is immaterial. Monads compose \emph{dependent effects} in sequence,
-where the result of one effect determines subsequent effects, dynamically.
+execution is immaterial. Monads provide additional power of composing
+\emph{dependent effects} in sequence, where the value computed by one effect
+determines all subsequent effects, dynamically.
 
 This paper introduces an intermediate abstraction called \emph{selective
 applicative functors} that requires all effects to be declared statically, but

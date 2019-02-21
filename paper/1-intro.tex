@@ -21,8 +21,72 @@ functors along with this paper: for Haskell and OCaml.}:
 \noindent
 The operator takes two arguments: an effectful computation \hs{f}~\hs{a}, which
 yields a value of type~\hs{a} when executed, and a recipe, i.e. a pure function
-of type \hs{a}~\hs{->}~\hs{f}~\hs{a}, for turning~\hs{a} into a subsequent
+of type \hs{a}~\hs{->}~\hs{f}~\hs{b}, for turning~\hs{a} into a subsequent
 computation of type \hs{f}~\hs{b}. This approach to composing effectful
 computations is inherently sequential: until you execute the effects in
 \hs{f}~\hs{a}, you have no way of obtaining the continuation \hs{f}~\hs{b},
 i.e. these computations can only be performed in sequence.
+
+Consider a simple example, where we use the monad \hs{f}~\hs{=}~\hs{IO} to
+describe an effectful program that prints \hs{"pong"} if the user enters
+\hs{"ping"}:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+pingPongM :: IO ()
+pingPongM = getLine
+            >>=
+            \s -> if s == "ping" then putStrLn "pong" else pure ()
+\end{minted}
+\vspace{1mm}
+
+\noindent
+Here the first argument of the bind operator reads a string using
+\hs{getLine}~\hs{::}~\hs{IO}~\hs{String}, and the second argument is the
+function of type \hs{String}~\hs{->}~\hs{IO}~\hs{()}, which examines the string
+and prints \hs{"pong"} if need be. While this works, the function is completely
+opaque: there is no way to "see through" the lambda \hs{\s}~\hs{->}~\hs{...} to
+predict the effects it might perform. Instead of conditionally executing
+\hs{putStrLn}, as intended, it could delete a file from disk, or launch
+proverbial missiles. As we will see in sections~\S\ref{sec-static}
+and~\S\ref{sec-haxl}, in some applications it is desirable to know all possible
+effects \emph{statically}, i.e. before starting the computation.
+
+Applicative functors, introduced by~\citet{mcbride2008applicative}, can be used
+for composing a statically known collection of effectful computations, as long
+as these computations are \emph{independent}. The key ingredient of applicative
+functors is the \emph{apply} operator, denoted by \hs{<*>}:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+(<*>) :: Applicative f => f (a -> b) -> f a -> f b
+\end{minted}
+\vspace{1mm}
+
+\noindent
+The operator takes two effectful computations, which -- independently -- compute
+values of types \hs{a}~\hs{->}~\hs{b} and \hs{a}, and returns their composition
+that performs both computations, and applies the obtained function to the
+obtained value producing the result of type \hs{b}. Crucially, both arguments
+and associated effects are known statically, which, for example, allows us to
+allocate all necessary resources upfront (\S\ref{sec-static}) or execute both
+computations in parallel (\S\ref{sec-haxl}).
+
+Alas, our ping-pong example cannot be expressed using applicative functors.
+Since the two computations must be independent, the best we can do is to print
+\hs{"pong"} unconditionally:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+pingPongA :: IO ()
+pingPongA = fmap (const id) getLine
+            <*>
+            putStrLn "pong"
+\end{minted}
+\vspace{1mm}
+
+\noindent
+We use \hs{fmap}~\hs{(}\hs{const}~\hs{id)} to replace the input string, which we
+now have no need for, with the identity function to match the return type of
+\hs{putStrLn}~\hs{::}~\hs{IO}~\hs{()}.
+
