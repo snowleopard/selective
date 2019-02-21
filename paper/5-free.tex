@@ -77,7 +77,7 @@ Whereas the \hs{read} combinator is exactly the lifted \hs{R} data constructor, 
 the \hs{W} data constructor. It evaluates its second argument, thus executing its
 associated effects.
 
-\subsubsection{Simple Example: \hs{add} instruction semantics}
+\subsubsection{Example 1. Addition}
 
 To get acquainted with the proposed methodology, we start with a simple semantics for
 the addition instruction, which will read the summands from the two locations, add them,
@@ -86,21 +86,33 @@ flag to indicate if the sum was zero:
 
 \begin{minted}{haskell}
 add :: Location -> Location -> Location -> ISA Value
-add var1 var2 var3 =
-    let x      = read var1
-        y      = read var2
-        sum    = (+) <$> x <*> y
-        isZero = (==) <$> pure 0 <*> write var3 sum
-    in write "zero" (ifS isZero (pure 1) (pure 0))
+add var1 var2 dest =
+    let arg1     = read var1
+        arg2     = read var2
+        sum      = (+)  <$> arg1   <*> arg2
+        isZero   = (==) <$> pure 0 <*> write dest sum
+        overflow = willOverflowPure <$> arg1 <*> arg2
+    in write "zero"     (fromBool <$> isZero) *>
+       write "overflow" (fromBool <$> overflow)
 \end{minted}
 
+Here, we get two effectful values from the two locations and calculate three intermediate
+results. To calculate the sum we just lift \hs{+} into the free selective using the applicative
+combinators. We calculate the state of the \hs{"zero"} flag in the similar way, but here we
+exploit the fact that the \hs{write} combinator returns the value it has just written, thus we
+can reuse the value of the sum without recalculating it and triggering its associated effects
+again. We detect integer overflow by means of a pure function, thus there is not much difference
+with calculating the sum (\todo{discuss effects of \hs{willOverflow}?}).
 
+The free selective functor construction shines in the static analysis. By executing
+the analysis of the \hs{add} semantics, we can find obtain the list of all its effects:
+\begin{minted}{haskell}
+> analyse (add "x" "y" "z")
+([],Left (W "overflow" :| [R "y",R "x",W "zero",W "z",R "y",R "x"]))
+\end{minted}
+If we read the list from right to left, we could see that \hs{add} read the values of the
+arguments than written the destination variable then then something else \todo{write this}.
 
-
-
-
-
-
-
+\subsubsection{Example 2. Conditional jump}
 
 
