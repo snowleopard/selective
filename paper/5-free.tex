@@ -12,5 +12,53 @@ Free construction with examples
 
 \subsection{Analysis and simulation of processor instructions}
 
-..
+The methodology of building effectful computations with free constructions such
+as free~\cite{free-monads} and freer~\cite{freer-monads} monads and free
+applicatives~\cite{free-applicatives} is a widespread in the functional programming community.
+It allows to focus on the internal aspects of the effect under consideration and receive the
+desired applicative/monadic structure of the computation~\emph{for free}, i.e. without the need
+to construct~\hs{Applicative}/~\hs{Monad} instances and proving the laws.
+
+In the ``free-structure'' methodology, the essence of an effect is a datatype which encodes
+the ``commands''which the effect provides. This datatype acts as a deep embedding of the effect's
+interface. THis datatype must only have enough structure to be a~\hs{Functor}. The purpose of
+the free constructions is then to build on this functor a richer structure, which would have
+an instance of Applicative/Selective/Monad.
+
+In this section, we demonstrate how we can use free selective functors to construct an
+effect which can be used for effectively describing the semantics of a simple instruction set
+architecture. The features of free selective functors will allow for multiple distinct
+interpretations of the same semantics, such as~\emph{static} dependency analysis
+and~\emph{dynamic} simulation.
+
+\subsubsection{Embedding}
+
+We will represent the semantics of instruction in terms of the following datatype:
+
+\begin{minted}{haskell}
+type ISA a = Select RW a
+\end{minted}
+
+Here, \hs{Select} is the free selective functor defined earlier in this section.
+We apply the \hs{Select} type constructor to the \hs{RW} datatype, which is the
+functor we build our free construction on:
+
+\begin{minted}{haskell}
+data RW k v a = R k                 (v -> a)
+              | W k (Program k v v) (v -> a)
+    deriving Functor
+\end{minted}
+
+The effect we require comprises two commands. We need to have an ability to (1)
+\emph{read} a value associated with a key and, (2) given a computation which produces a value,
+\emph{write} its result into the store. Here, the second argument of the \hs{W} constructor
+This exact structure of the definition is required for accommodating a pattern that
+frequently occurs in instruction semantics: often we read a value from a location
+(register/memory), do something with the value and then write it into a different location.
+If we had the type of \hs{W} to be \hs{k -> v -> (v -> a)}, i.e. required the value to be pure,
+we would not be able to get away from using monadic bind/join.
+
+
+
+
 
