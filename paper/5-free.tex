@@ -44,8 +44,8 @@ We apply the \hs{Select} type constructor to the \hs{RW} datatype, which is the
 functor we build our free construction on:
 
 \begin{minted}{haskell}
-data RW k v a = R k                 (v -> a)
-              | W k (Program k v v) (v -> a)
+data RW k v a = R k             (v -> a)
+              | W k (ISA k v v) (v -> a)
     deriving Functor
 \end{minted}
 
@@ -56,7 +56,49 @@ This exact structure of the definition is required for accommodating a pattern t
 frequently occurs in instruction semantics: often we read a value from a location
 (register/memory), do something with the value and then write it into a different location.
 If we had the type of \hs{W} to be \hs{k -> v -> (v -> a)}, i.e. required the value to be pure,
-we would not be able to get away from using monadic bind/join.
+we would not be able to get away from using monadic bind/join. Additionally, we want the write
+operation to not just write the value and return \hs{()}, but to return the just written value
+back, so it somehow used in the context; such a generosity of the write command not consuming
+its arguments will be useful to avoid creating more data dependencies than necessary.
+
+We introduce two convenience combinators, which \emph{lift} the data constructors
+of the \hs{RW} datatype into the free selective, thus making them directly usable in
+the definitions of instruction semantics:
+
+\begin{minted}{haskell}
+read :: Location -> ISA Value
+read k = liftSelect (R k id)
+
+write :: Location -> ISA Value -> ISA Value
+write k p = p *> liftSelect (W k p id)
+\end{minted}
+
+Whereas the \hs{read} combinator is exactly the lifted \hs{R} data constructor, the \hs{write}'s implementation deserves attention, since it deviates from the trivial lifting of
+the \hs{W} data constructor. It evaluates its second argument, thus executing its
+associated effects.
+
+\subsubsection{Simple Example: \hs{add} instruction semantics}
+
+To get acquainted with the proposed methodology, we start with a simple semantics for
+the addition instruction, which will read the summands from the two locations, add them,
+write the result into the third location and also update the state of the \hs{zero}
+flag to indicate if the sum was zero:
+
+\begin{minted}{haskell}
+add :: Location -> Location -> Location -> ISA Value
+add var1 var2 var3 =
+    let x      = read var1
+        y      = read var2
+        sum    = (+) <$> x <*> y
+        isZero = (==) <$> pure 0 <*> write var3 sum
+    in write "zero" (ifS isZero (pure 1) (pure 0))
+\end{minted}
+
+
+
+
+
+
 
 
 
