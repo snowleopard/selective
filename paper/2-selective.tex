@@ -1,5 +1,3 @@
-\newpage
-
 \section{Selective functors}\label{sec-selective}
 
 \begin{figure}
@@ -33,7 +31,68 @@ a new intermediate abstraction introduced between \hs{Applicative} and
 \hs{Monad}.}\label{fig-types}
 \end{figure}
 
-See Fig.~\ref{fig-types}.
+In this section we introduce selective applicative functors, which we will
+further refer to as simply \emph{selective functors}, for brevity. We start by
+defining the new abstraction and using it to implement several simple
+combinators, such as the aforementioned \hs{whenS}. In~\S\ref{sec-instances} we
+provide several examples of selective functors, and discuss the relationships
+between applicative functors, selective functors, and monads.
+In~\S\ref{sec-laws}, these relationships are further elaborated and expressed
+as a set of laws that all selective functors are required to satisfy.
+
+Like applicative functors~\citep{mcbride2008applicative}, selective functors
+provide a way to embed pure values into an effectful context \hs{f} using the
+function \hs{pure}, and give meaning to composition of two independent effectful
+computations using the operator \hs{<*>}. See Fig.~\ref{fig-types} for the
+standard definition of the corresponding type class \hs{Applicative}. The
+additional feature that selective functors provide compared to \hs{Applicative}
+is the function \hs{select}, which gives meaning to the composition of two
+effectful computations, where the value produced by the first computation can be
+used to decide whether to execute or to skip the subsequent computation:
+
+\begin{minted}[xleftmargin=10pt]{haskell}
+class Applicative f => Selective f where
+    select :: f (Either a b) -> f (a -> b) -> f b
+\end{minted}
+
+\noindent
+Think of \hs{select} as a selective function application: you \emph{must apply}
+the function of type \hs{a}~\hs{->}~\hs{b} when given a value of type
+\hs{Left}~\hs{a}, but you \emph{may skip} the function and associated effects,
+and simply return the \hs{b} when given a \hs{Right}~\hs{b}. When convenient, we
+will use the infix operator alias \hs{<*?} instead of \hs{select}, which follows
+the notational convention for applicative operators: the angle bracket pointing
+to the left means we always use the corresponding value; the value on the right,
+however, may be skipped, hence the question mark.
+
+Note that one can implement a function with the type signature of \hs{select}
+using applicative functors, but it will always execute the effects associated
+with the second argument, rendering any conditional execution of effects
+impossible, as in the \hs{pingPongA} example in~\S\ref{sec-intro}:
+
+\begin{minted}[xleftmargin=10pt]{haskell}
+selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
+selectA x y = (\e f -> case e of { Left a -> f a; Right b -> b }) <$> x <*> y
+\end{minted}
+
+\noindent
+As we will see in~\S\ref{sec-instances}, the above definition is sometimes
+useful, for example, selective functors that are used for static analysis will
+collect information about all possible effects instead of skipping some of them,
+therefore using \hs{select}~\hs{=}~\hs{selectA} in their instance definition.
+
+
+As a first use-case of selective functors ...
+
+
+
+\subsection{Basic examples}\label{sec-instances}
+
+Over, under
+
+Validation
+
+\subsection{Laws}\label{sec-laws}
 
 It may be illuminating to compare the following type signatures:
 
@@ -43,8 +102,47 @@ select :: Selective   f => f (Either a b) -> f (a -> b) -> f b
 (>>=)  :: Monad       f => f a            -> (a -> f b) -> f b
 \end{minted}
 
-\subsection{Basic examples}
+The type signature of \hs{select} is reminiscent of both \hs{<*>} and \hs{>>=},
+and indeed a selective functor is in some sense a composition of an applicative
+functor and the \hs{Either} monad.
 
-Const
 
-Validation
+Note that it is not a requirement for selective functors to skip unnecessary
+effects. It may be counterintuitive, but this makes them more useful. Why?
+Typically, when executing a selective computation, you would want to skip the
+effects (saving work); but on the other hand, if your goal is to statically
+analyse a given selective computation and extract the set of all possible
+effects (without actually executing them), then you do not want to skip any
+effects, because that defeats the purpose of static analysis.
+
+...
+
+\begin{figure}
+\begin{minted}[fontsize=\small]{haskell}
+branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
+branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
+
+ifS :: Selective f => f Bool -> f a -> f a -> f a
+ifS i t e = branch (bool (Right ()) (Left ()) <$> i) (const <$> t) (const <$> e)
+
+whenS :: Selective f => f Bool -> f () -> f ()
+whenS x act = ifS x act (pure ())
+
+whileS :: Selective f => f Bool -> f ()
+whileS act = whenS act (whileS act)
+
+(<||>) :: Selective f => f Bool -> f Bool -> f Bool
+(<||>) a b = ifS a (pure True) b
+
+(<&&>) :: Selective f => f Bool -> f Bool -> f Bool
+(<&&>) a b = ifS a b (pure False)
+
+anyS :: Selective f => (a -> f Bool) -> [a] -> f Bool
+anyS p = foldr ((<||>) . p) (pure False)
+
+allS :: Selective f => (a -> f Bool) -> [a] -> f Bool
+allS p = foldr ((<&&>) . p) (pure True)
+\end{minted}
+\caption{Various conditional combinators implemented using selective functors.}
+\label{fig-library}
+\end{figure}
