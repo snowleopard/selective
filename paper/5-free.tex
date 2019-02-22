@@ -113,6 +113,40 @@ the analysis of the \hs{add} semantics, we can find obtain the list of all its e
 If we read the list from right to left, we could see that \hs{add} read the values of the
 arguments than written the destination variable then then something else \todo{write this}.
 
+The addition instruction semantics has only used the applicative combinators and thus
+the same analysis capabilities could have been implemented with free applicative functors.
+However, there are important instructions whose semantics cannot be implemented in terms
+of the \hs{Applicative} interface, but still do not require such heavy artillery as monads.
+
 \subsubsection{Example 2. Conditional jump}
 
+Selective functors allow to introduce limited dependencies between effectful computations.
+It turns out, that they give just enough power to implement the semantics of conditional
+jump instructions. A relative conditional jump offsets the program counter in case if a
+certain condition, materialised in a microarchitectural flag, holds. For instance, some instruction set might have a jump triggered by the fact that the result of the last addition was zero
+
+\begin{minted}{haskell}
+jumpZero :: Value -> ISA ()
+jumpZero offset =
+    let pc       = read PC
+        zeroSet  = (/=) <$> pure 0 <*> read (Flag Zero)
+        modifyPC = void $ write PC (fmap (+ offset) pc)
+    in whenS zeroSet modifyPC
+\end{minted}
+
+Here we use the aforementioned \hs{whenS} combinator to only execute the effect, i.e.
+to modify the program counter, if the flag is set. By implementing this semantics in terms of
+\hs{Selective} we achieve both the ability to implement an adequate simulator for the ISA and
+to retain the possibilities for the static analysis of programs by means of the \hs{analyse} function:
+
+\begin{minted}{haskell}
+> analyse (jumpZero 42)
+([],Left (Write PC :| [Read PC,Read Zero]))
+\end{minted}
+
+The \hs{analyse} function informs us of all necessary effects of the computation, thus
+effectively giving us an over-approximated list of dependencies. Note that it does not matter
+what argument we supply, since it will never get evaluated, e.g. the analysis will succeed and give us the same result even if we supply \hs{undefined}.
+
+\subsubsection{Blocks of instructions}
 
