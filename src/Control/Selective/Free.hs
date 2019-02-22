@@ -11,7 +11,6 @@ module Control.Selective.Free (
 import Control.Monad.Trans.Except
 import Data.Bifunctor
 import Data.Functor
-import Data.Functor.Const
 import Data.List.NonEmpty
 import Control.Selective
 
@@ -77,7 +76,7 @@ runSelect t (Select x f) = select (runSelect t x) (t f)
 
 -- | Concatenate all effects of a free selective computation.
 foldSelect :: Monoid m => (forall a. f a -> m) -> Select f a -> m
-foldSelect f = getConst . runSelect (Const . f)
+foldSelect f = getOver . runSelect (Over . f)
 
 -- | Extract the resulting value if there are no necessary effects. This is
 -- equivalent to @eitherToMaybe . snd . analyse@ but has no 'Functor' constraint.
