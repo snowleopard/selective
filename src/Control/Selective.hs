@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveFunctor, RankNTypes, ScopedTypeVariables, TupleSections #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DerivingVia #-}
 module Control.Selective (
     -- * Type class
     Selective (..), (<*?), branch, selectA, apS, selectM,
@@ -10,7 +10,7 @@ module Control.Selective (
     foldS, anyS, allS, matchS, bindS, matchM,
 
     -- * Static analysis
-    ConstUnder, constUnder, getConstUnder, Validation (..), dependencies
+    Over (..), Under (..), Validation (..), dependencies
     ) where
 
 import Build.Task
@@ -285,22 +285,19 @@ instance Semigroup e => Selective (Validation e) where
     select (Failure e        ) _           = Failure e
 
 -- Static analysis of selective functors with over-approximation
-instance Monoid m => Selective (Const m) where
+newtype Over m a = Over { getOver :: m }
+    deriving (Functor, Applicative) via (Const m)
+
+instance Monoid m => Selective (Over m) where
     select = selectA
 
 -- Static analysis of selective functors with under-approximation
-newtype ConstUnder m a = ConstUnder (Const m a)
-    deriving (Functor, Applicative)
+newtype Under m a = Under { getUnder :: m }
+    deriving (Functor, Applicative) via (Const m)
 
-instance Monoid m => Selective (ConstUnder m) where
-    select (ConstUnder (Const m)) _ = (ConstUnder (Const m))
-
-constUnder :: m -> ConstUnder m a
-constUnder = ConstUnder . Const
-
-getConstUnder :: ConstUnder m a -> m
-getConstUnder (ConstUnder m) = getConst m
+instance Monoid m => Selective (Under m) where
+    select (Under m) _ = Under m
 
 -- | Extract dependencies from a selective task.
 dependencies :: Task Selective k v -> [k]
-dependencies task = getConst $ run task (\k -> Const [k])
+dependencies task = getOver $ run task (Over . pure)
