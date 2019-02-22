@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveFunctor, RankNTypes, ScopedTypeVariables, TupleSections #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Control.Selective (
     -- * Type class
     Selective (..), (<*?), branch, selectA, apS, selectM,
@@ -9,7 +10,7 @@ module Control.Selective (
     foldS, anyS, allS, matchS, bindS, matchM,
 
     -- * Static analysis
-    Validation (..), dependencies
+    ConstUnder, constUnder, getConstUnder, Validation (..), dependencies
     ) where
 
 import Build.Task
@@ -245,7 +246,7 @@ allS :: Selective f => (a -> f Bool) -> [a] -> f Bool
 allS p = foldr ((<&&>) . p) (pure True)
 
 -- | Generalised folding with the short-circuiting behaviour.
-foldS :: (Selective f, Foldable t, Monoid m) => t (f (Either e m)) -> f (Either e m)
+foldS :: (Selective f, Foldable t, Monoid a) => t (f (Either e a)) -> f (Either e a)
 foldS = foldr andAlso (pure (Right mempty))
 
 -- Instances
@@ -283,9 +284,22 @@ instance Semigroup e => Selective (Validation e) where
     select (Success (Left  a)) (Success f) = Success (f a)
     select (Failure e        ) _           = Failure e
 
--- Static analysis of selective functors
+-- Static analysis of selective functors with over-approximation
 instance Monoid m => Selective (Const m) where
     select = selectA
+
+-- Static analysis of selective functors with under-approximation
+newtype ConstUnder m a = ConstUnder (Const m a)
+    deriving (Functor, Applicative)
+
+instance Monoid m => Selective (ConstUnder m) where
+    select (ConstUnder (Const m)) _ = (ConstUnder (Const m))
+
+constUnder :: m -> ConstUnder m a
+constUnder = ConstUnder . Const
+
+getConstUnder :: ConstUnder m a -> m
+getConstUnder (ConstUnder m) = getConst m
 
 -- | Extract dependencies from a selective task.
 dependencies :: Task Selective k v -> [k]
