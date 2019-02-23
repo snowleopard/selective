@@ -5,3 +5,63 @@ Arrows
 Kleisli functors
 https://elvishjerricco.github.io/2016/10/12/kleisli-functors.html
 
+\hs{Alternative} is a type class originally motivated by non-monadic parsers;
+see, for example,~\citet{swierstra1996parsers}, where the methods of the
+\hs{Alternative} type class appear as part a bigger \hs{Parsing} type class. In
+modern Haskell, \hs{Alternative} is a subclass of \hs{Applicative}:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+class Applicative f => Alternative f where
+    empty :: f a
+    (<|>) :: f a -> f a -> f a
+\end{minted}
+\vspace{1mm}
+
+\noindent
+The operator \hs{<|>} allows us to naturally express \emph{choice} in parsers.
+As an example, consider the task of parsing binary and hexadecimal numbers,
+which are prefixed with \hs{"0b"} and \hs{"0x"}, respectively. Following the
+classic parser combinator approach~\citep{hutton1998monadic}, assume the
+existence of the following parsers:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+sat    :: (Char -> Bool) -> Parser Char   -- parse a specified character
+string :: String         -> Parser String -- parse a fixed string
+bin    ::                   Parser Int    -- parse a binary-encoded number
+hex    ::                   Parser Int    -- parse a hexadecimal-encoded number
+\end{minted}
+\vspace{1mm}
+
+\noindent
+Now the desired parser can be obtained as a choice between parsers for binary
+and hexadecimal numbers, each augmented with the prefix-parsing part:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+numberA :: Parser Int
+numberA = (string "0b" *> bin) <|> (string "0x" *> hex)
+\end{minted}
+\vspace{1mm}
+
+\noindent
+When parsing \hs{"0x7E3"}, the first parser fails (due to the prefix mismatch),
+but the second one succeeds. Note that the leading \hs{"0"} will therefore be
+parsed \emph{twice}.
+
+Selective functors also allow us to implement the desired parser, and arguably
+in a more direct style that does not involve backtracking (i.e. failing and
+trying another parser):
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+numberS :: Parser Int
+numberS = ifS ((=='b') <$> (string "0" *> sat (`elem` "bh"))) bin hex
+\end{minted}
+\vspace{1mm}
+
+\noindent
+Here we first parse the leading \hs{"0"}, \emph{once}, then the second character
+of the prefix, failing if it is neither \hs{"b"} nor \hs{"h"}, and finally
+select an appropriate subsequent parser using \hs{ifS}.
