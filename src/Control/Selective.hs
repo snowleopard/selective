@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveFunctor, RankNTypes, ScopedTypeVariables, TupleSections #-}
-{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE DerivingVia, GeneralizedNewtypeDeriving #-}
 module Control.Selective (
     -- * Type class
     Selective (..), (<*?), branch, selectA, apS, selectM,
@@ -10,7 +10,8 @@ module Control.Selective (
     foldS, anyS, allS, matchS, bindS, matchM,
 
     -- * Static analysis
-    Over (..), Under (..), Validation (..), dependencies
+    ViaSelectA (..), Over (..), Under (..), Validation (..),
+    dependencies
     ) where
 
 import Build.Task
@@ -132,7 +133,10 @@ branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 -- 'Applicative' type class, but it will always execute the effects associated
 -- with the second argument, hence being potentially less efficient.
 selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
-selectA x f = (\e f -> either f id e) <$> x <*> f
+selectA x y = (\e f -> either f id e) <$> x <*> y
+
+-- Implementation used in the paper:
+-- selectA x y = fmap (\e f -> case e of { Left a -> f a; Right b -> b }) x <*> y
 
 -- | 'Selective' is more powerful than 'Applicative': we can recover the
 -- application operator '<*>'. In particular, the following 'Applicative' laws
@@ -148,17 +152,19 @@ apS f x = select (Left <$> f) (flip ($) <$> x)
 -- | One can easily implement a monadic 'selectM' that satisfies the laws,
 -- hence any 'Monad' is 'Selective'.
 selectM :: Monad f => f (Either a b) -> f (a -> b) -> f b
-selectM mx mf = do
-    x <- mx
-    case x of
-        Left  a -> fmap ($a) mf
-        Right b -> pure b
+selectM x y = x >>= \e -> case e of Left  a -> y <*> pure a -- execute y
+                                    Right b ->       pure b -- skip y
 
 -- Many useful 'Monad' combinators can be implemented with 'Selective'
 
 -- | Branch on a Boolean value, skipping unnecessary effects.
 ifS :: Selective f => f Bool -> f a -> f a -> f a
 ifS i t e = branch (bool (Right ()) (Left ()) <$> i) (const <$> t) (const <$> e)
+
+-- Implementation used in the paper:
+-- ifS x t e = branch selector (fmap const t) (fmap const e)
+--   where
+--     selector = fmap (\b -> if b then Left () else Right ()) x
 
 -- | Eliminate a specified value @a@ from @f (Either a b)@ by replacing it
 -- with a given @f b@.
@@ -192,6 +198,12 @@ bindS x f = fromRight <$> matchS casesEnum x f
 -- | Conditionally perform an effect.
 whenS :: Selective f => f Bool -> f () -> f ()
 whenS x act = ifS x act (pure ())
+
+-- Implementation used in the paper:
+-- whenS x y = selector <*? effect
+--   where
+--     selector = fmap (\b -> if b then Left () else Right ()) x
+--     effect   = fmap const                                   y
 
 -- | A lifted version of 'fromMaybe'.
 fromMaybeS :: Selective f => f a -> f (Maybe a) -> f a
@@ -267,6 +279,12 @@ instance Monad m => Selective (ReaderT s m) where select = selectM
 instance Monad m => Selective (StateT s m) where select = selectM
 instance (Monoid s, Monad m) => Selective (WriterT s m) where select = selectM
 
+newtype ViaSelectA f a = ViaSelectA { fromViaSelectA :: f a }
+    deriving (Functor, Applicative)
+
+instance Applicative f => Selective (ViaSelectA f) where
+    select = selectA
+
 -- Selective instance for the standard Applicative Validation
 -- This is a good example of a Selective functor which is not a Monad
 data Validation e a = Failure e | Success a deriving (Functor, Show)
@@ -286,10 +304,10 @@ instance Semigroup e => Selective (Validation e) where
 
 -- Static analysis of selective functors with over-approximation
 newtype Over m a = Over { getOver :: m }
-    deriving (Functor, Applicative) via (Const m)
-
-instance Monoid m => Selective (Over m) where
-    select = selectA
+    deriving
+        (Functor, Applicative, Selective)
+    via
+        (ViaSelectA (Const m))
 
 -- Static analysis of selective functors with under-approximation
 newtype Under m a = Under { getUnder :: m }
