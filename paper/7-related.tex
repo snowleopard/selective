@@ -22,13 +22,13 @@ class Applicative f => Alternative f where
 The operator \hs{<|>} allows us to naturally express \emph{choice} in parsers.
 As an example, consider the task of parsing binary and hexadecimal numbers,
 which are prefixed with \hs{"0b"} and \hs{"0x"}, respectively. Following the
-classic parser combinator approach~\citep{hutton1998monadic}, assume the
+classic parser combinator approach~\citep{hutton1998monadic}, let us assume the
 existence of the following parsers:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 sat    :: (Char -> Bool) -> Parser Char   -- parse a specified character
-string :: String         -> Parser String -- parse a fixed string
+string :: String         -> Parser String -- parse a specified string
 bin    ::                   Parser Int    -- parse a binary-encoded number
 hex    ::                   Parser Int    -- parse a hexadecimal-encoded number
 \end{minted}
@@ -47,12 +47,11 @@ numberA = (string "0b" *> bin) <|> (string "0x" *> hex)
 
 \noindent
 When parsing \hs{"0x7E3"}, the first parser fails (due to the prefix mismatch),
-but the second one succeeds. Note that the leading \hs{"0"} will therefore be
-parsed \emph{twice}.
+but the second one succeeds. Note that parsing of the leading \hs{"0"} can be
+factored out into a separate parser \hs{string}~\hs{"0"} to avoid backtracking.
 
 Selective functors also allow us to implement the desired parser, and arguably
-in a more direct style that does not involve backtracking (i.e. failing and
-trying another parser):
+in a more direct style that does not involve trying one parser after another:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -62,6 +61,10 @@ numberS = ifS ((=='b') <$> (string "0" *> sat (`elem` "bh"))) bin hex
 \vspace{1mm}
 
 \noindent
-Here we first parse the leading \hs{"0"}, \emph{once}, then the second character
-of the prefix, failing if it is neither \hs{"b"} nor \hs{"h"}, and finally
-select an appropriate subsequent parser using \hs{ifS}.
+Here we first parse the leading \hs{"0"}, then the second character of the
+prefix, failing if it is neither \hs{"b"} nor \hs{"h"}, and finally select an
+appropriate subsequent parser using \hs{ifS}.
+
+Investigation of the relationship between \hs{Alternative} and \hs{Selective}
+type classes, as well as application of selective functors to parsers is left
+for future work.

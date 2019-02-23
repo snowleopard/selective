@@ -2,15 +2,10 @@
 
 One might argue that the \hs{select} method should simply be added to the
 \hs{Applicative} type class, with the default implementation
-\hs{select}~\hs{=}~\hs{selectA}. This is indeed a viable approach, but it has
-two drawbacks: (i) this is a breaking change, since the new method will conflict
-with any existing definitions of \hs{select}, and (ii) more importantly, it will
-make it harder to reason about code with the \hs{Applicative}~\hs{f} constraint,
-since the new method will make it possible for "new applicative" effects to
-depend on values. We therefore think that selective applicative functors deserve
-a separate type class.
+\hs{select}~\hs{=}~\hs{selectA}. This is indeed a viable approach, however, it
+would make it harder to reason about code with the \hs{Applicative}~\hs{f}
+constraint, since the \hs{select} method makes it possible for "new applicative"
+effects to depend on values; declaring such a significant ability by the
+\hs{Selective}~\hs{f} constraint would arguably be a more prudent approach.
 
 Use \hs{branch} instead of \hs{select}, or use both
-
-
-

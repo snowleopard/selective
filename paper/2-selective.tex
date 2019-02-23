@@ -86,8 +86,8 @@ information about all possible effects instead of skipping some of them,
 hence directly using \hs{select}~\hs{=}~\hs{selectA} in their \hs{Selective}
 instance definitions.
 
-We can also implement a monadic version of the \hs{select} function, which uses
-the bind operator to examine the value produced by
+We can also implement a monadic version of the select operator, which uses the
+monadic bind operator to examine the value produced by
 \hs{f}~\hs{(Either}~\hs{a}~\hs{b)} and skip the subsequent effect if possible:
 
 \vspace{1mm}
@@ -135,7 +135,7 @@ used for static analysis would record both \hs{x} and \hs{y} as possible
 effects. See more examples in~\S\ref{sec-instances}.
 
 It is worth noting that unlike the select operator, whose implementation is
-almost completely determined by parametricity (the only real question is:
+almost completely determined by parametricity (i.e., the only real question is:
 \emph{"To skip, or not to skip?"}), \hs{whenS} admits a variety of (incorrect)
 implementations. In particular, due to \emph{Boolean blindness}\footnote{The
 term refers to the fact that the \hs{True} and \hs{False} values are not
