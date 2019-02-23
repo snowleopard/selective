@@ -4,9 +4,38 @@ module Control.Selective.Example where
 import Algebra.Graph
 import Algebra.Graph.Export.Dot
 import Build.Task
+import Control.Monad
 import Control.Selective.Free
 
 import qualified Data.Set as Set
+
+------------------------------- Ping-pong example ------------------------------
+pingPongM :: IO ()
+pingPongM = getLine
+            >>=
+            \s -> if s == "ping" then putStrLn "pong" else pure ()
+
+pingPongA :: IO ()
+pingPongA = fmap (\_ -> id) getLine
+            <*>
+            putStrLn "pong"
+
+pingPongS :: IO ()
+pingPongS =
+    (\s -> if s == "ping" then Left () else Right ()) <$> getLine
+    <*?
+    (putStrLn "pong" *> pure id)
+
+pingPongDoM :: IO ()
+pingPongDoM = do
+    s <- getLine
+    when (s == "ping") (putStrLn "pong")
+
+pingPongWhenS :: IO ()
+pingPongWhenS = whenS (fmap (=="ping") getLine) (putStrLn "pong")
+
+------------------------------- Task dependencies ------------------------------
+
 
 -- dependencies task "B1" = ["A2","B2","C1"]
 -- dependencies task "B2" = ["A1","B1","C1"]
