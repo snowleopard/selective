@@ -33,12 +33,12 @@ a new intermediate abstraction introduced between \hs{Applicative} and
 
 In this section we introduce selective applicative functors, which we will
 further refer to as simply \emph{selective functors}, for brevity. We start by
-defining the new abstraction and using it to implement several simple
-combinators, such as the aforementioned \hs{whenS}. In~\S\ref{sec-instances} we
-provide several examples of selective functors, and discuss the relationships
-between applicative functors, selective functors, and monads.
-In~\S\ref{sec-laws}, these relationships are further elaborated and expressed
-as a set of laws that all selective functors are required to satisfy.
+defining the new abstraction, and then use it in~\S\ref{sec-combinators} to
+implement several simple combinators, such as the aforementioned \hs{whenS}.
+In~\S\ref{sec-instances} we provide several examples of selective functors, and
+discuss the relationships between applicative functors, selective functors, and
+monads. In~\S\ref{sec-laws}, these relationships are further elaborated and
+expressed as a set of laws that all selective functors are required to satisfy.
 
 Like applicative functors~\citep{mcbride2008applicative}, selective functors
 provide a way to embed pure values into an effectful context \hs{f} using the
@@ -75,7 +75,7 @@ impossible, as in the \hs{pingPongA} example in~\S\ref{sec-intro}:
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
-selectA x y = (\e f -> case e of { Left a -> f a; Right b -> b }) <$> x <*> y
+selectA x y = fmap (\e f -> case e of { Left a -> f a; Right b -> b }) x <*> y
 \end{minted}
 \vspace{1mm}
 
@@ -83,8 +83,29 @@ selectA x y = (\e f -> case e of { Left a -> f a; Right b -> b }) <$> x <*> y
 As we will see in~\S\ref{sec-instances}, the above definition is sometimes
 useful, for example, selective functors used for static analysis need to collect
 information about all possible effects instead of skipping some of them,
-therefore directly using \hs{select}~\hs{=}~\hs{selectA} in their
-\hs{Selective} instance definition.
+hence directly using \hs{select}~\hs{=}~\hs{selectA} in their \hs{Selective}
+instance definitions.
+
+We can also implement a monadic version of the \hs{select} function, which uses
+the bind operator to examine the value produced by
+\hs{f}~\hs{(Either}~\hs{a}~\hs{b)} and skip the subsequent effect if possible:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+selectM :: Monad f => f (Either a b) -> f (a -> b) -> f b
+selectM x y = x >>= \e -> case e of Left  a -> y <*> pure a -- execute y
+                                    Right b ->       pure b -- skip y
+\end{minted}
+\vspace{1mm}
+
+\noindent
+While \hs{selectA} is useful for \emph{static analysis}, \hs{selectM} is
+useful for \emph{conditional execution} of effects. Many monads directly use
+\hs{select}~\hs{=}~\hs{selectM} in their \hs{Selective} instance definitions,
+and in \S\ref{sec-laws} we argue that this should in fact be a law when both
+\hs{Selective}~\hs{f} and \hs{Monad}~\hs{f} instances exist.
+
+\subsection{Selective combinators}\label{sec-combinators}
 
 As a first use-case of selective functors, let us revisit our ping-pong example
 from~\S\ref{sec-intro} and implement the combinator \hs{whenS}:
@@ -107,8 +128,11 @@ converted into a \hs{selector}~\hs{::}~\hs{f}~\hs{(Either}~\hs{()}~\hs{())}, and
 \hs{y}~\hs{::}~\hs{f}~\hs{()} is converted into
 \hs{effect}~\hs{::}~\hs{f}~\hs{(()}~\hs{->}~\hs{())}. The results are composed
 using the select operator \hs{<*?}, and the meaning of this composition is
-determined by a specific \hs{Selective} instance.
-% (see some examples in~\S\ref{sec-instances}).
+determined by the \hs{Selective}~\hs{f} instance. For example, an instance
+like \hs{f}~\hs{=}~\hs{IO} would skip \hs{y} if \hs{x} yields \hs{True}, as
+exploited by our implementation of \hs{pingPongS}. On the other hand, instances
+used for static analysis would record both \hs{x} and \hs{y} as possible
+effects. See more examples in~\S\ref{sec-instances}.
 
 It is worth noting that unlike the select operator, whose implementation is
 almost completely determined by parametricity (the only real question is:
@@ -121,9 +145,13 @@ flips the meaning of the Boolean value. The ability to reason parametrically was
 one of the guiding principles we used when looking for a good abstraction for
 selective functors: \hs{select} provides this ability, whereas \hs{whenS} does
 not.
-% Constraints liberate, liberties constrain
 
-A strong contender for being the main ingredient of selective functors is the
+% Constraints liberate, liberties constrain
+% Dijkstra: "Being abstract is something profoundly different from being vague …
+% The purpose of abstraction is not to be vague, but to create a new semantic
+% level in which one can be absolutely precise."
+
+A strong contender for playing the first violin in selective functors is the
 function \hs{branch} that, given an effectful computation
 \hs{x}~\hs{::}~\hs{f}~\hs{(Either}~\hs{a}~\hs{b)}, selects which subsequent
 computation, namely \hs{l}~\hs{::}~\hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{c)} or
@@ -135,14 +163,48 @@ branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
 branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 \end{minted}
 \vspace{1mm}
+\newpage
+
+\begin{figure}
+\begin{minted}[fontsize=\small]{haskell}
+branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
+branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
+
+ifS :: Selective f => f Bool -> f a -> f a -> f a
+ifS x t e = branch ((\b -> if b then Left@\,@() else Right@\,@()) <$> x) (const@\,@<$>@\,\blk{t}@) (const@\,@<$>@\,\blk{e}@)
+
+whenS :: Selective f => f Bool -> f () -> f ()
+whenS x y = ifS x y (pure ())
+
+(<||>) :: Selective f => f Bool -> f Bool -> f Bool
+(<||>) x y = ifS x (pure True) y
+
+(<&&>) :: Selective f => f Bool -> f Bool -> f Bool
+(<&&>) x y = ifS x y (pure False)
+
+anyS :: Selective f => (a -> f Bool) -> [a] -> f Bool
+anyS p = foldr ((<||>) . p) (pure False)
+
+allS :: Selective f => (a -> f Bool) -> [a] -> f Bool
+allS p = foldr ((<&&>) . p) (pure True)
+
+fromMaybeS :: Selective f => f a -> f (Maybe a) -> f a
+fromMaybeS dx x = select (maybe (Left ()) Right <$> x) (const <$> dx)
+
+whileS :: Selective f => f Bool -> f ()
+whileS x = whenS x (whileS x)
+\end{minted}
+\caption{A library of selective combinators.}
+\label{fig-library}
+\end{figure}
 
 \noindent
-While we encourage the reader to derive this implementation as an exercise, we
-would like to also share our intuition behind it, as it will be useful for
-\emph{free selective functors} in~\S\ref{sec-free}.
-The select operator allows us to eliminate one of the cases in a sum type,
-namely the \hs{Left}~\hs{a} case in \hs{Either}~\hs{a}~\hs{b}, leaving the other
-case intact. To implement \hs{branch}, we will need to apply \hs{<*?} twice,
+While we encourage the reader to derive an implementation of \hs{branch} as an
+exercise, we would like to share our intuition behind it, as it will be useful
+for \emph{free selective functors} in~\S\ref{sec-free}. The select operator
+allows us to eliminate one of the cases in a sum type, namely the
+\hs{Left}~\hs{a} case in \hs{Either}~\hs{a}~\hs{b}, leaving the other case
+intact. To implement \hs{branch}, we will need to apply \hs{<*?} twice,
 eliminating \hs{a} and \hs{b} one after another. The first application is tricky
 because \hs{f}~\hs{(Either}~\hs{a}~\hs{b)} and
 \hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{c)} do not match the type signature of \hs{<*?}.
@@ -151,22 +213,31 @@ To fix the mismatch, we convert them to
 \hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{Either}~\hs{b}~\hs{c)}, respectively. The second
 application of \hs{<*?} is then straightforward.
 
-As discussed in~\S\ref{sec-alternatives}, we could have chosen to use
+As will be discussed in~\S\ref{sec-alternatives}, we could have chosen to use
 \hs{branch} instead of \hs{select} as the method of the \hs{Selective} type
-class. Our choice of \hs{select} followed the Occam's razor principle:
+class. Our choice of \hs{select} follows the Occam's razor principle:
 \hs{select} is simpler than \hs{branch}, which, in particular, leads to a
 simpler free construction (\S\ref{sec-free}).
 
-By instantiating \hs{select} to \hs{a}~\hs{=}~\hs{b}~\hs{=}~\hs{()} we obtained
-\hs{whenS}, and now we repeat this trick, obtaining another familiar combinator
-\hs{ifS} from the function \hs{branch}:
+By instantiating \hs{select} with \hs{a}~\hs{=}~\hs{b}~\hs{=}~\hs{()} we have
+earlier obtained \hs{whenS}. Below we repeat the same trick but with
+\hs{branch}, obtaining another familiar conditional combinator \hs{ifS}:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 ifS :: Selective f => f Bool -> f a -> f a -> f a
-ifS i t e = branch (bool (Right ()) (Left ()) <$> i) (const <$> t) (const <$> e)
+ifS x t e = branch selector (fmap const t) (fmap const e)
+  where
+    selector = fmap (\b -> if b then Left () else Right ()) x
 \end{minted}
 \vspace{1mm}
+
+\noindent
+Many conditional combinators, which are typically associated with the \hs{Monad}
+type class, can be expressed using selective functors, as demonstrated in
+Fig.~\ref{fig-library}, making them reusable in new contexts. In particular, the
+logical combinators \hs{<||>} and \hs{<&&>} will play an important role in
+improving the efficiency of the \Haxl framework in~\S\ref{sec-haxl}.
 
 \subsection{Basic examples}\label{sec-instances}
 
@@ -199,32 +270,3 @@ effects, because that defeats the purpose of static analysis.
 
 ...
 
-\begin{figure}
-\begin{minted}[fontsize=\small]{haskell}
-branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
-branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
-
-ifS :: Selective f => f Bool -> f a -> f a -> f a
-ifS i t e = branch (bool (Right ()) (Left ()) <$> i) (const <$> t) (const <$> e)
-
-whenS :: Selective f => f Bool -> f () -> f ()
-whenS x act = ifS x act (pure ())
-
-whileS :: Selective f => f Bool -> f ()
-whileS act = whenS act (whileS act)
-
-(<||>) :: Selective f => f Bool -> f Bool -> f Bool
-(<||>) a b = ifS a (pure True) b
-
-(<&&>) :: Selective f => f Bool -> f Bool -> f Bool
-(<&&>) a b = ifS a b (pure False)
-
-anyS :: Selective f => (a -> f Bool) -> [a] -> f Bool
-anyS p = foldr ((<||>) . p) (pure False)
-
-allS :: Selective f => (a -> f Bool) -> [a] -> f Bool
-allS p = foldr ((<&&>) . p) (pure True)
-\end{minted}
-\caption{Various conditional combinators implemented using selective functors.}
-\label{fig-library}
-\end{figure}
