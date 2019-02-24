@@ -57,10 +57,6 @@ import Data.Proxy
 --
 --            select x (pure y) = either y id <$> x
 --
---       (P2) Selective application of a function to a pure 'Left' value:
---
---            select (pure (Left x)) y = ($x) <$> y
---
 --       (A1) Associativity:
 --
 --            select x (select y z) = select (select (f <$> x) (g <$> y)) (h <$> z)
@@ -74,22 +70,24 @@ import Data.Proxy
 --                  h z = uncurry z
 --
 --
---       Note that there is no law for selective application of a function to a
---       pure 'Right' value, i.e. we do not require that the following holds:
+--       Note that there are no laws for selective application of a function to
+--       a pure 'Left' or 'Right' value, i.e. we do not require that the
+--       following laws hold:
 --
---            select (pure (Right x)) y = pure x
+--            (P2) select (pure (Left  x)) y = y <*> pure x
+--            (P3) select (pure (Right x)) y =       pure x
 --
 --       In particular, the following is allowed too:
 --
+--            select (pure (Left  x)) y = pure ()       -- when y :: f (a -> ())
 --            select (pure (Right x)) y = const x <$> y
 --
---       We therefore allow 'select' to be selective about effects in this case.
+--       We therefore allow 'select' to be selective about effects in these
+--       cases, which in practice allows to under- or over-approximate possible
+--       effects in static analysis using instances like 'Under' and 'Over'.
 --
--- A consequence of the above laws is that 'apS' satisfies 'Applicative' laws.
--- We choose not to require that 'apS' = '<*>', since this forbids some
--- interesting instances, such as 'Validation'.
---
--- If f is also a 'Monad', we require that 'select' = 'selectM'.
+-- If f is also a 'Monad', we require that 'select' = 'selectM', from which one
+-- can prove 'apS' = '<*>', and furthermore the above two laws P2-P3 now hold.
 --
 -- We can rewrite any selective expression in the following canonical form:
 --
@@ -207,7 +205,7 @@ whenS x act = ifS x act (pure ())
 
 -- | A lifted version of 'fromMaybe'.
 fromMaybeS :: Selective f => f a -> f (Maybe a) -> f a
-fromMaybeS dx x = select (maybe (Left ()) Right <$> x) (const <$> dx)
+fromMaybeS x mx = select (maybe (Left ()) Right <$> mx) (const <$> x)
 
 -- | Return the first @Right@ value. If both are @Left@'s, accumulate errors.
 orElse :: (Selective f, Semigroup e) => f (Either e a) -> f (Either e a) -> f (Either e a)
