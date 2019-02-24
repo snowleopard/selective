@@ -50,6 +50,17 @@ f3 f x y = select x (f <$> y) === select (first (flip f) <$> x) (flip ($) <$> y)
 p1 :: Selective f => f (Either a b) -> (a -> b) -> f b
 p1 x y = select x (pure y) === either y id <$> x
 
+-- A more basic form of P1, from which P1 itself follows as a free theorem.
+-- Intuitively, both 'p1' and 'p1id' make the following Const instance illegal:
+--
+-- @
+-- instance Monoid m => Selective (Const m) where
+--    select (Const m) (Const _) = Const (m <> m)
+-- @
+-- P1id: select x (pure id) == either id id <$> x
+p1id  :: Selective f => f (Either a a) -> f a
+p1id x = select x (pure id) === either id id <$> x
+
 -- P2 (does not generally hold): select (pure (Left x)) y = ($x) <$> y
 p2 :: Selective f => a -> f (a -> b) -> f b
 p2 x y = select (pure (Left  x)) y === y <*> pure x
