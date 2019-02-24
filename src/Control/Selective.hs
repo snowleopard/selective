@@ -241,11 +241,11 @@ untilRight x = select y h
 
 -- | A lifted version of lazy Boolean OR.
 (<||>) :: Selective f => f Bool -> f Bool -> f Bool
-(<||>) a b = ifS a (pure True) b
+a <||> b = ifS a (pure True) b
 
 -- | A lifted version of lazy Boolean AND.
 (<&&>) :: Selective f => f Bool -> f Bool -> f Bool
-(<&&>) a b = ifS a b (pure False)
+a <&&> b = ifS a b (pure False)
 
 -- | A lifted version of 'any'. Retains the short-circuiting behaviour.
 anyS :: Selective f => (a -> f Bool) -> [a] -> f Bool

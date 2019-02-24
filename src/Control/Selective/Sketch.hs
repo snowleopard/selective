@@ -34,19 +34,19 @@ infixl 0 ===
 
 -- First, we typecheck the laws
 
--- F1: f <$> select x y = select (second f <$> x) ((f .) <$> y)
+-- F1 (Free): f <$> select x y = select (second f <$> x) ((f .) <$> y)
 f1 :: Selective f => (b -> c) -> f (Either a b) -> f (a -> b) -> f c
 f1 f x y = f <$> select x y === select (second f <$> x) ((f .) <$> y)
 
--- F2: select (first f <$> x) y = select x ((. f) <$> y)
+-- F2 (Free): select (first f <$> x) y = select x ((. f) <$> y)
 f2 :: Selective f => (a -> c) -> f (Either a b) -> f (c -> b) -> f b
 f2 f x y = select (first f <$> x) y === select x ((. f) <$> y)
 
--- F3: select x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
+-- F3 (Free): select x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
 f3 :: Selective f => (c -> a -> b) -> f (Either a b) -> f c -> f b
 f3 f x y = select x (f <$> y) === select (first (flip f) <$> x) (flip ($) <$> y)
 
--- P1: select x (pure y) == either y id <$> x
+-- P1 (Generalised identity): select x (pure y) == either y id <$> x
 p1 :: Selective f => f (Either a b) -> (a -> b) -> f b
 p1 x y = select x (pure y) === either y id <$> x
 
@@ -57,7 +57,7 @@ p1 x y = select x (pure y) === either y id <$> x
 -- instance Monoid m => Selective (Const m) where
 --    select (Const m) (Const _) = Const (m <> m)
 -- @
--- P1id: select x (pure id) == either id id <$> x
+-- P1id (Identity): select x (pure id) == either id id <$> x
 p1id  :: Selective f => f (Either a a) -> f a
 p1id x = select x (pure id) === either id id <$> x
 
@@ -69,7 +69,8 @@ p2 x y = select (pure (Left  x)) y === y <*> pure x
 p3 :: Selective f => b -> f (a -> b) -> f b
 p3 x y = select (pure (Right x)) y === pure x
 
--- A1: select x (select y z) = select (select (f <$> x) (g <$> y)) (h <$> z)
+-- A1 (Associativity):
+--     select x (select y z) = select (select (f <$> x) (g <$> y)) (h <$> z)
 --       where f x = Right <$> x
 --             g y = \a -> bimap (,a) ($a) y
 --             h z = uncurry z
@@ -79,6 +80,38 @@ a1 x y z = select x (select y z) === select (select (f <$> x) (g <$> y)) (h <$> 
     f x = Right <$> x
     g y = \a -> bimap (,a) ($a) y
     h z = uncurry z
+
+-- Intuitively, 'i1' makes the following Const instance illegal, by insisting
+-- that effects on the left hand side must be executed.
+--
+-- @
+-- instance Monoid m => Selective (Const m) where
+--    select _ _ = Const mempty
+-- @
+--
+-- If we decompose an effect @x :: f a@ into the effect itself @void x@ and the
+-- resulting pure value @a@, i.e. @void x *> pure a@, then it becomes clear that
+-- 'i1unit' means that all effects must be executed and the remainig pure value
+-- will be used to select whether to execute or skip the right hand side.
+-- i1unit (Interchange): (x *> y) <*? z = x *> (y <*? z)
+i1unit :: Selective f => f c -> f (Either a b) -> f (a -> b) -> f b
+i1unit x y z =
+    (x *> y) <*? z
+    ===
+    x *> (y <*? z)
+
+-- i1: x <*> (y <*? z) = (f <$> x <*> y) <*? (g <$> z)
+--     where
+--       f = (\ab -> bimap (, ab) ab)
+--       g = (\ca (c, ab) -> ab (ca c))
+i1 :: forall f a b c. Selective f => f (a -> b) -> f (Either c a) -> f (c -> a) -> f b
+i1 x y z =
+    x <*> (y <*? z)
+    ===
+    (f <$> x <*> y) <*? (g <$> z)
+  where
+    f ab = bimap (\c ca -> ab (ca c)) ab
+    g ca = ($ca)
 
 -- Now let's typecheck some theorems
 
@@ -99,7 +132,6 @@ t1 v =
     === -- Functor identity: -- Functor identity: fmap id = id
     v
 
--- This assumes P2, which does not always hold
 -- Homomorphism: pure f <*> pure x = pure (f x)
 t2 :: Selective f => (a -> b) -> a -> f b
 t2 f x =
@@ -109,11 +141,13 @@ t2 f x =
     select (Left <$> pure f) (flip ($) <$> pure x)
     === -- Push 'Left' inside 'pure'
     select (pure (Left f)) (flip ($) <$> pure x)
-    === -- Apply P2
-    ($f) <$> (flip ($) <$> pure x)
+    === -- Applicative's fmap-pure law
+    select (pure (Left f)) (pure (flip ($) x))
+    === -- Apply P1
+    either ((flip ($) x)) id <$> pure (Left f)
+    === -- Applicative's fmap-pure law
+    pure ((flip ($) x) f)
     === -- Simplify
-    f <$> pure x
-    === -- Apply a pure function to a pure value (pure f <*> pure x)
     pure (f x)
 
 -- This assumes P2, which does not always hold
