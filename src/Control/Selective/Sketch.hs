@@ -50,9 +50,13 @@ f3 f x y = select x (f <$> y) === select (first (flip f) <$> x) (flip ($) <$> y)
 p1 :: Selective f => f (Either a b) -> (a -> b) -> f b
 p1 x y = select x (pure y) === either y id <$> x
 
--- P2: select (pure (Left x)) y = ($x) <$> y
+-- P2 (does not generally hold): select (pure (Left x)) y = ($x) <$> y
 p2 :: Selective f => a -> f (a -> b) -> f b
-p2 x y = select (pure (Left x)) y === ($x) <$> y
+p2 x y = select (pure (Left  x)) y === y <*> pure x
+
+-- P3 (does not generally hold): select (pure (Left x)) y = ($x) <$> y
+p3 :: Selective f => b -> f (a -> b) -> f b
+p3 x y = select (pure (Right x)) y === pure x
 
 -- A1: select x (select y z) = select (select (f <$> x) (g <$> y)) (h <$> z)
 --       where f x = Right <$> x
@@ -67,6 +71,7 @@ a1 x y z = select x (select y z) === select (select (f <$> x) (g <$> y)) (h <$> 
 
 -- Now let's typecheck some theorems
 
+-- This assumes P2, which does not always hold
 -- Identity: pure id <*> v = v
 t1 :: Selective f => f a -> f a
 t1 v =
@@ -83,6 +88,7 @@ t1 v =
     === -- Functor identity: -- Functor identity: fmap id = id
     v
 
+-- This assumes P2, which does not always hold
 -- Homomorphism: pure f <*> pure x = pure (f x)
 t2 :: Selective f => (a -> b) -> a -> f b
 t2 f x =
@@ -99,6 +105,7 @@ t2 f x =
     === -- Apply a pure function to a pure value (pure f <*> pure x)
     pure (f x)
 
+-- This assumes P2, which does not always hold
 -- Interchange: u <*> pure y = pure ($y) <*> u
 t3 :: Selective f => f (a -> b) -> a -> f b
 t3 u y =
@@ -243,6 +250,7 @@ x .? y = select (maybe (Right Nothing) Left <$> x) ((\ab bc -> (bc .) <$> ab) <$
 
 infixl 4 .?
 
+-- This assumes P2, which does not always hold
 -- Proof of left identity: pure (Just id) .? x = x
 t5 :: Selective f => f (Maybe (a -> b)) -> f (Maybe (a -> b))
 t5 x =

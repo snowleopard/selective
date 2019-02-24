@@ -124,11 +124,6 @@ them. Please let me know if you find an improvement.
     select x (pure y) = either y id <$> x
     ```
 
-* (P2) Selective application of a function to a pure 'Left' value:
-    ```haskell
-    select (pure (Left x)) y = ($x) <$> y
-    ```
-
 * (A1) Associativity:
     ```haskell
     select x (select y z) = select (select (f <$> x) (g <$> y)) (h <$> z)
@@ -142,25 +137,27 @@ them. Please let me know if you find an improvement.
     x <*? (y <*? z) = (f <$> x) <*? (g <$> y) <*? (h <$> z)
     ```
 
-Note that there is no law for selective application of a function to a
-pure `Right` value, i.e. we do not require that the following holds:
+Note that there are no laws for selective application of a function to a pure
+`Left` or `Right` value, i.e. we do not require that the following laws hold:
 
 ```haskell
-select (pure (Right x)) y = pure x
+select (pure (Left  x)) y = y <*> pure x -- P2
+select (pure (Right x)) y =       pure x -- P3
 ```
 
 In particular, the following is allowed too:
 
 ```haskell
+select (pure (Left  x)) y = pure ()       -- when y :: f (a -> ())
 select (pure (Right x)) y = const x <$> y
 ```
 
-We therefore allow `select` to be selective about effects in this case.
-A consequence of the above laws is that `apS` satisfies `Applicative` laws.
-However, we choose not to require that `apS = <*>`, since this forbids some
-interesting instances, such as `Validation` defined below.
+We therefore allow `select` to be selective about effects in these cases, which
+in practice allows to under- or over-approximate possible effects in static
+analysis using instances like `Under` and `Over`.
 
-If `f` is also a `Monad`, we require that `select = selectM`.
+If `f` is also a `Monad`, we require that `select = selectM`, from which one
+can prove `apS = <*>`, and furthermore the above two laws P2-P3 now hold.
 
 ## Static analysis of selective functors
 
