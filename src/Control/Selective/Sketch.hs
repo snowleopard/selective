@@ -2,7 +2,27 @@
 module Control.Selective.Sketch where
 
 import Control.Selective.Free
+import Control.Monad
 import Data.Bifunctor
+import Data.Void
+
+------------------------------- Various examples -------------------------------
+
+bindBool :: Selective f => f Bool -> (Bool -> f a) -> f a
+bindBool x f = ifS x (f False) (f True)
+
+branch3 :: Selective f => f (Either a (Either b c)) -> f (a -> d) -> f (b -> d) -> f (c -> d) -> f d
+branch3 x a b c = (fmap (fmap Left)     <$> x)
+              <*? (fmap (Right . Right) <$> a)
+              <*? (fmap Right           <$> b)
+              <*? c
+
+bindOrdering :: Selective f => f Ordering -> (Ordering -> f a) -> f a
+bindOrdering x f = branch3 (toEither <$> x) (const <$> f LT) (const <$> f EQ) (const <$> f GT)
+  where
+    toEither LT = Left ()
+    toEither EQ = Right (Left ())
+    toEither GT = Right (Right ())
 
 -------------------------------- Proof sketches --------------------------------
 -- A convenient primitive which checks that the types of two given values
@@ -187,6 +207,32 @@ class Applicative f => SelectiveS f where
 -- See: http://blog.ezyang.com/2012/08/applicative-functors/
 class Applicative f => SelectiveM f where
     (|**|) :: f (Either e a) -> f (Either e b) -> f (Either e (a, b))
+
+apM :: SelectiveM f => f (a -> b) -> f a -> f b
+apM f x = fmap (either absurd (uncurry ($))) (fmap Right f |**| fmap Right x)
+
+fromM :: SelectiveM f => f (Either a b) -> f (a -> b) -> f b
+fromM x f = either id (\(a, f) -> f a) <$> (fmap mirror x |**| fmap Right f)
+
+toM :: Selective f => f (Either e a) -> f (Either e b) -> f (Either e (a, b))
+toM a b = select ((fmap Left . mirror) <$> a) ((\e a -> fmap (a,) e) <$> b)
+
+mirror :: Either a b -> Either b a
+mirror (Left  a) = Right a
+mirror (Right b) = Left  b
+
+-- Proof that if select = selectM, and <*> = ap, then <*> = apS.
+apSEqualsApply :: (Selective f, Monad f) => f (a -> b) -> f a -> f b
+apSEqualsApply fab fa =
+    fab <*> fa
+    === -- Law: <*> = ap
+    ap fab fa
+    === -- Free theorem (?)
+    selectM (Left <$> fab) (flip ($) <$> fa)
+    === -- Law: selectM = select
+    select (Left <$> fab) (flip ($) <$> fa)
+    === -- Definition of apS
+    apS fab fa
 
 -- | Selective function composition, where the first effect is always evaluated,
 -- but the second one can be skipped if the first value is @Nothing@.

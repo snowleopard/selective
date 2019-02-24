@@ -34,6 +34,19 @@ pingPongDoM = do
 pingPongWhenS :: IO ()
 pingPongWhenS = whenS (fmap (=="ping") getLine) (putStrLn "pong")
 
+-- Doesn't make much sense, there are still opaque binds, furthermore getLine
+-- might happen twice.
+pingPongMP :: IO ()
+pingPongMP = mplus x y
+  where
+    x = do
+        x <- getLine
+        guard (x == "ping")
+        putStrLn "pong"
+    y = do
+        x <- getLine
+        guard (x /= "ping")
+
 ------------------------------- Task dependencies ------------------------------
 
 
