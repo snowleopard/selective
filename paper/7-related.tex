@@ -5,6 +5,8 @@ Arrows
 Kleisli functors
 https://elvishjerricco.github.io/2016/10/12/kleisli-functors.html
 
+\subsection{Parsers and \hs{Alternative} type class}
+
 \hs{Alternative} is a type class originally motivated by non-monadic parsers;
 see, for example,~\citet{swierstra1996parsers}, where the methods of the
 \hs{Alternative} type class appear as part a bigger \hs{Parsing} type class. In
@@ -56,7 +58,7 @@ in a more direct style that does not involve trying one parser after another:
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 numberS :: Parser Int
-numberS = ifS ((=='b') <$> (string "0" *> sat (`elem` "bh"))) bin hex
+numberS = ifS ((== 'b') <$> (string "0" *> sat (`elem` "bh"))) bin hex
 \end{minted}
 \vspace{1mm}
 

@@ -42,12 +42,13 @@ expressed as a set of laws that all selective functors are required to satisfy.
 
 Like applicative functors~\citep{mcbride2008applicative}, selective functors
 provide a way to embed pure values into an effectful context \hs{f} using the
-function \hs{pure}, and give meaning to composition of two independent effectful
-computations using the operator \hs{<*>}. See Fig.~\ref{fig-types} for the
-standard definition of the corresponding type class \hs{Applicative}. Selective
-functors enrich the applicative interface with the \hs{select} function, which
-gives meaning to the composition of two effectful computations, where, in
-contrast to \hs{<*>}, the second computation \emph{may depend} on the first one:
+function \hs{pure}, and give meaning to composition of two \emph{independent}
+effectful computations using the operator \hs{<*>}. See Fig.~\ref{fig-types} for
+the standard definition of the corresponding type class \hs{Applicative}.
+Selective functors enrich the applicative interface with the \hs{select}
+function, which gives meaning to the composition of two effectful computations,
+where, in contrast to \hs{<*>}, the second computation \emph{depends} on the
+first one:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -58,11 +59,14 @@ class Applicative f => Selective f where
 
 \noindent
 One can think of \hs{select} as a selective function application:
-parametricity~\citep{wadler1989theorems} dictates that we \emph{must apply} the
-function of type \hs{a}~\hs{->}~\hs{b} when given a value of type
-\hs{Left}~\hs{a}, but we \emph{may skip} the function and associated effects,
-and simply return the \hs{b} when given a \hs{Right}~\hs{b}. Following the
-notational convention for applicative operators, we also define the infix
+parametricity~\citep{wadler1989theorems} dictates that, when given a
+\hs{Left}~\hs{a}, we \emph{must execute the effects} in
+\hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{b)}, apply the obtained function to \hs{a}, and
+return the resulting \hs{b}; on the other hand, when given a \hs{Right}~\hs{b},
+we \emph{may skip the effects} associated with the function, and return the
+given \hs{b}.
+
+Following the notational convention for applicative operators, we also define the infix
 operator alias \hs{<*?} for \hs{select}: the angle bracket pointing to the left
 means we always use the corresponding value; the value on the right, however,
 may be skipped, hence the question mark.
