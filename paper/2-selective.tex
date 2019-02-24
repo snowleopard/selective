@@ -132,7 +132,7 @@ converted into a \hs{selector}~\hs{::}~\hs{f}~\hs{(Either}~\hs{()}~\hs{())}, and
 \hs{y}~\hs{::}~\hs{f}~\hs{()} is converted into
 \hs{effect}~\hs{::}~\hs{f}~\hs{(()}~\hs{->}~\hs{())}. The results are composed
 using the select operator \hs{<*?}, and the meaning of this composition is
-determined by the \hs{Selective}~\hs{f} instance. For example, an instance
+determined by the supplied \hs{Selective}~\hs{f} instance. For example, an instance
 like \hs{f}~\hs{=}~\hs{IO} would skip \hs{y} if \hs{x} yields \hs{True}, as
 exploited by our implementation of \hs{pingPongS}. On the other hand, instances
 used for static analysis would record both \hs{x} and \hs{y} as possible
@@ -173,19 +173,13 @@ branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 \begin{minted}[fontsize=\small]{haskell}
 branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
 branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
-\end{minted}
-\vspace{0mm}
-\begin{minted}[fontsize=\small]{haskell}
+
 ifS :: Selective f => f Bool -> f a -> f a -> f a
 ifS x t e = branch ((\b -> if b then Left@\,@() else Right@\,@()) <$> x) (const@\,@<$>@\,\blk{t}@) (const@\,@<$>@\,\blk{e}@)
-\end{minted}
-\vspace{0mm}
-\begin{minted}[fontsize=\small]{haskell}
+
 whenS :: Selective f => f Bool -> f () -> f ()
 whenS x y = ifS x y (pure ())
-\end{minted}
-\vspace{0mm}
-\begin{minted}[fontsize=\small]{haskell}
+
 whileS :: Selective f => f Bool -> f () -- Run a computation while it yields True
 whileS x = whenS x (whileS x)
 
@@ -204,7 +198,6 @@ allS p = foldr ((<&&>) . p) (pure True)
 fromMaybeS :: Selective f => f a -> f (Maybe a) -> f a
 fromMaybeS x mx = select (maybe (Left ()) Right <$> mx) (const <$> x)
 \end{minted}
-\vspace{-2mm}
 \caption{A library of selective combinators. The names and order of parameters
 are inherited from the standard Haskell library. For example, \hs{fromMaybeS}
 corresponds to the standard
@@ -212,8 +205,9 @@ corresponds to the standard
 retains the short-circuiting behaviour, i.e. if the second argument is a
 \hs{Just}, the first argument is skipped.}
 \label{fig-library}
-\vspace{-2mm}
 \end{figure}
+
+% Add `orElse` and `andAlso' combinators?
 
 \noindent
 While we encourage the reader to derive an implementation of \hs{branch} as an
@@ -276,6 +270,46 @@ The type signature of \hs{select} is reminiscent of both \hs{<*>} and \hs{>>=},
 and indeed a selective functor is in some sense a composition of an applicative
 functor and the \hs{Either} monad.
 
+\begin{figure}
+\begin{minted}{haskell}
+------------------------------------- Laws: ------------------------------------
+-- Identity
+@\blk{x}@ <*? pure id = either id id <$> x
+
+-- Interchange
+@\blk{x}@ *> (y <*? z) = (x *> y) <*? z
+
+-- Associativity
+@\blk{x}@ <*? (y <*? z) = (f <$> x) <*? (g <$> y) <*? (h <$> z)
+  where
+    f x = Right <$> x
+    g y = \a -> bimap (,a) ($a) y
+    h z = uncurry z
+
+-- For selective functors that are also monads:
+select = selectM
+---------------------------------- Theorems: -----------------------------------
+-- Apply a pure function to the result:
+f <$> select x y = select (second f <$> x) ((f .) <$> y)
+
+-- Apply a pure function to the Left case of the first argument:
+select (first f <$> x) y = select x ((. f) <$> y)
+
+-- Apply a pure function to the second argument:
+select x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
+
+-- General interchange
+x <*> (y <*? z) = (f <$> x <*> y) <*? (g <$> z)
+  where
+    f = (\ab -> bimap (, ab) ab)
+    g = (\ca (c, ab) -> ab (ca c))
+
+-- For selective functors that are also monads:
+(<*>) = apS
+\end{minted}
+\caption{Laws and theorems of selective functors.}
+\label{fig-laws}
+\end{figure}
 
 Note that it is not a requirement for selective functors to skip unnecessary
 effects. It may be counterintuitive, but this makes them more useful. Why?
