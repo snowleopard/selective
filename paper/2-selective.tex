@@ -173,18 +173,27 @@ branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 \begin{minted}[fontsize=\small]{haskell}
 branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
 branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
-
+\end{minted}
+\vspace{0mm}
+\begin{minted}[fontsize=\small]{haskell}
 ifS :: Selective f => f Bool -> f a -> f a -> f a
 ifS x t e = branch ((\b -> if b then Left@\,@() else Right@\,@()) <$> x) (const@\,@<$>@\,\blk{t}@) (const@\,@<$>@\,\blk{e}@)
-
+\end{minted}
+\vspace{0mm}
+\begin{minted}[fontsize=\small]{haskell}
 whenS :: Selective f => f Bool -> f () -> f ()
 whenS x y = ifS x y (pure ())
+\end{minted}
+\vspace{0mm}
+\begin{minted}[fontsize=\small]{haskell}
+whileS :: Selective f => f Bool -> f () -- Run a computation while it yields True
+whileS x = whenS x (whileS x)
 
 (<||>) :: Selective f => f Bool -> f Bool -> f Bool
-(<||>) x y = ifS x (pure True) y
+x <||> y = ifS x (pure True) y
 
 (<&&>) :: Selective f => f Bool -> f Bool -> f Bool
-(<&&>) x y = ifS x y (pure False)
+x <&&> y = ifS x y (pure False)
 
 anyS :: Selective f => (a -> f Bool) -> [a] -> f Bool
 anyS p = foldr ((<||>) . p) (pure False)
@@ -193,13 +202,17 @@ allS :: Selective f => (a -> f Bool) -> [a] -> f Bool
 allS p = foldr ((<&&>) . p) (pure True)
 
 fromMaybeS :: Selective f => f a -> f (Maybe a) -> f a
-fromMaybeS dx x = select (maybe (Left ()) Right <$> x) (const <$> dx)
-
-whileS :: Selective f => f Bool -> f ()
-whileS x = whenS x (whileS x)
+fromMaybeS x mx = select (maybe (Left ()) Right <$> mx) (const <$> x)
 \end{minted}
-\caption{A library of selective combinators.}
+\vspace{-2mm}
+\caption{A library of selective combinators. The names and order of parameters
+are inherited from the standard Haskell library. For example, \hs{fromMaybeS}
+corresponds to the standard
+\hs{fromMaybe}~\hs{::}~\hs{a}~\hs{->}~\hs{Maybe}~\hs{a}~\hs{->}~\hs{a} and
+retains the short-circuiting behaviour, i.e. if the second argument is a
+\hs{Just}, the first argument is skipped.}
 \label{fig-library}
+\vspace{-2mm}
 \end{figure}
 
 \noindent
