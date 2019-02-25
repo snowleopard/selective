@@ -22,11 +22,9 @@ import Control.Selective.Free.Examples.ISA.Simulate
 notEqual :: Program
 notEqual = fromList $ zip [0..]
     [ Load R0 0
-    -- , Store R0 0
-    -- , Add R0 2
-    , Add R0 1
-    -- , JumpZero 1
-    -- , Set R1 1
+    , Sub R0 1
+    , JumpZero 1
+    , Set R1 1
     , Halt
     ]
 
