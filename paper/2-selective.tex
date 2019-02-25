@@ -356,17 +356,18 @@ Having explored various useful combinators that can be implemented using the
 selective interface, in this section we look at several basic examples of
 selective functors.
 
-As we have already observed at the beginning of this section, any monad can be
-given a \hs{Selective} instance simply by using \hs{select}~\hs{=}~\hs{selectM}
-as the definition. As an example, below we define a selective instance for
-\hs{IO}, and test our \hs{pingPongS} example in an interactive GHC session:
+As we have observed at the beginning of this section, any monad can be given a
+\hs{Selective} instance simply by using \hs{select}~\hs{=}~\hs{selectM} as the
+definition. As an example, below we define a selective instance for \hs{IO}, and
+test the function \hs{pingPongS} from \S\ref{sec-intro} in an interactive GHC
+session:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 instance Selective IO where
     select = selectM
 
-@\ghci@ pingPongS = whenS (fmap (=="ping") getLine) (putStrLn "pong")
+@\ghci@ pingPongS = whenS (("ping"==) <$> getLine) (putStrLn "pong")
 @\ghci@ pingPongS
 hello
 @\ghci@ pingPongS
@@ -377,12 +378,66 @@ pong
 
 \noindent
 As desired, the effect \hs{putStrLn}~\hs{"pong"} is conditional.
-In~\S\ref{sec-free} we will see how to statically analyse \hs{pingPongS}, i.e.
-obtain a list of all possible effects before the execution, which can be done by
-interpreting \hs{pingPongS} in the selective functor \hs{Over}, introduced
-below.
+In~\S\ref{sec-free-ping-pong} we will see how to statically analyse
+\hs{pingPongS}, i.e. obtain a list of all possible effects \emph{before the
+execution}, which can be done by interpreting \hs{pingPongS} in the selective
+functor \hs{Over}, introduced below.
 
-Over, under
+The \hs{Const}~\hs{m}~\hs{a} functor is an interesting instance of the
+\hs{Applicative} type class, which stores no values of type \hs{a}, but keeps
+track of the applicative structure in the monoid value of type \hs{m}:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+newtype Const m a = Const { getConst :: m }
+\end{minted}
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+instance Functor (Const m) where
+    fmap _ (Const x) = Const x
+\end{minted}
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+-- 'mempty' and '<>' are the identity and the binary operation of the Monoid m
+instance Monoid m => Applicative (Const m) where
+    pure _              = Const mempty   -- pure values have no effects
+    Const x <*> Const y = Const (x <> y) -- collect effects in x and y
+\end{minted}
+\vspace{1mm}
+
+\noindent
+It turns out there are two useful selective instances for \hs{Const}. To
+disambiguate between them, we will call them \hs{Over} and \hs{Under},
+reusing\footnote{Fortunately it is possible to reuse \hs{Const} instances
+without duplicating any code, by using the new GHC extension
+\textsf{DerivingVia}~\citep{blondal2018deriving} and adding
+\hs{deriving}~\hs{(Functor,}~\hs{Applicative)}~\hs{via}~\hs{(Const}~\hs{m)} to
+the \hs{newtype} definitions.}
+the above \hs{Functor} and \hs{Applicative} instances:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+newtype Over  m a = Over  { getOver  :: m }
+newtype Under m a = Under { getUnder :: m }
+
+instance Monoid m => Selective (Under m) where
+    select (Over x) (Over y) = Over (x <> y) -- collect effects in x and y
+\end{minted}
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+instance Monoid m => Selective (Under m) where
+    select (Under x) _ = Under x             -- discard conditional effects
+\end{minted}
+\vspace{1mm}
+
+\noindent
+The selective functor \hs{Over} can be used for computing a list of all possible
+effects embedded in a computation, i.e. an \emph{over-approximation} of the
+effects that will actually occur. This can be seen in the definition of the
+instance, which keeps track of effects in both arguments of \hs{select}. The
+selective functor \hs{Under}, on the other hand, discards the second argument of
+\hs{select} and therefore computes an \emph{under-approximation}, i.e. a list
+of effects that are guaranteed to occur.
 
 Validation
 

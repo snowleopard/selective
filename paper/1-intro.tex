@@ -118,7 +118,7 @@ rewrite the ping-pong example using \hs{whenS}:
 \vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 pingPongS :: IO ()
-pingPongS = whenS (fmap (=="ping") getLine) (putStrLn "pong")
+pingPongS = whenS (fmap ("ping"==) getLine) (putStrLn "pong")
 \end{minted}
 \vspace{0.5mm}
 
