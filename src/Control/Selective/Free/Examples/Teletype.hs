@@ -26,7 +26,7 @@ instance Show (TeletypeF a) where
 -- | Interpret the 'TeletypeF' commands as IO actions
 inIO :: TeletypeF a -> IO a
 inIO (GetLine t)   = t <$> Prelude.getLine
-inIO (PutLine v x) = Prelude.putStrLn v *> pure x
+inIO (PutLine s x) = Prelude.putStrLn s *> pure x
 
 -- | A Teletype program is a free Selective over the 'TeletypeF' functor
 type Teletype a = Select TeletypeF a
@@ -35,7 +35,7 @@ getLine :: Teletype String
 getLine = liftSelect (GetLine id)
 
 putStrLn :: String -> Teletype ()
-putStrLn v = liftSelect (PutLine v ())
+putStrLn s = liftSelect (PutLine s ())
 
 -- | The example from the paper's intro. Implemented in terms of the free
 --   selective, can now be statically analysed for effects:

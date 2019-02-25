@@ -6,6 +6,64 @@ Free construction with examples
 
 ...
 
+\subsubsection{\textbf{Example: Teletype}}
+
+To illustrate how the free selective construction can be used, we implement the
+classical example of the Teletype DSL.
+
+The \hs{TeletypeF} datatype has two constructors, representing the commands of the
+Teletype interface:
+
+\begin{minted}[xleftmargin=10pt]{haskell}
+data Teletype a = GetLine (String -> a)
+                | PutStrLn String a
+    deriving Functor
+\end{minted}
+
+We embed these commands into the free selective with the following two combinators,
+mimicking Haskell Prelude's IO API:
+
+\begin{minted}[xleftmargin=10pt]{haskell}
+getLine :: Select Teletype String
+getLine = liftSelect (GetLine id)
+
+putStrLn:: Select Teletype ()
+putStrLn s = liftSelect (PutStrLn s ())
+\end{minted}
+
+By reimplement the \hs{pingPongS} example from the section \ref{sec-intro}
+in terms of the free selective construction:
+
+\begin{minted}[xleftmargin=10pt]{haskell}
+pingPongS :: Select Teletype ()
+pingPongS = whenS (fmap (=="ping") getLine) (putStrLn "pong")
+\end{minted}
+
+Once we have embedded the \hs{pingPongS} program into the free selective datatype,
+we have access to the machinery allowing for static analysis of its effects:
+
+\begin{minted}[xleftmargin=10pt]{haskell}
+ghci> getEffects pingPong
+[GetLine,PutStrLn pong]
+\end{minted}
+
+The \hs{getEffects} function of type \hs{Functor f => Select f a -> [f ()]}
+returns a list of all effects of a free selective computations. In the specific case of
+the Teletype functor, we get a list of all commands that a computations has called.
+Internally, the \hs{getEffects} function interprets a free selective computation
+in the \hs{Over} functor (see section~\ref{sec-instances}).
+
+We can interpret Teletype programs in any other \hs{Selective} by means of the
+\hs{runSelect} function, by providing a \emph{natural transformation} \hs{forall a. f a -> g a}, which gives an interpretation of the commands of
+\hs{f} (specifically, \hs{Teletype}) in terms of \hs{g}. A natural example of such a
+transformation would be an interpretation in the \hs{IO} monad:
+
+\begin{minted}[xleftmargin=10pt]{haskell}
+inIO :: Teletype a -> IO a
+inIO (GetLine t)    = t <$> Prelude.getLine
+inIO (PutStrLn s x) = Prelude.putStrLn s *> pure x
+\end{minted}
+
 \subsection{Build systems, freely}
 
 ...
@@ -35,7 +93,7 @@ and~\emph{dynamic} simulation.
 
 We will represent the semantics of instruction in terms of the following datatype:
 
-\begin{minted}{haskell}
+\begin{minted}[xleftmargin=10pt]{haskell}
 type ISA a = Select RW a
 \end{minted}
 
@@ -43,7 +101,7 @@ Here, \hs{Select} is the free selective functor defined earlier in this section.
 We apply the \hs{Select} type constructor to the \hs{RW} datatype, which is the
 functor we build our free construction on:
 
-\begin{minted}{haskell}
+\begin{minted}[xleftmargin=10pt]{haskell}
 data RW k v a = R k             (v -> a)
               | W k (ISA k v v) (v -> a)
     deriving Functor
@@ -65,7 +123,7 @@ We introduce two convenience combinators, which \emph{lift} the data constructor
 of the \hs{RW} datatype into the free selective, thus making them directly usable in
 the definitions of instruction semantics:
 
-\begin{minted}{haskell}
+\begin{minted}[xleftmargin=10pt]{haskell}
 read :: Location -> ISA Value
 read k = liftSelect (R k id)
 
@@ -84,7 +142,7 @@ the addition instruction, which will read the summands from the two locations, a
 write the result into the third location and also update the state of the \hs{zero}
 flag to indicate if the sum was zero:
 
-\begin{minted}{haskell}
+\begin{minted}[xleftmargin=10pt]{haskell}
 add :: Location -> Location -> Location -> ISA Value
 add var1 var2 dest =
     let arg1     = read var1
@@ -106,7 +164,7 @@ with calculating the sum (\todo{discuss effects of \hs{willOverflow}?}).
 
 The free selective functor construction shines in the static analysis. By executing
 the analysis of the \hs{add} semantics, we can find obtain the list of all its effects:
-\begin{minted}{haskell}
+\begin{minted}[xleftmargin=10pt]{haskell}
 > analyse (add "x" "y" "z")
 ([],Left (W "overflow" :| [R "y",R "x",W "zero",W "z",R "y",R "x"]))
 \end{minted}
@@ -125,7 +183,7 @@ It turns out, that they give just enough power to implement the semantics of con
 jump instructions. A relative conditional jump offsets the program counter in case if a
 certain condition, materialised in a microarchitectural flag, holds. For instance, some instruction set might have a jump triggered by the fact that the result of the last addition was zero
 
-\begin{minted}{haskell}
+\begin{minted}[xleftmargin=10pt]{haskell}
 jumpZero :: Value -> ISA ()
 jumpZero offset =
     let pc       = read PC
@@ -139,7 +197,7 @@ to modify the program counter, if the flag is set. By implementing this semantic
 \hs{Selective} we achieve both the ability to implement an adequate simulator for the ISA and
 to retain the possibilities for the static analysis of programs by means of the \hs{analyse} function:
 
-\begin{minted}{haskell}
+\begin{minted}[xleftmargin=10pt]{haskell}
 > analyse (jumpZero 42)
 ([],Left (Write PC :| [Read PC,Read Zero]))
 \end{minted}
