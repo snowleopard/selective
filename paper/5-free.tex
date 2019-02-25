@@ -84,14 +84,14 @@ inIO (PutStrLn s x) = Prelude.putStrLn s *> pure x
 \subsection{Analysis and simulation of processor instructions}\label{sec-free-isa}
 
 In this section, we demonstrate how we can use free selective functors to construct an
-effect which can be used for effectively describing the semantics of a hypothetical
-instruction set architecture. The features of free selective functors will allow for
-multiple distinct interpretations of the same semantics, such as~\emph{static} dependency
+effect which can be used for describing the semantics of a hypothetical
+instruction set architecture. The semantics will allow for
+multiple distinct interpretations, such as~\emph{static} dependency
 analysis and~\emph{dynamic} simulation.
 
 \subsubsection{Embedding}
 
-We will represent the semantics of instruction in terms of the following datatype:
+We will represent the semantics of instructions in terms of the following datatype:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
 type ISA a = Select RW a
@@ -102,92 +102,93 @@ We apply the \hs{Select} type constructor to the \hs{RW} datatype, which is the
 functor we build our free construction on:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
-data RW k v a = R k             (v -> a)
-              | W k (ISA k v v) (v -> a)
+data RW a = Read  Key             (Value -> a)
+          | Write Key (ISA Value) (Value -> a)
     deriving Functor
 \end{minted}
 
 The effect we require comprises two commands. We need to have an ability to (1)
 \emph{read} a value associated with a key and, (2) given a computation which produces a value,
-\emph{write} its result into the store. Here, the second argument of the \hs{W} constructor
+\emph{write} its result into the store.
 This exact structure of the definition is required for accommodating a pattern that
-frequently occurs in instruction semantics: often we read a value from a location
-(register/memory), do something with the value and then write it into a different location.
-If we had the type of \hs{W} to be \hs{k -> v -> (v -> a)}, i.e. required the value to be pure,
-we would not be able to get away from using monadic bind/join. Additionally, we want the write
+occurs frequently in instruction semantics: often we read a value from a register or a memory
+cell, do something with the value and then write it somewhere else.
+If we had the type of \hs{Write} to be \hs{k -> v -> (v -> a)}, i.e. required
+the second argument to be a pure value,
+we would not be able to grasp the desired pattern without resorting to the monadic interface. Additionally, we want the write
 operation to not just write the value and return \hs{()}, but to return the just written value
-back, so it somehow used in the context; such a generosity of the write command not consuming
-its arguments will be useful to avoid creating more data dependencies than necessary.
+back, so it may be used in the rest of the computations; such a generosity of the write
+command not consuming its arguments will be useful to avoid creating more data dependencies
+than necessary.
 
 We introduce two convenience combinators, which \emph{lift} the data constructors
 of the \hs{RW} datatype into the free selective, thus making them directly usable in
 the definitions of instruction semantics:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
-read :: Location -> ISA Value
-read k = liftSelect (R k id)
+read :: Key -> ISA Value
+read k = liftSelect (Read k id)
 
-write :: Location -> ISA Value -> ISA Value
-write k p = p *> liftSelect (W k p id)
+write :: Key -> ISA Value -> ISA Value
+write k p = p *> liftSelect (Write k p id)
 \end{minted}
 
-Whereas the \hs{read} combinator is exactly the lifted \hs{R} data constructor, the \hs{write}'s implementation deserves attention, since it deviates from the trivial lifting of
-the \hs{W} data constructor. It evaluates its second argument, thus executing its
+Whereas the \hs{read} combinator is exactly the lifted \hs{Read} data constructor, the \hs{write}'s implementation deserves attention, since it deviates from the trivial lifting of
+the \hs{Write} data constructor and \emph{evaluates its second argument}, thus executing its
 associated effects.
 
-\subsubsection{Example 1. Addition}
+\subsubsection{\textbf{Example 1. Addition}}
 
-To get acquainted with the proposed methodology, we start with a simple semantics for
+To get acquainted with the proposed vocabulary, we start with a simple semantics for
 the addition instruction, which will read the summands from the two locations, add them,
 write the result into the third location and also update the state of the \hs{zero}
-flag to indicate if the sum was zero:
+and \hs{overflow} flags to indicate if the sum was zero and if integer overflow occurred:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
-add :: Location -> Location -> Location -> ISA Value
-add var1 var2 dest =
-    let arg1     = read var1
-        arg2     = read var2
-        sum      = (+)  <$> arg1   <*> arg2
-        isZero   = (==) <$> pure 0 <*> write dest sum
+add :: Register -> Address  -> ISA Value
+add reg addr =
+    let arg1     = read (Reg reg)
+        arg2     = read (Mem addr)
+        result   = (+)  <$> arg1   <*> arg2
+        isZero   = (==) <$> pure 0 <*> write (Reg reg) result
         overflow = willOverflowPure <$> arg1 <*> arg2
-    in write "zero"     (fromBool <$> isZero) *>
-       write "overflow" (fromBool <$> overflow)
+    in write (F Zero)     (fromBool <$> isZero) *>
+       write (F Overflow) (fromBool <$> overflow)
 \end{minted}
 
 Here, we get two effectful values from the two locations and calculate three intermediate
 results. To calculate the sum we just lift \hs{+} into the free selective using the applicative
-combinators. We calculate the state of the \hs{"zero"} flag in the similar way, but here we
+combinators. We calculate the state of the \hs{Zero} flag in a similar way, but here we
 exploit the fact that the \hs{write} combinator returns the value it has just written, thus we
 can reuse the value of the sum without recalculating it and triggering its associated effects
 again. We detect integer overflow by means of a pure function, thus there is not much difference
-with calculating the sum (\todo{discuss effects of \hs{willOverflow}?}).
+with calculating the sum.
 
 The free selective functor construction shines in the static analysis. By executing
-the analysis of the \hs{add} semantics, we can find obtain the list of all its effects:
+the analysis of the \hs{add} semantics, we can find obtain the list of all its effects,
+in the order they appear in the computation:
 \begin{minted}[xleftmargin=10pt]{haskell}
-> analyse (add "x" "y" "z")
-([],Left (W "overflow" :| [R "y",R "x",W "zero",W "z",R "y",R "x"]))
+> getEffects (add  R0 1)
+[Read R0,Read 1,Write R0,Write Zero,Read R0,Read 1,Write Overflow]
 \end{minted}
-If we read the list from right to left, we could see that \hs{add} read the values of the
-arguments than written the destination variable then then something else \todo{write this}.
 
 The addition instruction semantics has only used the applicative combinators and thus
-the same analysis capabilities could have been implemented with free applicative functors.
+the same analysis capabilities could have been achieved with free applicative functors.
 However, there are important instructions whose semantics cannot be implemented in terms
-of the \hs{Applicative} interface, but still do not require such heavy artillery as monads.
+of the \hs{Applicative} interface, but still they do not require the heavy artillery of monads.
 
-\subsubsection{Example 2. Conditional jump}
+\subsubsection{\textbf{Example 2. Conditional jump}}
 
 Selective functors allow to introduce limited dependencies between effectful computations.
 It turns out, that they give just enough power to implement the semantics of conditional
 jump instructions. A relative conditional jump offsets the program counter in case if a
-certain condition, materialised in a microarchitectural flag, holds. For instance, some instruction set might have a jump triggered by the fact that the result of the last addition was zero
+certain condition, materialised in a microarchitectural flag, holds. For instance, some instruction set might have a jump triggered by the fact that the result of the last addition was zero:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
 jumpZero :: Value -> ISA ()
 jumpZero offset =
     let pc       = read PC
-        zeroSet  = (/=) <$> pure 0 <*> read (Flag Zero)
+        zeroSet  = (/=) <$> pure 0 <*> read (F Zero)
         modifyPC = void $ write PC (fmap (+ offset) pc)
     in whenS zeroSet modifyPC
 \end{minted}
@@ -195,16 +196,22 @@ jumpZero offset =
 Here we use the aforementioned \hs{whenS} combinator to only execute the effect, i.e.
 to modify the program counter, if the flag is set. By implementing this semantics in terms of
 \hs{Selective} we achieve both the ability to implement an adequate simulator for the ISA and
-to retain the possibilities for the static analysis of programs by means of the \hs{analyse} function:
+to retain the possibilities for the static analysis of programs by means of the \hs{getEffects} function:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
 > analyse (jumpZero 42)
-([],Left (Write PC :| [Read PC,Read Zero]))
+[Read Zero,Read PC,Write PC]
 \end{minted}
 
-The \hs{analyse} function informs us of all necessary effects of the computation, thus
-effectively giving us an over-approximated list of dependencies. Note that it does not matter
+The \hs{getEffects} function informs us of all effects of the computation, thus
+effectively giving us an over-approximated list of the instructions
+data-dependencies dependencies. Note that it does not matter
 what argument we supply, since it will never get evaluated, e.g. the analysis will succeed and give us the same result even if we supply \hs{undefined}.
 
 \subsubsection{Blocks of instructions}
+
+Once we have implemented the semantics for a desired subset of an ISA, we can construct the
+semantics of sequences, or blocks, of instructions by simply composing the \hs{ISA} computations
+with the applicative \hs{*>}:
+
 
