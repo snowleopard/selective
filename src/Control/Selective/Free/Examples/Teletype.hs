@@ -13,7 +13,7 @@ module Control.Selective.Free.Examples.Teletype where
 import Prelude hiding (getLine, putStrLn)
 import qualified Prelude (getLine, putStrLn)
 import Control.Selective
-import Control.Selective.Free
+import Control.Selective.Free.Rigid
 
 data TeletypeF a = GetLine (String -> a)
                  | PutLine String a
