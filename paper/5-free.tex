@@ -2,6 +2,19 @@
 
 Free construction with examples
 
+The methodology of building effectful computations with free constructions such
+as free~\cite{free-monads} and freer~\cite{freer-monads} monads and free
+applicatives~\cite{free-applicatives} is a widespread in the functional programming community.
+It allows to focus on the internal aspects of the effect under consideration and receive the
+desired \hs{Applicative} of \hs{Monadic} structure of the computation~\emph{for free},
+i.e. without the need to construct instances or prove laws.
+
+In the ``free structures'' methodology, the essence of an effect is a datatype which encodes
+the ``commands'' which the effect provides, acting as a deep embedding of the effect's
+interface. This datatype must only have enough structure to be a~\hs{Functor}. The purpose of
+the free constructions is then to build on top of this functor a richer structure,
+which would have the instances of \hs{Applicative}/\hs{Selective}/\hs{Monad}.
+
 \subsection{Free construction}\label{sec-free-construction}
 
 ...
@@ -70,24 +83,11 @@ inIO (PutStrLn s x) = Prelude.putStrLn s *> pure x
 
 \subsection{Analysis and simulation of processor instructions}
 
-The methodology of building effectful computations with free constructions such
-as free~\cite{free-monads} and freer~\cite{freer-monads} monads and free
-applicatives~\cite{free-applicatives} is a widespread in the functional programming community.
-It allows to focus on the internal aspects of the effect under consideration and receive the
-desired applicative/monadic structure of the computation~\emph{for free}, i.e. without the need
-to construct~\hs{Applicative}/~\hs{Monad} instances and proving the laws.
-
-In the ``free-structure'' methodology, the essence of an effect is a datatype which encodes
-the ``commands''which the effect provides. This datatype acts as a deep embedding of the effect's
-interface. THis datatype must only have enough structure to be a~\hs{Functor}. The purpose of
-the free constructions is then to build on this functor a richer structure, which would have
-an instance of Applicative/Selective/Monad.
-
 In this section, we demonstrate how we can use free selective functors to construct an
-effect which can be used for effectively describing the semantics of a simple instruction set
-architecture. The features of free selective functors will allow for multiple distinct
-interpretations of the same semantics, such as~\emph{static} dependency analysis
-and~\emph{dynamic} simulation.
+effect which can be used for effectively describing the semantics of a hypothetical
+instruction set architecture. The features of free selective functors will allow for
+multiple distinct interpretations of the same semantics, such as~\emph{static} dependency
+analysis and~\emph{dynamic} simulation.
 
 \subsubsection{Embedding}
 
