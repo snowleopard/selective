@@ -4,31 +4,60 @@
 \begin{minted}[fontsize=\small]{haskell}
 class Functor f where
     fmap :: (a -> b) -> f a -> f b
-
+\end{minted}
+\vspace{0.5mm}
+\begin{minted}[fontsize=\small]{haskell}
 -- An infix synonym for fmap
-(<$>) :: Functor f => (a -> b) -> f a -> f b       -- (<$>) is pronounced as "map"
-
+(<$>) :: Functor f => (a -> b) -> f a -> f b       -- (<$>) is pronounced "map"
+\end{minted}
+\vspace{2mm}
+\hrule
+\vspace{2mm}
+\begin{minted}[fontsize=\small]{haskell}
 class Functor f => Applicative f where
     pure  :: a -> f a
-    (<*>) :: f (a -> b) -> f a -> f b              -- (<*>) is pronounced as "apply"
-
+    (<*>) :: f (a -> b) -> f a -> f b              -- (<*>) is pronounced "apply"
+\end{minted}
+\vspace{0.5mm}
+\begin{minted}[fontsize=\small]{haskell}
 -- A variant of <*> with the arguments reversed
 (<**>) :: Applicative f => f a -> f (a -> b) -> f b
-
+\end{minted}
+\vspace{0.5mm}
+\begin{minted}[fontsize=\small]{haskell}
+-- A variant of <*> that discards the value of the first argument
+(*>) :: Applicative f => f a -> f b -> f b
+\end{minted}
+\vspace{2mm}
+\hrule
+\vspace{2mm}
+\begin{minted}[fontsize=\small]{haskell}
 class Applicative f => Selective f where
     select :: f (Either a b) -> f (a -> b) -> f b
-
+\end{minted}
+\vspace{0.5mm}
+\begin{minted}[fontsize=\small]{haskell}
 -- An infix synonym for select
-(<*?) :: f (Either a b) -> f (a -> b) -> f b       -- (<*?) is pronounced as "select"
-
+(<*?) :: f (Either a b) -> f (a -> b) -> f b       -- (<*?) is pronounced "select"
+\end{minted}
+\vspace{2mm}
+\hrule
+\vspace{2mm}
+\begin{minted}[fontsize=\small]{haskell}
 class Selective f => Monad f where
-    return :: a -> f a
-    (>>=)  :: f a -> (a -> f b) -> f b             -- (>>=) is pronounced as "bind"
+    return :: a -> f a                             -- Note the law: return = pure
+    (>>=)  :: f a -> (a -> f b) -> f b             -- (>>=) is pronounced "bind"
+\end{minted}
+\vspace{0.5mm}
+\begin{minted}[fontsize=\small]{haskell}
+-- A monadic equivalent of the apply operator, satisfying the law (<*>) = ap
+@\blk{ap}@ :: Monad f => f (a -> b) -> f a -> f b
 \end{minted}
 \caption{The proposed type class hierarchy, where \hs{Functor}, \hs{Applicative}
 and \hs{Monad} are standard Haskell type classes, and \hs{Selective} is
 a new intermediate abstraction introduced between \hs{Applicative} and
 \hs{Monad}.}\label{fig-types}
+\vspace{-2mm}
 \end{figure}
 
 In this section we introduce selective applicative functors, which we will
@@ -66,61 +95,120 @@ return the resulting \hs{b}; on the other hand, when given a \hs{Right}~\hs{b},
 we \emph{may skip the effects} associated with the function, and return the
 given \hs{b}.
 
-Following the notational convention for applicative operators, we also define the infix
-operator alias \hs{<*?} for \hs{select}: the angle bracket pointing to the left
-means we always use the corresponding value; the value on the right, however,
-may be skipped, hence the question mark.
+Following the notational convention for applicative operators, we also define
+the infix operator alias \hs{<*?} for \hs{select}: the angle bracket pointing to
+the left means we always use the corresponding value; the value on the right,
+however, may be skipped, hence the question mark.
 
-Note that one can implement a function with the type signature of \hs{select}
-using applicative functors, but it will always execute the effects associated
-with the second argument, rendering any conditional execution of effects
-impossible, as in the \hs{pingPongA} example in~\S\ref{sec-intro}:
-
-\vspace{1mm}
-\begin{minted}[xleftmargin=10pt]{haskell}
-selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
-selectA x y = fmap (\e f -> case e of { Left a -> f a; Right b -> b }) x <*> y
+\begin{figure}
+\begin{minted}[fontsize=\small]{haskell}
+($)     :: (a -> b) -> a -> b                               -- Function application
+(.)     :: (b -> c) -> (a -> b) -> a -> c                   -- Function composition
+id      :: a -> a                                           -- Identity function
+const   :: a -> b -> a                                      -- Constant function
+flip    :: (a -> b -> c) -> b -> a -> c                     -- Flip function arguments
+uncurry :: (a -> b -> c) -> (a, b) -> c                     -- Uncurry a function
+foldr   :: (a -> b -> b) -> b -> [a] -> b                   -- Reduce a list to a value
+bool    :: a -> a -> Bool -> a                              -- Deconstruct a Bool
+maybe   :: b -> (a -> b) -> Maybe a -> b                    -- Deconstruct a Maybe
+either  :: (a -> c) -> (b -> c) -> Either a b -> c          -- Deconstruct a Either
+first   :: (a -> c) -> Either a b -> Either c b             -- Map over Left
+second  :: (b -> c) -> Either a b -> Either a c             -- Map over Right
+bimap   :: (a -> c) -> (b -> d) -> Either a b -> Either c d -- Map over Left and Right
+void    :: Functor f => f a -> f ()                         -- Discard an effect's value
 \end{minted}
-\vspace{1mm}
+\caption{Type signatures of standard operators and functions used throughout the
+paper.}\label{fig-std}
+\end{figure}
 
-\noindent
-As we will see in~\S\ref{sec-instances}, the above definition is sometimes
-useful, for example, selective functors used for static analysis need to collect
-information about all possible effects instead of skipping some of them,
-hence directly using \hs{select}~\hs{=}~\hs{selectA} in their \hs{Selective}
-instance definitions.
-
-We can also implement a monadic version of the select operator, which uses the
-monadic bind operator to examine the value produced by
-\hs{f}~\hs{(Either}~\hs{a}~\hs{b)} and skip the subsequent effect if possible:
+One can implement a function with the type signature of \hs{select} using monads
+in a straightforward manner: examine the value produced by
+\hs{f}~\hs{(Either}~\hs{a}~\hs{b)} with the bind operator, and then, in the
+\hs{Left}~\hs{a} case, execute the subsequent effect, passing the \hs{a} to it
+using the \hs{Functor}'s map operator, as shown below (we use \hs{<@\fmap@>}, an
+infix alias of \hs{fmap}, see Fig.~\ref{fig-types} for the type signatures):
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 selectM :: Monad f => f (Either a b) -> f (a -> b) -> f b
-selectM x y = x >>= \e -> case e of Left  a -> y <*> pure a -- execute y
-                                    Right b ->       pure b -- skip y
+selectM x y = x >>= \e -> case e of Left  a -> ($a) <$> y -- execute y
+                                    Right b -> pure b     -- skip y
 \end{minted}
 \vspace{1mm}
 
 \noindent
-While \hs{selectA} is useful for \emph{static analysis}, \hs{selectM} is
-useful for \emph{conditional execution} of effects. Many monads directly use
-\hs{select}~\hs{=}~\hs{selectM} in their \hs{Selective} instance definitions,
-and in \S\ref{sec-laws} we argue that this should in fact be a law when both
-\hs{Selective}~\hs{f} and \hs{Monad}~\hs{f} instances exist.
+Many monads directly use \hs{select}~\hs{=}~\hs{selectM} in their \hs{Selective}
+instance definitions, and in \S\ref{sec-laws} we argue that this should in fact
+be a law when both \hs{Selective}~\hs{f} and \hs{Monad}~\hs{f} instances exist.
+Note that some monads, e.g. the \Haxl monad (\S\ref{sec-haxl}), choose to
+implement the  \hs{select} method differently for performance reasons, but they
+still satisfy the law \hs{select}~\hs{=}~\hs{selectM} at the semantic level.
+
+One can also implement \hs{select} using applicative functors, but it will
+always execute the effects associated with the second argument, rendering any
+conditional execution of effects impossible, as in the \hs{pingPongA} example
+in~\S\ref{sec-intro}:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
+selectA x y = (\e f -> either f id e) <$> x <*> y
+\end{minted}
+\vspace{1mm}
+
+\noindent
+Fig.~\ref{fig-std} gives type signatures and short descriptions for standard
+functions \hs{either}, \hs{id}, as well as many other convenient functional
+combinators used throughout this paper.
+
+While \hs{selectM} is useful for \emph{conditional execution} of effects,
+\hs{selectA} is useful for \emph{static analysis}. As we will see
+in~\S\ref{sec-instances}, the above definition is sometimes useful, for example,
+selective functors used for static analysis need to collect information about
+all possible effects instead of skipping some of them, hence directly using
+\hs{select}~\hs{=}~\hs{selectA} in their \hs{Selective} instance definitions.
+
+Any \hs{Applicative} instance can thus be given a \hs{Selective} instance. The
+opposite is also true in the sense that one can recover the operator \hs{<*>}
+from \hs{select} as follows:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+apS :: Selective f => f (a -> b) -> f a -> f b
+apS f x = select (Left <$> f) (flip ($) <$> x)
+\end{minted}
+\vspace{1mm}
+
+\noindent
+Here we tag a given function \hs{a}~\hs{->}~\hs{b} with \hs{Left} and turn a
+value of type \hs{a} into the reverse application function
+\hs{\}\hs{a}~\hs{f}~\hs{->}~\hs{f}~\hs{a}, which yields \hs{b} when given
+\hs{a}~\hs{->}~\hs{b}, as desired. Since the \hs{Right} case is impossible, the
+effect \hs{f}~\hs{a} is executed unconditionally. Note however, that the
+equality \hs{(<*>)}~\hs{=}~\hs{apS} does not always hold. Selective functors
+that satisfy the law \hs{(<*>)}~\hs{=}~\hs{apS} will be called \emph{rigid};
+they will turn out to have a particularly simple normal form, which we will
+exploit in the free construction in~\S\ref{sec-free}.
+
+We will come back to the relationship between applicative functors, selective
+functors and monads in \S\ref{sec-laws}, after first exploring \emph{selective
+combinators} that can be written using the selective interface
+(\S\ref{sec-combinators}), and looking at some concrete examples of selective
+functors (\S\ref{sec-instances}).
 
 \subsection{Selective combinators}\label{sec-combinators}
 
-As a first use-case of selective functors, let us revisit our ping-pong example
-from~\S\ref{sec-intro} and implement the combinator \hs{whenS}:
+As a first use-case of the interface provided by selective functors, let us
+revisit our ping-pong example from~\S\ref{sec-intro} and implement the
+combinator \hs{whenS}:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 whenS :: Selective f => f Bool -> f () -> f ()
 whenS x y = selector <*? effect
   where
-    selector = fmap (\b -> if b then Left () else Right ()) x
-    effect   = fmap const                                   y
+    selector = bool (Right ()) (Left ()) <$> x -- NB: maps True to Left ()
+    effect   = const                     <$> y
 \end{minted}
 \vspace{1mm}
 
@@ -167,7 +255,6 @@ branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
 branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 \end{minted}
 \vspace{1mm}
-\newpage
 
 \begin{figure}
 \begin{minted}[fontsize=\small]{haskell}
@@ -175,7 +262,7 @@ branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
 branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 
 ifS :: Selective f => f Bool -> f a -> f a -> f a
-ifS x t e = branch ((\b -> if b then Left@\,@() else Right@\,@()) <$> x) (const@\,@<$>@\,\blk{t}@) (const@\,@<$>@\,\blk{e}@)
+ifS x t e = branch (bool (Right ()) (Left ()) <$> x) (const <$> t) (const <$> e)
 
 whenS :: Selective f => f Bool -> f () -> f ()
 whenS x y = ifS x y (pure ())
