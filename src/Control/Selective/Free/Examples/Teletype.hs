@@ -41,7 +41,7 @@ putStrLn v = liftSelect (PutLine v ())
 --   selective, can now be statically analysed for necessary effects:
 --
 --   > analyse pingPong
---   ([],Left (Write () "pong" :| [Read ()]))
+--   ([],Left (PutLine pong :| [GetLine]))
 --
 --   We can also run the program in IO:
 --   > runSelect inIO pingPong
