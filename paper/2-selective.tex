@@ -121,12 +121,13 @@ void    :: Functor f => f a -> f ()                         -- Discard an effect
 paper.}\label{fig-std}
 \end{figure}
 
-One can implement a function with the type signature of \hs{select} using monads
-in a straightforward manner: examine the value produced by
-\hs{f}~\hs{(Either}~\hs{a}~\hs{b)} with the bind operator, and then, in the
-\hs{Left}~\hs{a} case, execute the subsequent effect, passing the \hs{a} to it
-using the \hs{Functor}'s map operator, as shown below (we use \hs{<@\fmap@>}, an
-infix alias of \hs{fmap}, see Fig.~\ref{fig-types} for the type signatures):
+One can implement \hs{select} using monads in a straightforward manner: examine
+the value produced by \hs{f}~\hs{(Either}~\hs{a}~\hs{b)} with the bind operator,
+and then, in the \hs{Left}~\hs{a} case, execute the subsequent effect
+\hs{f}~\hs{(a}~\hs{->}~\hs{b)}, passing the \hs{a} to it using the
+\hs{Functor}'s map operator, as shown below. We will use~\hs{<@\fmap@>}, an
+infix synonym of \hs{fmap}, throughout the paper (see Fig.~\ref{fig-types} for
+\hs{Functor}'s API).
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -144,10 +145,10 @@ Note that some monads, e.g. the \Haxl monad (\S\ref{sec-haxl}), choose to
 implement the  \hs{select} method differently for performance reasons, but they
 still satisfy the law \hs{select}~\hs{=}~\hs{selectM} at the semantic level.
 
-One can also implement \hs{select} using applicative functors, but it will
-always execute the effects associated with the second argument, rendering any
-conditional execution of effects impossible, as in the \hs{pingPongA} example
-in~\S\ref{sec-intro}:
+One can also implement a function with the type signature of \hs{select} using
+applicative functors, but it will always execute the effects associated with the
+second argument, rendering any conditional execution of effects impossible, as
+in the \hs{pingPongA} example in~\S\ref{sec-intro}:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -158,8 +159,8 @@ selectA x y = (\e f -> either f id e) <$> x <*> y
 
 \noindent
 Fig.~\ref{fig-std} gives type signatures and short descriptions for standard
-functions \hs{either}, \hs{id}, as well as many other convenient functional
-combinators used throughout this paper.
+functions \hs{either}, \hs{id}, and other convenient functional combinators that
+we use in this paper.
 
 While \hs{selectM} is useful for \emph{conditional execution} of effects,
 \hs{selectA} is useful for \emph{static analysis}. As we will see
@@ -207,24 +208,23 @@ combinator \hs{whenS}:
 whenS :: Selective f => f Bool -> f () -> f ()
 whenS x y = selector <*? effect
   where
-    selector = bool (Right ()) (Left ()) <$> x -- NB: maps True to Left ()
+    selector = bool (Right ()) (Left ()) <$> x -- NB: convert True to Left ()
     effect   = const                     <$> y
 \end{minted}
 \vspace{1mm}
 
 \noindent
 We first bring the given effectful computations into the right shape by using
-the \hs{Functor}'s function \hs{fmap} (see
-Fig.~\ref{fig-types}); specifically, \hs{x}~\hs{::}~\hs{f}~\hs{Bool} is
-converted into a \hs{selector}~\hs{::}~\hs{f}~\hs{(Either}~\hs{()}~\hs{())}, and
-\hs{y}~\hs{::}~\hs{f}~\hs{()} is converted into
+the \hs{Functor}'s map operator. Specifically, \hs{x}~\hs{::}~\hs{f}~\hs{Bool}
+is converted into a \hs{selector}~\hs{::}~\hs{f}~\hs{(Either}~\hs{()}~\hs{())},
+and \hs{y}~\hs{::}~\hs{f}~\hs{()} is converted into
 \hs{effect}~\hs{::}~\hs{f}~\hs{(()}~\hs{->}~\hs{())}. The results are composed
 using the select operator \hs{<*?}, and the meaning of this composition is
-determined by the supplied \hs{Selective}~\hs{f} instance. For example, an instance
-like \hs{f}~\hs{=}~\hs{IO} would skip \hs{y} if \hs{x} yields \hs{True}, as
-exploited by our implementation of \hs{pingPongS}. On the other hand, instances
-used for static analysis would record both \hs{x} and \hs{y} as possible
-effects. See more examples in~\S\ref{sec-instances}.
+determined by the supplied \hs{Selective}~\hs{f} instance. For example, an
+instance like \hs{f}~\hs{=}~\hs{IO} would skip \hs{y} if \hs{x} yields
+\hs{False}, as exploited by our implementation of \hs{pingPongS}. On the other
+hand, instances used for static analysis would record both \hs{x} and \hs{y} as
+possible effects. See more examples in~\S\ref{sec-instances}.
 
 It is worth noting that unlike the select operator, whose implementation is
 almost completely determined by parametricity (i.e., the only real question is:
@@ -289,7 +289,7 @@ fromMaybeS x mx = select (maybe (Left ()) Right <$> mx) (const <$> x)
 are inherited from the standard Haskell library. For example, \hs{fromMaybeS}
 corresponds to the standard
 \hs{fromMaybe}~\hs{::}~\hs{a}~\hs{->}~\hs{Maybe}~\hs{a}~\hs{->}~\hs{a} and
-retains the short-circuiting behaviour, i.e. if the second argument is a
+retains the short-circuiting behaviour, i.e. if the second argument yields a
 \hs{Just}, the first argument is skipped.}
 \label{fig-library}
 \end{figure}
@@ -311,7 +311,7 @@ To fix the mismatch, we convert them to
 \hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{Either}~\hs{b}~\hs{c)}, respectively. The second
 application of \hs{<*?} is then straightforward.
 
-As will be discussed in~\S\ref{sec-alternatives}, we could have chosen to use
+As will be discussed in~\S\ref{sec-alt-branch}, we could have chosen to use
 \hs{branch} instead of \hs{select} as the method of the \hs{Selective} type
 class. Our choice of \hs{select} follows the Occam's razor principle:
 \hs{select} is simpler than \hs{branch}, which, in particular, leads to a
@@ -324,20 +324,63 @@ earlier obtained \hs{whenS}. Below we repeat the same trick but with
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 ifS :: Selective f => f Bool -> f a -> f a -> f a
-ifS x t e = branch selector (fmap const t) (fmap const e)
+ifS x t e = branch selector (const <$> t) (const <$> e)
   where
-    selector = fmap (\b -> if b then Left () else Right ()) x
+    selector = bool (Right ()) (Left ()) <$> x -- NB: convert True to Left ()
 \end{minted}
 \vspace{1mm}
 
 \noindent
 Many conditional combinators, which are typically associated with the \hs{Monad}
-type class, can be expressed using selective functors, as demonstrated in
+type class, can be expressed using selective functors, as shown in
 Fig.~\ref{fig-library}, making them reusable in new contexts. In particular, the
 logical combinators \hs{<||>} and \hs{<&&>} will play an important role in
-improving the efficiency of the \Haxl framework in~\S\ref{sec-haxl}.
+improving the efficiency of the \Haxl framework in~\S\ref{sec-haxl}. To
+emphasise the monadic flavour of selective functors, we can rewrite \hs{ifS} in
+the form of the bind operator specialised to \hs{Bool}:
 
-\subsection{Basic examples}\label{sec-instances}
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+bindBool :: Selective f => f Bool -> (Bool -> f a) -> f a
+bindBool x f = ifS x (f False) (f True)
+\end{minted}
+\vspace{1mm}
+
+\noindent
+This can be achieved not only for \hs{Bool}, but for any \emph{enumerable}
+type, as we will discuss in \S\ref{sec-selectivedo}.
+
+\subsection{Examples of selective functors}\label{sec-instances}
+
+Having explored various useful combinators that can be implemented using the
+selective interface, in this section we look at several basic examples of
+selective functors.
+
+As we have already observed at the beginning of this section, any monad can be
+given a \hs{Selective} instance simply by using \hs{select}~\hs{=}~\hs{selectM}
+as the definition. As an example, below we define a selective instance for
+\hs{IO}, and test our \hs{pingPongS} example in an interactive GHC session:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+instance Selective IO where
+    select = selectM
+
+@\ghci@ pingPongS = whenS (fmap (=="ping") getLine) (putStrLn "pong")
+@\ghci@ pingPongS
+hello
+@\ghci@ pingPongS
+ping
+pong
+\end{minted}
+\vspace{1mm}
+
+\noindent
+As desired, the effect \hs{putStrLn}~\hs{"pong"} is conditional.
+In~\S\ref{sec-free} we will see how to statically analyse \hs{pingPongS}, i.e.
+obtain a list of all possible effects before the execution, which can be done by
+interpreting \hs{pingPongS} in the selective functor \hs{Over}, introduced
+below.
 
 Over, under
 
