@@ -134,7 +134,7 @@ selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
 selectA x y = (\e f -> either f id e) <$> x <*> y
 
 -- Implementation used in the paper:
--- selectA x y = fmap (\e f -> case e of { Left a -> f a; Right b -> b }) x <*> y
+-- selectA x y = (\e f -> case e of { Left a -> f a; Right b -> b }) <$> x <*> y
 
 -- | 'Selective' is more powerful than 'Applicative': we can recover the
 -- application operator '<*>'. In particular, the following 'Applicative' laws
@@ -147,11 +147,14 @@ selectA x y = (\e f -> either f id e) <$> x <*> y
 apS :: Selective f => f (a -> b) -> f a -> f b
 apS f x = select (Left <$> f) (flip ($) <$> x)
 
+-- flip :: (a -> b -> c) -> b -> a -> c
+-- flip f b a = f a b
+
 -- | One can easily implement a monadic 'selectM' that satisfies the laws,
 -- hence any 'Monad' is 'Selective'.
 selectM :: Monad f => f (Either a b) -> f (a -> b) -> f b
-selectM x y = x >>= \e -> case e of Left  a -> y <*> pure a -- execute y
-                                    Right b ->       pure b -- skip y
+selectM x y = x >>= \e -> case e of Left  a -> ($a) <$> y -- execute y
+                                    Right b -> pure b     -- skip y
 
 -- Many useful 'Monad' combinators can be implemented with 'Selective'
 

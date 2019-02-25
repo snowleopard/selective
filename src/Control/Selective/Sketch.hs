@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections, ScopedTypeVariables #-}
 module Control.Selective.Sketch where
 
-import Control.Selective.Free
+import Control.Selective.Free.Rigid
 import Control.Monad
 import Data.Bifunctor
 import Data.Void
@@ -104,7 +104,7 @@ i1unit x y z =
 --     where
 --       f = (\ab -> bimap (, ab) ab)
 --       g = (\ca (c, ab) -> ab (ca c))
-i1 :: forall f a b c. Selective f => f (a -> b) -> f (Either c a) -> f (c -> a) -> f b
+i1 :: Selective f => f (a -> b) -> f (Either c a) -> f (c -> a) -> f b
 i1 x y z =
     x <*> (y <*? z)
     ===
