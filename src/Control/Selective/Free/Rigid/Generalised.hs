@@ -1,6 +1,9 @@
+-- Free selective functors for the simple case when @<*> = apS@.
+-- This module uses a generalised approach to constructing free structures.
+-- See "Control.Selective.Free" for a simpler, non-generalised approach.
 {-# LANGUAGE FlexibleInstances, GADTs, KindSignatures, RankNTypes #-}
 {-# LANGUAGE TupleSections, TypeOperators #-}
-module Control.Selective.Free.Generalised (
+module Control.Selective.Free.Rigid.Generalised (
     -- * Re-exports
     module Control.Selective,
 

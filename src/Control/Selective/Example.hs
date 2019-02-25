@@ -5,7 +5,7 @@ import Algebra.Graph
 import Algebra.Graph.Export.Dot
 import Build.Task
 import Control.Monad
-import Control.Selective.Free
+import Control.Selective.Free.Rigid
 
 import qualified Data.Set as Set
 

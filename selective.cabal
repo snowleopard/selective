@@ -24,8 +24,8 @@ library
     hs-source-dirs:     src
     exposed-modules:    Control.Selective,
                         Control.Selective.Example,
-                        Control.Selective.Free,
-                        Control.Selective.Free.Generalised,
+                        Control.Selective.Free.Rigid.Generalised,
+                        Control.Selective.Free.Rigid,
                         Control.Selective.Parser,
                         Control.Selective.Sketch
     build-depends:      algebraic-graphs >= 0.1.1,

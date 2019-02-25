@@ -1,5 +1,7 @@
+-- Free selective functors for the simple case when @<*> = apS@.
+-- See the general construction in "Control.Selective.Free".
 {-# LANGUAGE FlexibleInstances, GADTs, RankNTypes, TupleSections #-}
-module Control.Selective.Free (
+module Control.Selective.Free.Rigid (
     -- * Re-exports
     module Control.Selective,
 
