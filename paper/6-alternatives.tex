@@ -1,4 +1,7 @@
-\section{Alternative formulations}\label{sec-alternatives}
+\section{Alternative formulations and further research opportunitites}
+\label{sec-alternatives}
+
+\subsection{Adding \hs{select} to \hs{Applicative}}\label{sec-alt-applicative}
 
 One might argue that the \hs{select} method should simply be added to the
 \hs{Applicative} type class, with the default implementation
@@ -8,8 +11,14 @@ constraint, since the \hs{select} method makes it possible for "new applicative"
 effects to depend on values; declaring such a significant ability by the
 \hs{Selective}~\hs{f} constraint would arguably be a more prudent approach.
 
+\subsection{Using \hs{branch} instead of \hs{select}}\label{sec-alt-branch}
+
 Use \hs{branch} instead of \hs{select}, or use both
 ...
 multi-way version, i.e. select1, select2, selectN, etc. up to infinite version
 
-% Arseniy's raise/catch
+\subsection{Radically different designs}
+
+Arseniy's raise/catch
+
+\subsection{Multiway \hs{select} and \hs{SelectiveDo}}\label{sec-selectivedo}
