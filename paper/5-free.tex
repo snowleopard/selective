@@ -19,7 +19,7 @@ which would have the instances of \hs{Applicative}/\hs{Selective}/\hs{Monad}.
 
 ...
 
-\subsubsection{\textbf{Example: Teletype}}
+\subsection{Ping-pong, freely}\label{sec-free-ping-pong}
 
 To illustrate how the free selective construction can be used, we implement the
 classical example of the Teletype DSL.
@@ -77,11 +77,11 @@ inIO (GetLine t)    = t <$> Prelude.getLine
 inIO (PutStrLn s x) = Prelude.putStrLn s *> pure x
 \end{minted}
 
-\subsection{Build systems, freely}
+\subsection{Build systems, freely}\label{sec-free-build}
 
 ...
 
-\subsection{Analysis and simulation of processor instructions}
+\subsection{Analysis and simulation of processor instructions}\label{sec-free-isa}
 
 In this section, we demonstrate how we can use free selective functors to construct an
 effect which can be used for effectively describing the semantics of a hypothetical
