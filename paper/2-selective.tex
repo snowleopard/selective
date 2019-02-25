@@ -301,8 +301,8 @@ select x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
 -- General interchange
 x <*> (y <*? z) = (f <$> x <*> y) <*? (g <$> z)
   where
-    f = (\ab -> bimap (, ab) ab)
-    g = (\ca (c, ab) -> ab (ca c))
+    f ab = bimap (\c ca -> ab (ca c)) ab
+    g ca = ($ca)
 
 -- For selective functors that are also monads:
 (<*>) = apS
