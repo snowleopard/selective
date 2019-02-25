@@ -133,9 +133,6 @@ branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
 selectA x y = (\e f -> either f id e) <$> x <*> y
 
--- Implementation used in the paper:
--- selectA x y = (\e f -> case e of { Left a -> f a; Right b -> b }) <$> x <*> y
-
 -- | 'Selective' is more powerful than 'Applicative': we can recover the
 -- application operator '<*>'. In particular, the following 'Applicative' laws
 -- hold when expressed using 'apS':
@@ -146,9 +143,6 @@ selectA x y = (\e f -> either f id e) <$> x <*> y
 -- * Composition  : (.) <$> u <*> v <*> w = u <*> (v <*> w)
 apS :: Selective f => f (a -> b) -> f a -> f b
 apS f x = select (Left <$> f) (flip ($) <$> x)
-
--- flip :: (a -> b -> c) -> b -> a -> c
--- flip f b a = f a b
 
 -- | One can easily implement a monadic 'selectM' that satisfies the laws,
 -- hence any 'Monad' is 'Selective'.
@@ -165,7 +159,7 @@ ifS i t e = branch (bool (Right ()) (Left ()) <$> i) (const <$> t) (const <$> e)
 -- Implementation used in the paper:
 -- ifS x t e = branch selector (fmap const t) (fmap const e)
 --   where
---     selector = fmap (\b -> if b then Left () else Right ()) x
+--     selector = bool (Right ()) (Left ()) <$> x -- NB: convert True to Left ()
 
 -- | Eliminate a specified value @a@ from @f (Either a b)@ by replacing it
 -- with a given @f b@.
@@ -203,8 +197,8 @@ whenS x act = ifS x act (pure ())
 -- Implementation used in the paper:
 -- whenS x y = selector <*? effect
 --   where
---     selector = fmap (\b -> if b then Left () else Right ()) x
---     effect   = fmap const                                   y
+--     selector = bool (Right ()) (Left ()) <$> x -- NB: maps True to Left ()
+--     effect   = const                     <$> y
 
 -- | A lifted version of 'fromMaybe'.
 fromMaybeS :: Selective f => f a -> f (Maybe a) -> f a
