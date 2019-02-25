@@ -38,9 +38,9 @@ putStrLn :: String -> Teletype ()
 putStrLn v = liftSelect (PutLine v ())
 
 -- | The example from the paper's intro. Implemented in terms of the free
---   selective, can now be statically analysed for necessary effects:
+--   selective, can now be statically analysed for effects:
 --
---   > analyse pingPong
+--   > getEffects pingPong
 --   ([],Left (PutLine pong :| [GetLine]))
 --
 --   We can also run the program in IO:
