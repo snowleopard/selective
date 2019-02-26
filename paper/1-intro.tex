@@ -144,9 +144,9 @@ select :: Selective f => f (Either a b) -> f (a -> b) -> f b
 
 \noindent
 Intuitively, the first effectful computation is used to select what happens
-next: if it yields a \hs{Left}~\hs{a} you \emph{must} execute the second
+next: if it yields a \hs{Left}~\hs{a} you \emph{must execute} the second
 computation in order to produce a \hs{b} in the end; otherwise, if it yields a
-\hs{Right}~\hs{b}, you \emph{may} skip the subsequent effect, because you have
+\hs{Right}~\hs{b}, you \emph{may skip} the subsequent effect, because you have
 no use for the resulting function.
 
 The contributions of this paper are as follows:

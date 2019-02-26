@@ -117,8 +117,8 @@ second  :: (b -> c) -> Either a b -> Either a c             -- Map over Right
 bimap   :: (a -> c) -> (b -> d) -> Either a b -> Either c d -- Map over Left and Right
 void    :: Functor f => f a -> f ()                         -- Discard an effect's value
 \end{minted}
-\caption{Type signatures of standard operators and functions used throughout the
-paper.}\label{fig-std}
+\caption{Type signatures and descriptions of standard operators and functions
+used throughout the paper.}\label{fig-std}
 \end{figure}
 
 One can implement \hs{select} using monads in a straightforward manner: examine
@@ -228,7 +228,7 @@ possible effects. See more examples in~\S\ref{sec-instances}.
 
 It is worth noting that unlike the select operator, whose implementation is
 almost completely determined by parametricity (i.e., the only real question is:
-\emph{"To skip, or not to skip?"}), \hs{whenS} admits a variety of (incorrect)
+\emph{``To skip, or not to skip?''}), \hs{whenS} admits a variety of (incorrect)
 implementations. In particular, due to \emph{Boolean blindness}\footnote{The
 term refers to the fact that the \hs{True} and \hs{False} values are not
 distinguished at the type level, see~\citet{boolean-blindness}.},
@@ -243,7 +243,7 @@ not.
 % The purpose of abstraction is not to be vague, but to create a new semantic
 % level in which one can be absolutely precise."
 
-A strong contender for playing the first violin in selective functors is the
+A strong contender for playing the leading role in selective functors is the
 function \hs{branch} that, given an effectful computation
 \hs{x}~\hs{::}~\hs{f}~\hs{(Either}~\hs{a}~\hs{b)}, selects which subsequent
 computation, namely \hs{l}~\hs{::}~\hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{c)} or
@@ -258,17 +258,14 @@ branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 
 \begin{figure}
 \begin{minted}[fontsize=\small]{haskell}
+whenS :: Selective f => f Bool -> f () -> f ()
+whenS x y = select (bool (Right ()) (Left ()) <$> x) (const <$> y)
+
 branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
 branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 
 ifS :: Selective f => f Bool -> f a -> f a -> f a
 ifS x t e = branch (bool (Right ()) (Left ()) <$> x) (const <$> t) (const <$> e)
-
-whenS :: Selective f => f Bool -> f () -> f ()
-whenS x y = ifS x y (pure ())
-
-whileS :: Selective f => f Bool -> f () -- Run a computation while it yields True
-whileS x = whenS x (whileS x)
 
 (<||>) :: Selective f => f Bool -> f Bool -> f Bool
 x <||> y = ifS x (pure True) y
@@ -276,14 +273,17 @@ x <||> y = ifS x (pure True) y
 (<&&>) :: Selective f => f Bool -> f Bool -> f Bool
 x <&&> y = ifS x y (pure False)
 
+fromMaybeS :: Selective f => f a -> f (Maybe a) -> f a
+fromMaybeS x mx = select (maybe (Left ()) Right <$> mx) (const <$> x)
+
 anyS :: Selective f => (a -> f Bool) -> [a] -> f Bool
 anyS p = foldr ((<||>) . p) (pure False)
 
 allS :: Selective f => (a -> f Bool) -> [a] -> f Bool
 allS p = foldr ((<&&>) . p) (pure True)
 
-fromMaybeS :: Selective f => f a -> f (Maybe a) -> f a
-fromMaybeS x mx = select (maybe (Left ()) Right <$> mx) (const <$> x)
+whileS :: Selective f => f Bool -> f () -- Run a computation while it yields True
+whileS x = whenS x (whileS x)
 \end{minted}
 \caption{A library of selective combinators. The names and order of parameters
 are inherited from the standard Haskell library. For example, \hs{fromMaybeS}
@@ -315,7 +315,7 @@ As will be discussed in~\S\ref{sec-alt-branch}, we could have chosen to use
 \hs{branch} instead of \hs{select} as the method of the \hs{Selective} type
 class. Our choice of \hs{select} follows the Occam's razor principle:
 \hs{select} is simpler than \hs{branch}, which, in particular, leads to a
-simpler free construction (\S\ref{sec-free}).
+simpler free construction (\S\ref{sec-free-construction}).
 
 By instantiating \hs{select} with \hs{a}~\hs{=}~\hs{b}~\hs{=}~\hs{()} we have
 earlier obtained \hs{whenS}. Below we repeat the same trick but with
@@ -352,8 +352,8 @@ type, as we will discuss in \S\ref{sec-selectivedo}.
 
 \subsection{Examples of selective functors}\label{sec-instances}
 
-Having explored various useful combinators that can be implemented using the
-selective interface, in this section we look at several basic examples of
+Having explored various useful combinators that can be implemented on top of the
+minimalistic selective interface, in this section we look at several examples of
 selective functors.
 
 As we have observed at the beginning of this section, any monad can be given a
@@ -377,7 +377,7 @@ pong
 \vspace{1mm}
 
 \noindent
-As desired, the effect \hs{putStrLn}~\hs{"pong"} is conditional.
+As desired, the effect \hs{putStrLn}~\hs{"pong"} occurs conditionally.
 In~\S\ref{sec-free-ping-pong} we will see how to statically analyse
 \hs{pingPongS}, i.e. obtain a list of all possible effects \emph{before the
 execution}, which can be done by interpreting \hs{pingPongS} in the selective
@@ -408,9 +408,9 @@ instance Monoid m => Applicative (Const m) where
 \noindent
 It turns out there are two useful selective instances for \hs{Const}. To
 disambiguate between them, we will call them \hs{Over} and \hs{Under},
-reusing\footnote{Fortunately it is possible to reuse \hs{Const} instances
-without duplicating any code, by using the new GHC extension
-\textsf{DerivingVia}~\citep{blondal2018deriving} and adding
+reusing\footnote{Fortunately, thanks to the new GHC extension
+\textsf{DerivingVia}~\citep{blondal2018deriving}, we can reuse \hs{Const}
+instances without duplicating any code, simply by adding
 \hs{deriving}~\hs{(Functor,}~\hs{Applicative)}~\hs{via}~\hs{(Const}~\hs{m)} to
 the \hs{newtype} definitions.}
 the above \hs{Functor} and \hs{Applicative} instances:
@@ -433,13 +433,144 @@ instance Monoid m => Selective (Under m) where
 \noindent
 The selective functor \hs{Over} can be used for computing a list of all possible
 effects embedded in a computation, i.e. an \emph{over-approximation} of the
-effects that will actually occur. This can be seen in the definition of the
-instance, which keeps track of effects in both arguments of \hs{select}. The
-selective functor \hs{Under}, on the other hand, discards the second argument of
-\hs{select} and therefore computes an \emph{under-approximation}, i.e. a list
-of effects that are guaranteed to occur.
+effects that will actually occur. This is achieved by keeping track of effects
+in both arguments of \hs{select}. The selective functor \hs{Under}, on the other
+hand, discards the second argument of \hs{select}, and therefore computes an
+\emph{under-approximation}, i.e. a list of effects that are guaranteed to occur.
 
-Validation
+\noindent
+Let us give these two instances a try:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt,fontsize=\small]{haskell}
+@\ghci@ ifS (Over@\,@"a") (Over@\,@"b") (Over@\,@"c") *> Over@\,@"d" *> whenS (Over@\,@"e") (Over@\,@"f")
+Over {getOver = "abcdef"}
+\end{minted}
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt,fontsize=\small]{haskell}
+@\ghci@ ifS (Under@\,@"a") (Under@\,@"b") (Under@\,@"c") *> Under@\,@"d" *> whenS (Under@\,@"e") (Under@\,@"f")
+Under {getUnder = "ade"}
+\end{minted}
+\vspace{1mm}
+
+\noindent
+As expected, \hs{Over} collects all effects, whereas \hs{Under} does not look
+beyond ``opaque'' conditions. A deeper difference between them is that \hs{Over}
+is a rigid selective functor (i.e. \hs{<*>}~\hs{=}~\hs{apS}), but \hs{Under} is
+not: indeed, \hs{Under}~\hs{"a"}~\hs{<*>}~\hs{Under}~\hs{"b"} records both
+\hs{"a"} and \hs{"b"}, but \hs{apS}~\hs{(Under}~\hs{"a")}~\hs{(Under}~\hs{"b")}
+records just \hs{"a"} since \hs{apS} is implemented via the under-approximating
+\hs{select}. Intuitively, non-rigid selective functors have a much richer
+structure, because \hs{<*>} is not expressible via \hs{select}, which will
+significantly complicate the corresponding free construction
+(\S\ref{sec-free-construction}).
+
+Our last example in this section is the selective functor
+\hs{Validation}\footnote{Applicative functors \hs{Const} and \hs{Validation}
+appeared under the names \hs{Accy} and \hs{Except} in
+\citep{mcbride2008applicative}.}, which is useful for validating complex data:
+if reading one or more data fields has failed, all errors are accumulated (using
+the operator \hs{<>} from the semigroup \hs{e}) to be reported together:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+data Validation e a = Failure e | Success a deriving (Functor, Show)
+\end{minted}
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+instance Semigroup e => Applicative (Validation e) where
+    pure = Success
+    Failure e1 <*> Failure e2 = Failure (e1 <> e2) -- Accumulate errors
+    Failure e1 <*> Success _  = Failure e1
+    Success _  <*> Failure e2 = Failure e2
+    Success f  <*> Success a  = Success (f a)
+\end{minted}
+\vspace{1mm}
+
+\noindent
+The error-accumulating behaviour cannot be extended to a \hs{Monad} instance,
+since the bind operator has nothing to bind to if the first computation fails.
+We can, however, define the following \hs{Selective} instance, which allows us
+to validate data in the presence of conditions.
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+instance Semigroup e => Selective (Validation e) where
+    select (Success (Right b)) _ = Success b
+    select (Success (Left  a)) f = ($a) <$> f
+    select (Failure e) _ = Failure e -- NB: Don't look past failed conditions
+\end{minted}
+\vspace{1mm}
+
+\noindent
+Here, the last line is particularly interesting: similarly to \hs{Under}, we
+discard the second argument, but \emph{only if the first has failed}. This
+allows us not to report any validation errors that are hidden behind a failed
+conditional (we do not know whether the corresponding fields are actually
+needed).
+
+Below we define a function that constructs a shape (a circle or a rectangle)
+given a choice of the shape \hs{x}, and the shape's parameters (\hs{r}, \hs{w},
+and \hs{h}) in an arbitrary selective functor \hs{f}. You can think of the
+inputs as results of reading the corresponding fields from a web form, where
+\hs{x} is a checkbox, and all other fields are numeric textboxes, some of which
+may be empty.
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+type Radius = Word; type Width = Word; type Height = Word
+\end{minted}
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+data Shape = Circle Radius | Rectangle Width Height deriving Show
+\end{minted}
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+shape :: Selective f => f Bool -> f Radius -> f Width -> f Height -> f Shape
+shape x r w h = ifS x (Circle <$> r) (Rectangle <$> w <*> h)
+\end{minted}
+\vspace{1mm}
+
+\noindent
+We choose \hs{f}~\hs{=}~\hs{Validation}~\hs{[String]} to report the errors that
+occurred when reading values from the form. Let us see how it works.
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt,fontsize=\small]{haskell}
+@\ghci@ shape (Success True) (Success 1) (Failure ["width?"]) (Failure ["height?"])
+Success (Circle 1)
+@\ghci@ shape (Success False) (Failure ["radius?"]) (Success 2) (Success 3)
+Success (Rectangle 2 3)
+@\ghci@ shape (Success False) (Success 1) (Failure ["width?"]) (Failure ["height?"])
+Failure ["width?", "height?"]
+@\ghci@ shape (Failure ["choice?"]) (Failure ["radius?"]) (Success 2) (Failure ["height?"])
+Failure ["choice?"]
+\end{minted}
+\vspace{1mm}
+
+\noindent
+In the last example, since the shape's choice has failed to be read, we do not
+report any subsequent errors. But it does not mean we are short-circuiting the
+validation: we will continue accumulating errors as soon as we get out of the
+opaque conditional, as demonstrated below.
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt,fontsize=\small]{haskell}
+twoShapes :: Selective f => f Shape -> f Shape -> f (Shape, Shape)
+twoShapes s1 s2 = (,) <$> s1 <*> s2
+\end{minted}
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt,fontsize=\small]{haskell}
+@\ghci@ s1 = shape (Failure ["choice 1?"]) (Success 1) (Failure ["width 1?"]) (Success 3)
+@\ghci@ s2 = shape (Success False) (Success 1) (Success 2) (Failure ["height 2?"])
+@\ghci@ twoShapes s1 s2
+Failure ["choice 1?","height 2?"]
+\end{minted}
+\vspace{1mm}
+
+\noindent
+Like \hs{Under}, the \hs{Validation} instance is not a rigid selective functor,
+since \hs{select} occasionally discards effects in the second argument.
 
 \subsection{Laws}\label{sec-laws}
 
@@ -489,7 +620,7 @@ x <*> (y <*? z) = (f <$> x <*> y) <*? (g <$> z)
     f ab = bimap (\c ca -> ab (ca c)) ab
     g ca = ($ca)
 
--- For selective functors that are also monads:
+-- For rigid selective functors and monads:
 (<*>) = apS
 \end{minted}
 \caption{Laws and theorems of selective functors.}

@@ -192,7 +192,7 @@ bindS x f = fromRight <$> matchS casesEnum x f
 
 -- | Conditionally perform an effect.
 whenS :: Selective f => f Bool -> f () -> f ()
-whenS x act = ifS x act (pure ())
+whenS x y = select (bool (Right ()) (Left ()) <$> x) (const <$> y)
 
 -- Implementation used in the paper:
 -- whenS x y = selector <*? effect
@@ -285,17 +285,16 @@ instance Applicative f => Selective (ViaSelectA f) where
 data Validation e a = Failure e | Success a deriving (Functor, Show)
 
 instance Semigroup e => Applicative (Validation e) where
-    pure  = Success
+    pure = Success
     Failure e1 <*> Failure e2 = Failure (e1 <> e2)
     Failure e1 <*> Success _  = Failure e1
     Success _  <*> Failure e2 = Failure e2
     Success f  <*> Success a  = Success (f a)
 
 instance Semigroup e => Selective (Validation e) where
-    select (Success (Right b)) _           = Success b
-    select (Success (Left  _)) (Failure e) = Failure e
-    select (Success (Left  a)) (Success f) = Success (f a)
-    select (Failure e        ) _           = Failure e
+    select (Success (Right b)) _ = Success b
+    select (Success (Left  a)) f = ($a) <$> f
+    select (Failure e        ) _ = Failure e
 
 -- Static analysis of selective functors with over-approximation
 newtype Over m a = Over { getOver :: m }
@@ -303,10 +302,12 @@ newtype Over m a = Over { getOver :: m }
         (Functor, Applicative, Selective)
     via
         (ViaSelectA (Const m))
+    deriving Show
 
 -- Static analysis of selective functors with under-approximation
 newtype Under m a = Under { getUnder :: m }
     deriving (Functor, Applicative) via (Const m)
+    deriving Show
 
 instance Monoid m => Selective (Under m) where
     select (Under m) _ = Under m

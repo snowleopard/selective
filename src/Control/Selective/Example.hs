@@ -137,26 +137,26 @@ data Shape = Circle Radius | Rectangle Width Height deriving Show
 
 -- Some validation examples:
 --
--- > shape (Success True) (Success 10) (Failure ["no width"]) (Failure ["no height"])
--- > Success (Circle 10)
+-- > shape (Success True) (Success 1) (Failure ["width?"]) (Failure ["height?"])
+-- > Success (Circle 1)
 --
--- > shape (Success False) (Failure ["no radius"]) (Success 20) (Success 30)
--- > Success (Rectangle 20 30)
+-- > shape (Success False) (Failure ["radius?"]) (Success 2) (Success 3)
+-- > Success (Rectangle 2 3)
 --
--- > shape (Success False) (Failure ["no radius"]) (Success 20) (Failure ["no height"])
--- > Failure ["no height"]
+-- > shape (Success False) (Failure ["radius?"]) (Success 2) (Failure ["height?"])
+-- > Failure ["height?"]
 --
--- > shape (Success False) (Failure ["no radius"]) (Failure ["no width"]) (Failure ["no height"])
--- > Failure ["no width", "no height"]
+-- > shape (Success False) (Success 1) (Failure ["width?"]) (Failure ["height?"])
+-- > Failure ["width?", "height?"]
 --
--- > shape (Failure ["no choice"]) (Failure ["no radius"]) (Success 20) (Failure ["no height"])
--- > Failure ["no choice"]
+-- > shape (Failure ["choice?"]) (Failure ["radius?"]) (Success 2) (Failure ["height?"])
+-- > Failure ["choice?"]
 shape :: Selective f => f Bool -> f Radius -> f Width -> f Height -> f Shape
 shape s r w h = ifS s (Circle <$> r) (Rectangle <$> w <*> h)
 
--- > s1 = shape (Failure ["no choice 1"]) (Failure ["no radius 1"]) (Success 20) (Failure ["no height 1"])
--- > s2 = shape (Success False) (Failure ["no radius 2"]) (Success 20) (Failure ["no height 2"])
+-- > s1 = shape (Failure ["choice 1?"]) (Success 1) (Failure ["width 1?"]) (Success 3)
+-- > s2 = shape (Success False) (Success 1) (Success 2) (Failure ["height 2?"])
 -- > twoShapes s1 s2
--- > Failure ["no choice 1","no height 2"]
+-- > Failure ["choice 1?","height 2?"]
 twoShapes :: Selective f => f Shape -> f Shape -> f (Shape, Shape)
 twoShapes s1 s2 = (,) <$> s1 <*> s2
