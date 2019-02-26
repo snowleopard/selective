@@ -295,7 +295,7 @@ partition = foldl go ([], [])
 instructionGraph :: (InstructionAddress, Instruction)
                     -> Graph (Either Key (InstructionAddress, Instruction))
 instructionGraph instrInfo@(_, instr) =
-    let (ins, outs) = partition $ getEffects (semantics instr)
+    let (ins, outs) = partition $ getEffectsISA (semantics instr)
     in overlay (star (Right instrInfo) (map Left outs))
                (transpose $ star (Right instrInfo) (map Left ins))
 
