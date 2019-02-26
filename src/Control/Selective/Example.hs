@@ -129,9 +129,9 @@ draw tasks = exportAsIs . graph deps
 fetchIO :: Read a => String -> IO a
 fetchIO prompt = do putStr (prompt ++ ": "); read <$> getLine
 
-type Radius = Int
-type Width  = Int
-type Height = Int
+type Radius = Word
+type Width  = Word
+type Height = Word
 
 data Shape = Circle Radius | Rectangle Width Height deriving Show
 

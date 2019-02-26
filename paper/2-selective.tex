@@ -20,12 +20,12 @@ class Functor f => Applicative f where
 \end{minted}
 \vspace{0.5mm}
 \begin{minted}[fontsize=\small]{haskell}
--- A variant of <*> with the arguments reversed
+-- A variant of (<*>) with the arguments reversed
 (<**>) :: Applicative f => f a -> f (a -> b) -> f b
 \end{minted}
 \vspace{0.5mm}
 \begin{minted}[fontsize=\small]{haskell}
--- A variant of <*> that discards the value of the first argument
+-- A variant of (<*>) that discards the value of the first argument
 (*>) :: Applicative f => f a -> f b -> f b
 \end{minted}
 \vspace{2mm}
@@ -420,7 +420,7 @@ the above \hs{Functor} and \hs{Applicative} instances:
 newtype Over  m a = Over  { getOver  :: m }
 newtype Under m a = Under { getUnder :: m }
 
-instance Monoid m => Selective (Under m) where
+instance Monoid m => Selective (Over m) where
     select (Over x) (Over y) = Over (x <> y) -- collect effects in x and y
 \end{minted}
 \vspace{1mm}
@@ -498,7 +498,7 @@ to validate data in the presence of conditions.
 instance Semigroup e => Selective (Validation e) where
     select (Success (Right b)) _ = Success b
     select (Success (Left  a)) f = ($a) <$> f
-    select (Failure e) _ = Failure e -- NB: Don't look past failed conditions
+    select (Failure e) _ = Failure e -- NB: Failed conditions are opaque
 \end{minted}
 \vspace{1mm}
 
@@ -533,7 +533,7 @@ shape x r w h = ifS x (Circle <$> r) (Rectangle <$> w <*> h)
 
 \noindent
 We choose \hs{f}~\hs{=}~\hs{Validation}~\hs{[String]} to report the errors that
-occurred when reading values from the form. Let us see how it works.
+occurred when reading values from the form. Let us see how this works.
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt,fontsize=\small]{haskell}
@@ -549,7 +549,7 @@ Failure ["choice?"]
 \vspace{1mm}
 
 \noindent
-In the last example, since the shape's choice has failed to be read, we do not
+In the last example, since the shape's choice could not be read, we do not
 report any subsequent errors. But it does not mean we are short-circuiting the
 validation: we will continue accumulating errors as soon as we get out of the
 opaque conditional, as demonstrated below.
