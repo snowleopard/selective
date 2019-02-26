@@ -125,7 +125,7 @@ One can implement \hs{select} using monads in a straightforward manner: examine
 the value produced by \hs{f}~\hs{(Either}~\hs{a}~\hs{b)} with the bind operator,
 and then, in the \hs{Left}~\hs{a} case, execute the subsequent effect
 \hs{f}~\hs{(a}~\hs{->}~\hs{b)}, passing the \hs{a} to it using the
-\hs{Functor}'s map operator, as shown below. We will use~\hs{<@\fmap@>}, an
+\hs{Functor}'s map operator, as shown below. We will use~\hs{<@\dollar@>}, an
 infix synonym of \hs{fmap}, throughout the paper (see Fig.~\ref{fig-types} for
 \hs{Functor}'s API).
 
@@ -444,12 +444,12 @@ Let us give these two instances a try:
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt,fontsize=\small]{haskell}
 @\ghci@ ifS (Over@\,@"a") (Over@\,@"b") (Over@\,@"c") *> Over@\,@"d" *> whenS (Over@\,@"e") (Over@\,@"f")
-Over {getOver = "abcdef"}
+Over "abcdef"
 \end{minted}
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt,fontsize=\small]{haskell}
 @\ghci@ ifS (Under@\,@"a") (Under@\,@"b") (Under@\,@"c") *> Under@\,@"d" *> whenS (Under@\,@"e") (Under@\,@"f")
-Under {getUnder = "ade"}
+Under "ade"
 \end{minted}
 \vspace{1mm}
 
@@ -474,7 +474,7 @@ the operator \hs{<>} from the semigroup \hs{e}) to be reported together.
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-data Validation e a = Failure e | Success a deriving (Functor, Show)
+data Validation e a = Failure e | Success a deriving Functor
 \end{minted}
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -522,7 +522,7 @@ type Radius = Word; type Width = Word; type Height = Word
 \end{minted}
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-data Shape = Circle Radius | Rectangle Width Height deriving Show
+data Shape = Circle Radius | Rectangle Width Height
 \end{minted}
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -598,15 +598,21 @@ simplify sequences of conditional operations \emph{as long as the conditions are
 pure}. The \emph{generalised identity} theorem follows from the identity law as
 a free theorem.
 
-% It may be illuminating to compare the following type signatures:
-% \begin{minted}[xleftmargin=10pt]{haskell}
-% (<**>) :: Applicative f => f a            -> f (a -> b) -> f b
-% select :: Selective   f => f (Either a b) -> f (a -> b) -> f b
-% (>>=)  :: Monad       f => f a            -> (a -> f b) -> f b
-% \end{minted}
-% The type signature of \hs{select} is reminiscent of both \hs{<*>} and \hs{>>=},
-% and indeed a selective functor is in some sense a composition of an applicative
-% functor and the \hs{Either} monad.
+Note that it is not a requirement for selective functors to skip unnecessary
+effects. In particular, we do not require that
+\hs{pure}~\hs{(Right}~\hs{x)}~\hs{<*?}~\hs{y}~\hs{=}~\hs{pure}~\hs{x}. It may be
+counterintuitive, but omitting this law makes selective functors more useful.
+Typically, \emph{when executing} a selective computation, you would want to skip
+the unnecessary effects (saving work); but on the other hand, if your goal is to
+\emph{statically analyse} a given selective computation and extract the set of
+all possible effects (without actually executing them), then you do not want to
+skip any effects, because this would defeat the purpose of static analysis.
+\hs{Over} is an example of a selective functor that would violate the
+requirement to skip unnecessary effects. Similarly, we do not require that
+\hs{pure}~\hs{(Left}~\hs{x)}~\hs{<*?}~\hs{y}~\hs{=}~\hs{(@\dollar@}\hs{x)}~\hs{<@\dollar@>}~\hs{y}
+thus legalising under-approximating instances like \hs{Under} and
+\hs{Validation}. It is worth noting, however, that the monadic select operator
+\hs{selectM} does satisfy the \emph{pure Left} and \emph{pure Right} properties.
 
 \begin{figure}
 \begin{minted}{haskell}
@@ -639,7 +645,7 @@ a free theorem.
 -- Generalised identity:
 @\blk{x}@ <*? pure y = either y id <$> x
 
--- For rigid selective functors (in particular, for monads):
+-- Theorems for rigid selective functors (in particular, for monads):
 (<*>) = apS                     -- Selective apply
 @\blk{x}@ *> (y <*? z) = (x *> y) <*? z -- Interchange
 \end{minted}
@@ -654,13 +660,78 @@ a free theorem.
 % -- General distributivity (?)
 % ifS (pure x) a1 b1 *> ifS (pure x) a2 b2 = ifS (pure x) (a1 *> a2) (b1 *> b2)
 
-Note that it is not a requirement for selective functors to skip unnecessary
-effects. It may be counterintuitive, but this makes them more useful. Why?
-Typically, when executing a selective computation, you would want to skip the
-effects (saving work); but on the other hand, if your goal is to statically
-analyse a given selective computation and extract the set of all possible
-effects (without actually executing them), then you do not want to skip any
-effects, because that defeats the purpose of static analysis.
+The \emph{associativity} law states that it should always be possible to
+re-associate a sequence of select operators to the left, by doing the necessary
+adjustments to shapes of the inner values. These adjustments, called \hs{f},
+\hs{g}, and \hs{h} in Fig.~\ref{fig-laws}, are admittedly obscure and require an
+explanation. For the expression \hs{x}~\hs{<*?}~\hs{(}\hs{y}~\hs{<*?}~\hs{z)} to
+typecheck, the arguments should have the following types:
 
-...
+\begin{minted}[xleftmargin=5pt,fontsize=\small]{haskell}
+x :: f (Either a b)                  @\blu{y}@ :: f (Either c (a -> b))     @\blu{z}@ :: f (c -> a -> b)
+\end{minted}
 
+\noindent
+On the other hand, the resulting expression
+\hs{p}~\hs{<*?}~\hs{q}~\hs{<*?}~\hs{r} has arguments of these types:
+
+\begin{minted}[xleftmargin=5pt,fontsize=\small]{haskell}
+p :: f (Either a (Either (c,a) b))   @\blu{q}@ :: f (a -> Either (c,a) b)   @\blu{r}@ :: f ((c,a) -> b)
+\end{minted}
+
+\noindent
+To adjust \hs{x}, we inject it in a larger sum type, \hs{y} is turned into a
+function accepting a value of type \hs{a} from \hs{p}, and \hs{z} is simply
+\hs{uncurry}ed. As we will see in~\S\ref{sec-alt-either}, the associativity law
+can be expressed much more naturally if we switch to a different select
+operator (a similar phenomenon occurs with the \emph{composition} law of
+the \hs{Applicative} type class when the latter is expressed using an equivalent
+but more symmetric \hs{Monoidal} interface~\citep{mcbride2008applicative}).
+
+The final law links selective functors to monads: in the spirit of the
+conventional applicative-monad law \hs{(<*>)}~\hs{=}~\hs{ap}, we require that
+monadic instances implement \hs{select} so that it is extensionally equivalent
+to \hs{selectM}, which in particular means that unnecessary effects are skipped.
+A consequence of this law is that monadic selective functors are also rigid,
+i.e. \hs{(<*>)}~\hs{=}~\hs{apS}, which makes it practically feasible to reason
+about code written using all three abstractions.
+
+Fig.~\ref{fig-laws} also lists a few theorems that are useful when working with
+selective functors. The first three come for free from parametricity: they tell
+how one can reshape pure contents of selective functors. Last but not least, the
+\emph{interchange} property is a consequence of associativity and
+\hs{(<*>)}~\hs{=}~\hs{apS}, which allows to move computations inside the
+condition argument of the select operator. This property does not always hold
+for non-rigid selective functors: while \hs{Under} respects it, \hs{Validation}
+does not, as demonstrated by the following example:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+@\ghci@ whenS (Under "a" *> Under "b") (Under "c")
+Under "ab"
+@\ghci@ Under "a" *> whenS (Under "b") (Under "c")
+Under "ab"
+\end{minted}
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+@\ghci@ Failure "a" *> whenS (Success True) (Failure "b")
+Failure "ab"
+@\ghci@ whenS (Failure "a" *> Success True) (Failure "b")
+Failure "a"
+\end{minted}
+\vspace{1mm}
+
+\noindent
+The proofs that all selective instances introduced in this paper satisfy the
+laws and properties in Fig.~\ref{fig-laws} are available in the artefact
+supplied with the paper.
+
+% It may be illuminating to compare the following type signatures:
+% \begin{minted}[xleftmargin=10pt]{haskell}
+% (<**>) :: Applicative f => f a            -> f (a -> b) -> f b
+% select :: Selective   f => f (Either a b) -> f (a -> b) -> f b
+% (>>=)  :: Monad       f => f a            -> (a -> f b) -> f b
+% \end{minted}
+% The type signature of \hs{select} is reminiscent of both \hs{<*>} and \hs{>>=},
+% and indeed a selective functor is in some sense a composition of an applicative
+% functor and the \hs{Either} monad.

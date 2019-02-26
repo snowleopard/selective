@@ -65,7 +65,7 @@ p1id x = select x (pure id) === either id id <$> x
 p2 :: Selective f => a -> f (a -> b) -> f b
 p2 x y = select (pure (Left  x)) y === y <*> pure x
 
--- P3 (does not generally hold): select (pure (Left x)) y = ($x) <$> y
+-- P3 (does not generally hold): select (pure (Right x)) y = pure x
 p3 :: Selective f => b -> f (a -> b) -> f b
 p3 x y = select (pure (Right x)) y === pure x
 

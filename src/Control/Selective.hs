@@ -10,7 +10,7 @@ module Control.Selective (
     foldS, anyS, allS, matchS, bindS, matchM,
 
     -- * Static analysis
-    ViaSelectA (..), Over (..), Under (..), Validation (..),
+    ViaSelectA (..), Over (..), getOver, Under (..), getUnder, Validation (..),
     dependencies
     ) where
 
@@ -297,20 +297,26 @@ instance Semigroup e => Selective (Validation e) where
     select (Failure e        ) _ = Failure e
 
 -- Static analysis of selective functors with over-approximation
-newtype Over m a = Over { getOver :: m }
+newtype Over m a = Over m
     deriving
         (Functor, Applicative, Selective)
     via
         (ViaSelectA (Const m))
     deriving Show
 
+getOver :: Over m a -> m
+getOver (Over x) = x
+
 -- Static analysis of selective functors with under-approximation
-newtype Under m a = Under { getUnder :: m }
+newtype Under m a = Under m
     deriving (Functor, Applicative) via (Const m)
     deriving Show
 
 instance Monoid m => Selective (Under m) where
     select (Under m) _ = Under m
+
+getUnder :: Under m a -> m
+getUnder (Under x) = x
 
 -- | Extract dependencies from a selective task.
 dependencies :: Task Selective k v -> [k]
