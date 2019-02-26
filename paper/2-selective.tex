@@ -470,7 +470,7 @@ Our last example in this section is the selective functor
 appeared under the names \hs{Accy} and \hs{Except} in
 \citep{mcbride2008applicative}.}, which is useful for validating complex data:
 if reading one or more data fields has failed, all errors are accumulated (using
-the operator \hs{<>} from the semigroup \hs{e}) to be reported together:
+the operator \hs{<>} from the semigroup \hs{e}) to be reported together.
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -574,17 +574,39 @@ since \hs{select} occasionally discards effects in the second argument.
 
 \subsection{Laws}\label{sec-laws}
 
-It may be illuminating to compare the following type signatures:
+Now that we have seen several instances of selective functors, it is time to
+discuss the laws that we expect them to satisfy. In particular, it is very
+useful to know how the selective interface interacts with existing applicative
+and monadic interfaces. Real code might mix all of these abstractions, because
+each of them is useful in its own right, and the laws presented in this section
+allow us to safely refactor such code while keeping its original meaning.
 
-\begin{minted}[xleftmargin=10pt]{haskell}
-(<**>) :: Applicative f => f a            -> f (a -> b) -> f b
-select :: Selective   f => f (Either a b) -> f (a -> b) -> f b
-(>>=)  :: Monad       f => f a            -> (a -> f b) -> f b
-\end{minted}
+Fig.~\ref{fig-laws} lists all laws for selective functors, as well as some
+useful theorems that can be derived from the laws and
+parametricity~\citep{wadler1989theorems}. Below we discuss them in order.
 
-The type signature of \hs{select} is reminiscent of both \hs{<*>} and \hs{>>=},
-and indeed a selective functor is in some sense a composition of an applicative
-functor and the \hs{Either} monad.
+The \emph{identity} and \emph{distributivity} laws determine the interaction of
+the select operator with pure computations. It should be impossible to
+distinguish \hs{x}~\hs{<*?}~\hs{pure}~\hs{id} from a direct execution of \hs{x}
+followed by the extraction of a value from the obtained
+\hs{Either}~\hs{a}~\hs{a}. In particular, the select operator is not allowed to
+duplicate effects associated with \hs{x}. Similarly, the select operator is not
+allowed to sneak in any effects if the first computation is pure, which allows
+\hs{pure}~\hs{x}~\hs{<*?} to be distributed through the applicative sequencing
+operator \hs{*>}. When applied in reverse, the distributivity law allows us to
+simplify sequences of conditional operations \emph{as long as the conditions are
+pure}. The \emph{generalised identity} theorem follows from the identity law as
+a free theorem.
+
+% It may be illuminating to compare the following type signatures:
+% \begin{minted}[xleftmargin=10pt]{haskell}
+% (<**>) :: Applicative f => f a            -> f (a -> b) -> f b
+% select :: Selective   f => f (Either a b) -> f (a -> b) -> f b
+% (>>=)  :: Monad       f => f a            -> (a -> f b) -> f b
+% \end{minted}
+% The type signature of \hs{select} is reminiscent of both \hs{<*>} and \hs{>>=},
+% and indeed a selective functor is in some sense a composition of an applicative
+% functor and the \hs{Either} monad.
 
 \begin{figure}
 \begin{minted}{haskell}
@@ -603,16 +625,19 @@ functor and the \hs{Either} monad.
     h z = uncurry z
 
 -- For selective functors that are also monads:
-select = selectM
+@\blk{select}@ = selectM
 ---------------------------------- Theorems: -----------------------------------
 -- Apply a pure function to the result:
-f <$> select x y = select (second f <$> x) ((f .) <$> y)
+@\blk{f}@ <$> select x y = select (second f <$> x) ((f .) <$> y)
 
 -- Apply a pure function to the Left case of the first argument:
-select (first f <$> x) y = select x ((. f) <$> y)
+@\blk{select}@ (first f <$> x) y = select x ((. f) <$> y)
 
 -- Apply a pure function to the second argument:
-select x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
+@\blk{select}@ x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
+
+-- Generalised identity:
+@\blk{x}@ <*? pure y = either y id <$> x
 
 -- For rigid selective functors (in particular, for monads):
 (<*>) = apS                     -- Selective apply
@@ -626,7 +651,8 @@ select x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
 %   where
 %     f ab = bimap (\c ca -> ab (ca c)) ab
 %     g ca = ($ca)
-
+% -- General distributivity (?)
+% ifS (pure x) a1 b1 *> ifS (pure x) a2 b2 = ifS (pure x) (a1 *> a2) (b1 *> b2)
 
 Note that it is not a requirement for selective functors to skip unnecessary
 effects. It may be counterintuitive, but this makes them more useful. Why?

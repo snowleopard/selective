@@ -55,7 +55,7 @@ p1 x y = select x (pure y) === either y id <$> x
 --
 -- @
 -- instance Monoid m => Selective (Const m) where
---    select (Const m) (Const _) = Const (m <> m)
+--    select (Const x) (Const _) = Const (x <> x)
 -- @
 -- P1id (Identity): select x (pure id) == either id id <$> x
 p1id  :: Selective f => f (Either a a) -> f a
@@ -119,6 +119,9 @@ d1 x y z =
     pure x <*? (y *> z)
     ===
     (pure x <*? y) *> (pure x <*? z)
+
+-- TODO: Can we prove the following from D1?
+-- ifS (pure x) a1 b1 *> ifS (pure x) a2 b2 = ifS (pure x) (a1 *> a2) (b1 *> b2)
 
 -- Now let's typecheck some theorems
 
