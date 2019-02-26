@@ -113,6 +113,13 @@ i1 x y z =
     f ab = bimap (\c ca -> ab (ca c)) ab
     g ca = ($ca)
 
+-- D1 (distributivity): pure x <*? (y *> z) = (pure x <*? y) *> (pure x <*? z)
+d1 :: Selective f => Either a b -> f (a -> b) -> f (a -> b) -> f b
+d1 x y z =
+    pure x <*? (y *> z)
+    ===
+    (pure x <*? y) *> (pure x <*? z)
+
 -- Now let's typecheck some theorems
 
 -- This assumes P2, which does not always hold

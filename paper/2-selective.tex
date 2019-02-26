@@ -164,10 +164,10 @@ we use in this paper.
 
 While \hs{selectM} is useful for \emph{conditional execution} of effects,
 \hs{selectA} is useful for \emph{static analysis}. As we will see
-in~\S\ref{sec-instances}, the above definition is sometimes useful, for example,
-selective functors used for static analysis need to collect information about
-all possible effects instead of skipping some of them, hence directly using
-\hs{select}~\hs{=}~\hs{selectA} in their \hs{Selective} instance definitions.
+in~\S\ref{sec-instances}, selective functors used for static analysis need to
+collect information about all possible effects instead of skipping some of them,
+hence they directly use \hs{select}~\hs{=}~\hs{selectA} in their \hs{Selective}
+instance definitions.
 
 Any \hs{Applicative} instance can thus be given a \hs{Selective} instance. The
 opposite is also true in the sense that one can recover the operator \hs{<*>}
@@ -592,8 +592,8 @@ functor and the \hs{Either} monad.
 -- Identity
 @\blk{x}@ <*? pure id = either id id <$> x
 
--- Interchange
-@\blk{x}@ *> (y <*? z) = (x *> y) <*? z
+-- Distributivity
+@\blk{pure}@ x <*? (y *> z) = (pure x <*? y) *> (pure x <*? z)
 
 -- Associativity
 @\blk{x}@ <*? (y <*? z) = (f <$> x) <*? (g <$> y) <*? (h <$> z)
@@ -614,18 +614,19 @@ select (first f <$> x) y = select x ((. f) <$> y)
 -- Apply a pure function to the second argument:
 select x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
 
--- General interchange
-x <*> (y <*? z) = (f <$> x <*> y) <*? (g <$> z)
-  where
-    f ab = bimap (\c ca -> ab (ca c)) ab
-    g ca = ($ca)
-
--- For rigid selective functors and monads:
-(<*>) = apS
+-- For rigid selective functors (in particular, for monads):
+(<*>) = apS                     -- Selective apply
+@\blk{x}@ *> (y <*? z) = (x *> y) <*? z -- Interchange
 \end{minted}
 \caption{Laws and theorems of selective functors.}
 \label{fig-laws}
 \end{figure}
+% -- General interchange
+% x <*> (y <*? z) = (f <$> x <*> y) <*? (g <$> z)
+%   where
+%     f ab = bimap (\c ca -> ab (ca c)) ab
+%     g ca = ($ca)
+
 
 Note that it is not a requirement for selective functors to skip unnecessary
 effects. It may be counterintuitive, but this makes them more useful. Why?
