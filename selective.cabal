@@ -63,3 +63,4 @@ test-suite test
                         -Wincomplete-uni-patterns
                         -Wredundant-constraints
                         -fno-warn-orphans
+                        -fno-warn-missing-signatures

@@ -9,7 +9,7 @@ import Data.Functor.Const
 import Control.Selective
 import Data.Functor.Identity
 import Control.Monad.State
-import Text.Show.Functions
+import Text.Show.Functions()
 
 -- | TODO:
 -- ifS (pure x) a1 b1 *> ifS (pure x) a2 b2 = ifS (pure x) (a1 *> a2) (b1 *> b2)

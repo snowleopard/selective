@@ -5,7 +5,6 @@ import Data.Functor.Identity
 import Test.Tasty
 import Test.Tasty.QuickCheck as QC
 import Control.Selective
-import Control.Selective.Example
 import Laws
 
 main :: IO ()
