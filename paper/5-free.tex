@@ -21,11 +21,10 @@ which would have the instances of \hs{Applicative}/\hs{Selective}/\hs{Monad}.
 
 \subsection{Ping-pong, freely}\label{sec-free-ping-pong}
 
-To illustrate how the free selective construction can be used, we implement the
-classical example of the Teletype DSL.
-
-The \hs{TeletypeF} datatype has two constructors, representing the commands of the
-Teletype interface:
+To illustrate the usage of the free selective constructor on a simple example, we implement the
+Teletype DSL~\cite{swierstra2008data} comprising two commands: reading a string of characters
+form the input stream and writing a string to the output stream. The \hs{Teletype} datatype
+has two constructors, representing the commands of the Teletype interface:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
 data Teletype a = GetLine (String -> a)
@@ -33,27 +32,27 @@ data Teletype a = GetLine (String -> a)
     deriving Functor
 \end{minted}
 
-We embed these commands into the free selective with the following two combinators,
-mimicking Haskell Prelude's IO API:
+We embed these commands into the free selective construction with the following two combinators,
+mimicking Haskell Prelude's \hs{IO} API:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
 getLine :: Select Teletype String
 getLine = liftSelect (GetLine id)
 
-putStrLn:: Select Teletype ()
+putStrLn:: String -> Select Teletype ()
 putStrLn s = liftSelect (PutStrLn s ())
 \end{minted}
 
-By reimplement the \hs{pingPongS} example from the section \ref{sec-intro}
-in terms of the free selective construction:
+We now can reimplement the \hs{pingPongS} example from the section \ref{sec-intro}
+in terms of the free selective construction simply by adjusting the type signature:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
 pingPongS :: Select Teletype ()
 pingPongS = whenS (fmap (=="ping") getLine) (putStrLn "pong")
 \end{minted}
 
-Once we have embedded the \hs{pingPongS} program into the free selective datatype,
-we have access to the machinery allowing for static analysis of its effects:
+Once we have embedded the \hs{pingPongS} program into the \hs{Select} datatype,
+we got access to the machinery for static analysis of effects:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
 @\ghci@ getEffects pingPong
@@ -61,15 +60,19 @@ we have access to the machinery allowing for static analysis of its effects:
 \end{minted}
 
 The \hs{getEffects} function of type \hs{Functor f => Select f a -> [f ()]}
-returns a list of all effects of a free selective computations. In the specific case of
-the Teletype functor, we get a list of all commands that a computations has called.
+returns a list of all effects of a free selective computation. In the specific case of
+the \hs{Teletype} functor, we get a list of all commands that a computation has called.
 Internally, the \hs{getEffects} function interprets a free selective computation
-in the \hs{Over} functor (see section~\ref{sec-instances}).
+in the \hs{Over} functor (see section~\ref{sec-instances}) to construct an over-approximated
+list of effects.
 
 We can interpret Teletype programs in any other \hs{Selective} by means of the
-\hs{runSelect} function, by providing a \emph{natural transformation} \hs{forall a. f a -> g a}, which gives an interpretation of the commands of
-\hs{f} (specifically, \hs{Teletype}) in terms of \hs{g}. A natural example of such a
-transformation would be an interpretation in the \hs{IO} monad:
+\hs{runSelect} function. We must providing a \emph{natural transformation}
+\hs{forall a. f a -> g a}, which assigns an interpretation to the commands of
+\hs{f} (in our example, \hs{f}~\hs{=}~\hs{Teletype}) in terms of \hs{g}.
+A natural example of such a transformation would be an interpretation in the \hs{IO} monad,
+which allows to run our \hs{pingPongS} program and get the same behaviour that the
+one in \ref{sec-intro} had.
 
 \begin{minted}[xleftmargin=10pt]{haskell}
 inIO :: Teletype a -> IO a
