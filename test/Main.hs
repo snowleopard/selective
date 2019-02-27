@@ -4,6 +4,7 @@ import Prelude hiding (maybe)
 import Data.Functor.Identity
 import Test.Tasty
 import Test.Tasty.QuickCheck as QC
+import Test.Tasty.ExpectedFailure
 import Control.Selective
 import Laws
 
@@ -46,7 +47,8 @@ overTheorems = testGroup "Theorems"
     ]
 
 overProperties = testGroup "Properties"
-    [ QC.testProperty "pure-right: pure (Right x) <*? y = pure x" $
+    [ expectFail $
+      QC.testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @(Over String) @Int @Int x
     , QC.testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
         \x -> propertyPureLeft @(Over String) @Int @Int x
@@ -76,7 +78,8 @@ underTheorems = testGroup "Theorems"
         \x -> theorem3 @(Under String) @Int @Int @Int x
     , QC.testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
         \x -> theorem4 @(Under String) @Int @Int x
-    , QC.testProperty "(f <*> g) == (f `apS` g)" $
+    , expectFailBecause "'Under' is a non-rigid selective functor" $
+      QC.testProperty "(f <*> g) == (f `apS` g)" $
         \x -> theorem5 @(Under String) @Int @Int x
     , QC.testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
         \x -> theorem6 @(Under String) @Int @Int x
@@ -85,7 +88,8 @@ underTheorems = testGroup "Theorems"
 underProperties = testGroup "Properties"
     [ QC.testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @(Under String) @Int @Int x
-    , QC.testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
+    , expectFail $
+      QC.testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
         \x -> propertyPureLeft @(Under String) @Int @Int x
     ]
 --------------------------------------------------------------------------------
@@ -114,9 +118,11 @@ validationTheorems = testGroup "Theorems"
         \x -> theorem3 @(Validation String) @Int @Int @Int x
     , QC.testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
         \x -> theorem4 @(Validation String) @Int @Int x
-    , QC.testProperty "(f <*> g) == (f `apS` g)" $
+    , expectFailBecause "'Validation' is a non-rigid selective functor" $
+      QC.testProperty "(f <*> g) == (f `apS` g)" $
         \x -> theorem5 @(Validation String) @Int @Int x
-    , QC.testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
+    , expectFailBecause "'Validation' is a non-rigid selective functor" $
+      QC.testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
         \x -> theorem6 @(Validation String) @Int @Int @Int x
     ]
 
