@@ -245,9 +245,10 @@ function:
 \end{figure}
 
 Since the analysis is static, the resulting list of effects and data-flow graph are
-over-approximated and show all effects that can possibly happen in the computations.
-Note that it does not matter what argument we supply, since it will never get evaluated,
-e.g. the analysis will succeed and give us the same result even if we supply \hs{undefined}.
+over-approximated and show all effects that can possibly happen in the computation.
+Note that it does not matter what argument we supply to \hs{jumpZero}, since it will
+never get forced, e.g. the analysis will succeed and give us the same result even
+if we supply \hs{undefined}.
 
 \subsubsection{\textbf{Blocks of instructions}}
 
@@ -257,7 +258,7 @@ using the applicative sequencing operator \hs{*>}:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
 addAndJump :: ISA Value
-addAndJump = add R0 1 *> jumpZero 2
+addAndJump = add R0 1 *> jumpZero 42
 \end{minted}
 
 We can analyse the composed computations for its effects in the same way we analyse the
@@ -292,15 +293,41 @@ free selective construction. By doing this, we can than can implement a mechanic
 which would construct \emph{data-flow graphs} of sequences of instructions, similar to
 the ones shown in Fig.~\ref{fig-addAndJump-gcd}.
 
-\begin{figure}
-
-\caption{Data-flow graphs of instructions and short programs}
-\label{fig-addAndJump-gcd}
-\end{figure}
-
 \subsubsection{\textbf{Simulation}}
 
+To implement a sequential simulator for the ISA, we need to follow the same path we did
+when running the \hs{pingPongS} example in the \hs{IO} monad earlier. We need a natural
+transformation from the functor \hs{RW} to an appropriate target functor, for example
+\hs{MonadState ISAState}, where \hs{ISAState} is a product type representing the state of the architecture. For brevity, we present a simplified
+partial implementation of such a transformation which only assigns interpretation to reading
+and writing registers:
 
+\begin{minted}[xleftmargin=10pt]{haskell}
+inState :: MonadState ISAState m => RW a -> m a
+inState (Read k t) = t <$> case k of
+    Reg r -> (Map.!) <$> (registers <$> get) <*> pure r
+inState (Write k p t) = case k of
+    Reg r -> do v <- runSelect inState p
+                let regs' s = Map.insert r v (registers s)
+                state (\s -> (t v, s {registers = regs' s}))
+\end{minted}
+
+To read a register, we simply lift the \hs{Data.Map} access combinator (the register bank
+is represented as a mapping from register tags to words). In order to write a value into a
+register, we first need to acknowledge its own effects and evaluate it, hence the call to
+\hs{runSelect} function. We then adjust the register bank with the new value and construct
+a \hs{MonadState} computation with the \hs{state} function.
+
+The \hs{inState} natural transformation gives interpretation to individual \hs{Read} and
+\hs{Write} commands, and now this interpretations can be extended to any \hs{ISA}
+computation by plugging it into a \hs{runSelect} call, which has already been once done in
+the implementation of \hs{inState} itself.
+
+\begin{minted}[xleftmargin=10pt]{haskell}
+runProgram :: ISA a -> ISAState -> (a, ISAState)
+runProgram f s = runState (runSelect inState f) s
+\end{minted}
 
 \subsubsection{\textbf{Restrictions}}
 
+Cannot express memory-indirect load.
