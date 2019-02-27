@@ -56,7 +56,31 @@ conditional statements. By doing static analysis at this level, one can reuse
 a lot of code, e.g. for parsing and interpreting build scripts, giving us good
 confidence in these parts of the implementation.
 
+In this mock environment, some part of the code cannot be fully
+evaluated as they need the output produced by external
+commands. However, these parts still need to be analysed. To achieve
+this, Dune uses an arrow data structure. The reason Dune uses an arrow
+rather than an applicative is discussed later, however applicatives
+would be suiitable as well in this context. In particular, a
+successful attempt was made at replacing arrows by applicatives in
+Dune in the past.
+
+Dune is another example where the extra power provided by selective
+functions is relevant. To understand why, let's consider the following
+example: a user wants to use some optimized C function if it is
+available on the system, and fallback to an OCaml implementation if
+not. The C and OCaml implementations might have different external
+dependencies. Such a test is dynamic since it depends on the system
+the users builds the software on. During compilation, we only want to
+follow one of the branch, as we clearly don't want to build
+implementation only to keep a single one. However, during dependency
+analysis for the project manifest we need to scan both branches. The
+dependencies discovered in both branches will be considered as
+optional dependencies given that neither is always required.
+
 \subsection{Static analysis of dependencies}
+
+
 
 Applicative non-implementation
 Monadic non-implementation
