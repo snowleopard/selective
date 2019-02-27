@@ -330,4 +330,17 @@ runProgram f s = runState (runSelect inState f) s
 
 \subsubsection{\textbf{Restrictions}}
 
+The free selective applicative construction in combination with the \hs{RW} functor
+provide an abstraction expressive enough to express the
+semantics of arithmetical, load and store instructions and conditional jumps. However,
+they still lack the full expressive power of the monadic interface and are unable
+to accommodate a very important instruction's semantics, namely the memory-indirect load:
+
+\begin{minted}[xleftmargin=10pt]{haskell}
+loadMI :: Monad m => Register -> Address -> m Value
+loadMI reg addr = do
+    addr' <- read (Memory addr)
+    write (Reg reg) (read (Memory addr'))
+\end{minted}
+
 Cannot express memory-indirect load.
