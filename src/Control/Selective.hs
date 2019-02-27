@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveFunctor, RankNTypes, ScopedTypeVariables, TupleSections #-}
-{-# LANGUAGE DerivingVia, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DerivingVia, FlexibleInstances, GeneralizedNewtypeDeriving #-}
 module Control.Selective (
     -- * Type class
     Selective (..), (<*?), branch, selectA, apS, selectM,
@@ -16,6 +16,7 @@ module Control.Selective (
 
 import Build.Task
 import Control.Applicative
+import Control.Arrow
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
@@ -321,3 +322,16 @@ getUnder (Under x) = x
 -- | Extract dependencies from a selective task.
 dependencies :: Task Selective k v -> [k]
 dependencies task = getOver $ run task (Over . pure)
+
+------------------------------------ Arrows ------------------------------------
+
+-- See the following standard definitions in "Control.Arrow".
+-- newtype ArrowMonad a b = ArrowMonad (a () b)
+-- instance Arrow a => Functor (ArrowMonad a)
+-- instance Arrow a => Applicative (ArrowMonad a)
+
+instance ArrowChoice y => Selective (ArrowMonad y) where
+    select (ArrowMonad x) y = ArrowMonad $ x >>> (toStatic y ||| returnA)
+
+toStatic :: Arrow y => ArrowMonad y (a -> b) -> y a b
+toStatic (ArrowMonad f) = arr (\x -> ((), x)) >>> first f >>> arr (uncurry ($))
