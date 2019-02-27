@@ -4,7 +4,8 @@
 module Laws where
 
 import Test.QuickCheck hiding (Failure, Success)
-import Data.Bifunctor
+import Data.Bifunctor (bimap, first, second)
+import Control.Arrow hiding (first, second)
 import Data.Functor.Const
 import Control.Selective
 import Data.Functor.Identity
@@ -128,6 +129,17 @@ instance (Arbitrary e, Arbitrary a) => Arbitrary (Validation e a) where
   arbitrary = arbitrary2
   shrink = shrink2
 
+--------------------------------------------------------------------------------
+------------------------ ArrowMonad --------------------------------------------
+--------------------------------------------------------------------------------
+instance Eq a => Eq (ArrowMonad (->) a) where
+  ArrowMonad f == ArrowMonad g = f () == g ()
+
+instance Arbitrary a => Arbitrary (ArrowMonad (->) a) where
+  arbitrary = ArrowMonad . const <$> arbitrary
+
+instance Show a => Show (ArrowMonad (->) a) where
+  show (ArrowMonad f) = show (f ())
 --------------------------------------------------------------------------------
 ------------------------ Maybe -------------------------------------------------
 --------------------------------------------------------------------------------

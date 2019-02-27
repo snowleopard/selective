@@ -6,11 +6,12 @@ import Test.Tasty
 import Test.Tasty.QuickCheck as QC
 import Test.Tasty.ExpectedFailure
 import Control.Selective
+import Control.Arrow (ArrowMonad)
 import Laws
 
 main :: IO ()
-main = defaultMain $
-    testGroup "Selective instances" [over, under, validation, maybe, identity]
+main = defaultMain $ testGroup "Selective instances"
+    [over, under, validation, arrowMonad, maybe, identity]
 
 -- main :: IO ()
 -- main = do
@@ -131,6 +132,46 @@ validationProperties = testGroup "Properties"
         \x -> propertyPureRight @(Validation String) @Int @Int x
     , QC.testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
         \x -> propertyPureLeft @(Validation String) @Int @Int x
+    ]
+--------------------------------------------------------------------------------
+------------------------ ArrowMonad --------------------------------------------
+--------------------------------------------------------------------------------
+
+arrowMonad :: TestTree
+arrowMonad = testGroup "ArrowMonad (->)"
+    [arrowMonadLaws, arrowMonadTheorems, arrowMonadProperties]
+
+arrowMonadLaws = testGroup "Laws"
+    [ QC.testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
+        \x -> lawIdentity @(ArrowMonad (->)) @Int x
+    , QC.testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
+        \x -> lawDistributivity @(ArrowMonad (->)) @Int @Int x
+    , QC.testProperty "Associativity: take a look at tests/Laws.hs" $
+        \x -> lawAssociativity @(ArrowMonad (->)) @Int @Int @Int x
+    , QC.testProperty "select == selectM" $
+        \x -> lawMonad @(ArrowMonad (->)) @Int @Int x
+    ]
+
+arrowMonadTheorems = testGroup "Theorems"
+    [ QC.testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
+        \x -> theorem1 @(ArrowMonad (->)) @Int @Int @Int x
+    , QC.testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
+        \x -> theorem2 @(ArrowMonad (->)) @Int @Int @Int x
+    , QC.testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
+        \x -> theorem3 @(ArrowMonad (->)) @Int @Int @Int x
+    , QC.testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
+        \x -> theorem4 @(ArrowMonad (->)) @Int @Int x
+    , QC.testProperty "(f <*> g) == (f `apS` g)" $
+        \x -> theorem5 @(ArrowMonad (->)) @Int @Int x
+    , QC.testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
+        \x -> theorem6 @(ArrowMonad (->)) @Int @Int @Int x
+    ]
+
+arrowMonadProperties = testGroup "Properties"
+    [ QC.testProperty "pure-right: pure (Right x) <*? y = pure x" $
+        \x -> propertyPureRight @(ArrowMonad (->)) @Int @Int x
+    , QC.testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
+        \x -> propertyPureLeft @(ArrowMonad (->)) @Int @Int x
     ]
 --------------------------------------------------------------------------------
 ------------------------ Maybe -------------------------------------------------
