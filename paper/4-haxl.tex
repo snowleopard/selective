@@ -1,6 +1,6 @@
 \section{Speculative execution}\label{sec-haxl}
 
-\Haxl\cite{haxl} is a framework for efficiently executing code that
+\Haxl~\citep{marlow2014haxl} is a framework for efficiently executing code that
 fetches data from external sources, typically databases or remote
 services. The \Haxl framework allows such code to be written in a
 natural style using \hs{Applicative} and \hs{Monad} combinators, while
@@ -8,7 +8,7 @@ automatically parallelising the data fetch operations and batching
 together multiple fetches from the same data source.
 
 To illustrate the idea using a fragment of the example code from
-\citep{Haxl}, suppose we're writing the code to render a blog into
+\citep{marlow2014haxl}, suppose we're writing the code to render a blog into
 HTML. The blog consists of a set of posts, where each post is
 identified by a \hs{PostId}.  The data for the blog is stored in a
 remote database.  The API for fetching the data from the database is
