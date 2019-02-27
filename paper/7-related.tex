@@ -1,15 +1,54 @@
 \section{Related work}\label{sec-related}
 
-\subsection{Arrows}
+Composing effectful computations is a rich research area and there is a vast
+body of related works. We build on the fundamental notions of applicative
+functors~\citep{mcbride2008applicative} and
+monads~\citep{moggi1991notions,1995_wadler_monads}, but these notions are not
+isolated points in space: the landscape between them is inhabited by
+\emph{arrows}~\citep{hughes2000arrows} and \emph{generalised
+arrows}~\citep{megacz2011hardware}, which we discuss in~\S\ref{sec-arrows}.
 
-...
+The idea of extending the \hs{Applicative} interface with new methods to gain
+additional expressive power is not new. In particular, there are several works
+in the area of \emph{parser combinators}, where static analysis of parsers is
+desirable because it allows for their automated optimisation.
+\citet{swierstra1996parsers} used an extended version of applicative functors
+which was later abstracted into \hs{Alternative} type class, which we discuss
+in~\S\ref{sec-alternative-functors}. Other extensions include combinators for
+\emph{observable recursion}, e.g.
+see~\citep{devriese2012finally,devriese2013fixing}.
 
-\subsection{Static analysis}
+Our free construction for rigid selective functors is inspired by the works
+on free applicative functors~\citep{free-applicatives} and free
+monads~\citep{swierstra2008data}, as well as by insightful blog posts
+by~\citet{fancher2016free,fancher2017static}.
 
-The idea of using the \hs{Const} functor for static analysis is not new.
-See, for example,~\citet{free-applicatives}.
+\subsection{Arrows}\label{sec-arrows}
 
-\subsection{Parsers and \hs{Alternative} type class}
+Arrows, introduced by~\citet{hughes2000arrows}, generalise monads by making the
+\emph{input} of a computation explicit. Rather than giving the type
+\hs{f}~\hs{a} to an effectful computation that yields a value of type~\hs{a}, as
+we have done in this paper so far, arrows give the type \hs{a}~\hs{i}~\hs{o} to
+an effectful computation (an \emph{arrow}~\hs{a}) that takes values of type
+\hs{i} as input and yields values of type \hs{o} as output.
+
+See \citet{lindley2011idioms} and \citet{rivas2017notions} [...]
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+newtype ArrowMonad a b = ArrowMonad (a () b) -- From Control.Arrow
+
+instance ArrowChoice a => Selective (ArrowMonad a) where
+    select (ArrowMonad x) y = ArrowMonad $ x >>> (toStatic y ||| returnA)
+
+toStatic :: Arrow a => ArrowMonad a (b -> c) -> a b c
+toStatic (ArrowMonad f) = arr (\x -> ((), x)) >>> first f >>> arr (uncurry ($))
+\end{minted}
+\vspace{1mm}
+
+[...]
+
+\subsection{Parsers and \hs{Alternative} type class}\label{sec-alternative-functors}
 
 \hs{Alternative} is a type class originally motivated by non-monadic parsers;
 see, for example,~\citet{swierstra1996parsers}, where the methods of the

@@ -330,8 +330,8 @@ dependencies task = getOver $ run task (Over . pure)
 -- instance Arrow a => Functor (ArrowMonad a)
 -- instance Arrow a => Applicative (ArrowMonad a)
 
-instance ArrowChoice y => Selective (ArrowMonad y) where
+instance ArrowChoice a => Selective (ArrowMonad a) where
     select (ArrowMonad x) y = ArrowMonad $ x >>> (toStatic y ||| returnA)
 
-toStatic :: Arrow y => ArrowMonad y (a -> b) -> y a b
+toStatic :: Arrow a => ArrowMonad a (b -> c) -> a b c
 toStatic (ArrowMonad f) = arr (\x -> ((), x)) >>> first f >>> arr (uncurry ($))
