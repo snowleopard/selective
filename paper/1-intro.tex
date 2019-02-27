@@ -44,14 +44,14 @@ The first argument of the bind operator reads a string using
 function of type \hs{String}~\hs{->}~\hs{IO}~\hs{()}, which prints \hs{"pong"}
 when~\hs{s}~\hs{==}~\hs{"ping"}.
 
-This way of composing effects is sometimes unsatisfactory. To \emph{inspect} the
-function \hs{\s}~\hs{->}~\hs{...}, we need an~\hs{s}, which becomes available
-only during execution; we are therefore unable to predict the effects that
-\hs{pingPongM} might perform: instead of conditionally executing \hs{putStrLn},
-as intended, it might delete a file from disk, or launch proverbial missiles. As
-we will see in sections~\S\ref{sec-static} and~\S\ref{sec-haxl}, in some
+As we will see in sections~\S\ref{sec-static} and~\S\ref{sec-haxl}, in some
 applications it is desirable to know all possible effects \emph{statically},
-i.e. before the execution.
+i.e. \emph{before the execution}. Alas, this is not possible with monadic effect
+composition. To \emph{inspect} the function \hs{\s}~\hs{->}~\hs{...}, we need
+an~\hs{s}, which becomes available only \emph{during execution}. We are
+therefore unable to predict the effects that \hs{pingPongM} might perform:
+instead of conditionally executing \hs{putStrLn}, as intended, it might delete a
+file from disk, or launch proverbial missiles.
 
 \emph{Applicative functors}, introduced by~\citet{mcbride2008applicative}, can
 be used for composing statically known collections of effectful computations, as
@@ -76,9 +76,9 @@ allows us to pre-allocate all necessary computation resources upfront
 (\S\ref{sec-static}) and execute all computations in parallel
 (\S\ref{sec-haxl}).
 
-Alas, our ping-pong example cannot be expressed using applicative functors.
-Since the two computations must be independent, the best we can do is to print
-\hs{"pong"} unconditionally:
+Our ping-pong example cannot be expressed using applicative functors. Since the
+two computations must be independent, the best we can do is to print \hs{"pong"}
+unconditionally:
 
 \vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -126,10 +126,11 @@ pingPongS = whenS (fmap ("ping"==) getLine) (putStrLn "pong")
 We replace the input string~\hs{s} with \hs{True} if it is equal to \hs{"ping"},
 and \hs{False} otherwise, thereby appropriately \emph{selecting} the subsequent
 effectful computation. This approach gives us both conditional execution of
-\hs{putStrLn}~\hs{"pong"}, and static visibility of both effects. Crucially,
-\hs{whenS} must be an \hs{IO} primitive instead of being implemented in terms of
-the monadic bind (\hs{>>=}), because the latter would result in wrapping
-\hs{putStrLn} into an opaque function, as in \hs{pingPongM}.
+\hs{putStrLn}~\hs{"pong"}, and static visibility of both effects
+(see~\S\ref{sec-free-ping-pong}). Crucially, \hs{whenS} must be an \hs{IO}
+primitive instead of being implemented in terms of the monadic bind (\hs{>>=}),
+because the latter would result in wrapping \hs{putStrLn} into an opaque
+function, as in \hs{pingPongM}.
 
 The main idea of this paper is that \hs{whenS}, as well as many other similar
 combinators, can be seen as special cases of a new intermediate abstraction,

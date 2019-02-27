@@ -65,7 +65,7 @@ instance ArrowApply a => Monad       (ArrowMonad a)
 \vspace{1mm}
 
 \noindent
-Selective functors provide the missing equivalent for \hs{ArrowChoice} in the
+Selective functors provide the missing counterpart for \hs{ArrowChoice} in the
 \emph{functor hierarchy}, as demonstrated by the following instance:
 
 \vspace{1mm}
@@ -146,19 +146,15 @@ in a more direct style that does not involve trying one parser after another:
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 numberS :: Parser Int
-numberS = ifS ((== 'b') <$> (string "0" *> sat (`elem` "bh"))) bin hex
+numberS = ifS ((== 'b') <$> (string "0" *> sat (`elem` "bx"))) bin hex
 \end{minted}
 \vspace{1mm}
 
 \noindent
 Here we first parse the leading \hs{"0"}, then the second character of the
-prefix, failing if it is neither \hs{"b"} nor \hs{"h"}, and finally select an
+prefix, failing if it is neither \hs{"b"} nor \hs{"x"}, and finally select an
 appropriate subsequent parser using \hs{ifS}.
 
 Investigation of the relationship between \hs{Alternative} and \hs{Selective}
-type classes, as well as application of selective functors to parsers is left
-for future work.
-
-% Anything else?
-% Kleisli functors
-% https://elvishjerricco.github.io/2016/10/12/kleisli-functors.html
+type classes, as well as application of selective functors to parsers is an
+interesting research opportunity.
