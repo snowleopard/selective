@@ -106,11 +106,11 @@
 \begin{abstract}
 Applicative functors and monads have conquered the world of functional
 programming by providing general and powerful ways of describing effectful
-computations using pure functions. Applicative functors compose
-\emph{independent effects}, which are declared statically and whose order of
-execution is immaterial. Monads provide additional power of composing
-\emph{dependent effects} in sequence, where the value computed by one effect
-determines all subsequent effects, dynamically.
+computations using pure functions. Applicative functors provide a way to compose
+\emph{independent effects}, all of which are declared statically. Monads extend
+the applicative interface by making it possible to compose \emph{dependent
+effects}, where the value computed by one effect determines all subsequent
+effects, dynamically.
 
 This paper introduces an intermediate abstraction called \emph{selective
 applicative functors} that requires all effects to be declared statically, but

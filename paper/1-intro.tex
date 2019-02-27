@@ -69,9 +69,9 @@ by~\hs{<*>}:
 \noindent
 The operator takes two effectful computations, which --- independently ---
 compute values of types \hs{a}~\hs{->}~\hs{b} and \hs{a}, and returns their
-composition that performs both computations, and applies the obtained function
-to the obtained value producing the result of type \hs{b}. Crucially, both
-arguments and associated effects are known statically, which, for example,
+composition that performs both computations, and then applies the obtained
+function to the obtained value producing the result of type \hs{b}. Crucially,
+both arguments and associated effects are known statically, which, for example,
 allows us to pre-allocate all necessary computation resources upfront
 (\S\ref{sec-static}) and execute all computations in parallel
 (\S\ref{sec-haxl}).

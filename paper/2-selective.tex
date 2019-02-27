@@ -620,7 +620,7 @@ thus legalising under-approximating instances like \hs{Under} and
 -- Identity
 @\blk{x}@ <*? pure id = either id id <$> x
 
--- Distributivity
+-- Distributivity; note that y and z have the same type f (a -> b)
 @\blk{pure}@ x <*? (y *> z) = (pure x <*? y) *> (pure x <*? z)
 
 -- Associativity
@@ -633,19 +633,19 @@ thus legalising under-approximating instances like \hs{Under} and
 -- For selective functors that are also monads:
 @\blk{select}@ = selectM
 ---------------------------------- Theorems: -----------------------------------
--- Apply a pure function to the result:
+-- Apply a pure function to the result
 @\blk{f}@ <$> select x y = select (second f <$> x) ((f .) <$> y)
 
--- Apply a pure function to the Left case of the first argument:
+-- Apply a pure function to the Left case of the first argument
 @\blk{select}@ (first f <$> x) y = select x ((. f) <$> y)
 
--- Apply a pure function to the second argument:
+-- Apply a pure function to the second argument
 @\blk{select}@ x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
 
--- Generalised identity:
+-- Generalised identity
 @\blk{x}@ <*? pure y = either y id <$> x
 
--- Theorems for rigid selective functors (in particular, for monads):
+-- Theorems for rigid selective functors (in particular, for monads)
 (<*>) = apS                     -- Selective apply
 @\blk{x}@ *> (y <*? z) = (x *> y) <*? z -- Interchange
 \end{minted}
