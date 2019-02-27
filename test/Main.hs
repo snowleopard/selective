@@ -150,6 +150,8 @@ arrowMonadLaws = testGroup "Laws"
         \x -> lawAssociativity @(ArrowMonad (->)) @Int @Int @Int x
     , QC.testProperty "select == selectM" $
         \x -> lawMonad @(ArrowMonad (->)) @Int @Int x
+    , QC.testProperty "select == selectA" $
+        \x -> selectALaw @(ArrowMonad (->)) @Int @Int x
     ]
 
 arrowMonadTheorems = testGroup "Theorems"

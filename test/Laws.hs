@@ -41,6 +41,10 @@ lawMonad :: (Selective f, Monad f, Eq (f b)) =>
             f (Either a b) -> f (a -> b) -> Bool
 lawMonad x f = select x f == selectM x f
 
+selectALaw :: (Selective f, Eq (f b)) =>
+              f (Either a b) -> f (a -> b) -> Bool
+selectALaw x f = select x f == selectA x f
+
 --------------------------------------------------------------------------------
 ------------------------ Theorems ----------------------------------------------
 --------------------------------------------------------------------------------
