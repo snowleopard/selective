@@ -19,7 +19,7 @@ main = defaultMain $
 ------------------------ Over --------------------------------------------------
 --------------------------------------------------------------------------------
 over :: TestTree
-over = testGroup "Over" [overLaws, overTheorems]
+over = testGroup "Over" [overLaws, overTheorems, overProperties]
 
 overLaws = testGroup "Laws"
     [ QC.testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
@@ -45,11 +45,18 @@ overTheorems = testGroup "Theorems"
         \x -> theorem6 @(Over String) @Int @Int x
     ]
 
+overProperties = testGroup "Properties"
+    [ QC.testProperty "pure-right: pure (Right x) <*? y = pure x" $
+        \x -> propertyPureRight @(Over String) @Int @Int x
+    , QC.testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
+        \x -> propertyPureLeft @(Over String) @Int @Int x
+    ]
+
 --------------------------------------------------------------------------------
 ------------------------ Under -------------------------------------------------
 --------------------------------------------------------------------------------
 under :: TestTree
-under = testGroup "Under" [underLaws, underTheorems]
+under = testGroup "Under" [underLaws, underTheorems, underProperties]
 
 underLaws = testGroup "Laws"
     [ QC.testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
@@ -74,12 +81,20 @@ underTheorems = testGroup "Theorems"
     , QC.testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
         \x -> theorem6 @(Under String) @Int @Int x
     ]
+
+underProperties = testGroup "Properties"
+    [ QC.testProperty "pure-right: pure (Right x) <*? y = pure x" $
+        \x -> propertyPureRight @(Under String) @Int @Int x
+    , QC.testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
+        \x -> propertyPureLeft @(Under String) @Int @Int x
+    ]
 --------------------------------------------------------------------------------
 ------------------------ Validation --------------------------------------------
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 validation :: TestTree
-validation = testGroup "Validation" [validationLaws, validationTheorems]
+validation = testGroup "Validation"
+    [validationLaws, validationTheorems, validationProperties]
 
 validationLaws = testGroup "Laws"
     [ QC.testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
@@ -104,11 +119,18 @@ validationTheorems = testGroup "Theorems"
     , QC.testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
         \x -> theorem6 @(Validation String) @Int @Int @Int x
     ]
+
+validationProperties = testGroup "Properties"
+    [ QC.testProperty "pure-right: pure (Right x) <*? y = pure x" $
+        \x -> propertyPureRight @(Validation String) @Int @Int x
+    , QC.testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
+        \x -> propertyPureLeft @(Validation String) @Int @Int x
+    ]
 --------------------------------------------------------------------------------
 ------------------------ Maybe -------------------------------------------------
 --------------------------------------------------------------------------------
 maybe :: TestTree
-maybe = testGroup "Maybe" [maybeLaws, maybeTheorems]
+maybe = testGroup "Maybe" [maybeLaws, maybeTheorems, maybeProperties]
 
 maybeLaws = testGroup "Laws"
     [ QC.testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
@@ -135,11 +157,19 @@ maybeTheorems = testGroup "Theorems"
     , QC.testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
         \x -> theorem6 @Maybe @Int @Int @Int x
     ]
+
+maybeProperties = testGroup "Properties"
+    [ QC.testProperty "pure-right: pure (Right x) <*? y = pure x" $
+        \x -> propertyPureRight @Maybe @Int @Int x
+    , QC.testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
+        \x -> propertyPureLeft @Maybe @Int @Int x
+    ]
 --------------------------------------------------------------------------------
 ------------------------ Identity ----------------------------------------------
 --------------------------------------------------------------------------------
 identity :: TestTree
-identity = testGroup "Identity" [identityLaws, identityTheorems]
+identity = testGroup "Identity"
+    [identityLaws, identityTheorems, identityProperties]
 
 identityLaws = testGroup "Laws"
     [ QC.testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
@@ -165,4 +195,11 @@ identityTheorems = testGroup "Theorems"
         \x -> theorem5 @Identity @Int @Int x
     , QC.testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
         \x -> theorem6 @Identity @Int @Int @Int x
+    ]
+
+identityProperties = testGroup "Properties"
+    [ QC.testProperty "pure-right: pure (Right x) <*? y = pure x" $
+        \x -> propertyPureRight @Identity @Int @Int x
+    , QC.testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
+        \x -> propertyPureLeft @Identity @Int @Int x
     ]
