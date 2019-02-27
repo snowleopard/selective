@@ -86,11 +86,12 @@ inIO (PutStrLn s x) = Prelude.putStrLn s *> pure x
 
 \subsection{Analysis and simulation of processor instructions}\label{sec-free-isa}
 
-In this section, we demonstrate how we can use free selective functors to construct an
-effect which can be used for describing the semantics of a hypothetical
-instruction set architecture. The semantics will allow for
-multiple distinct interpretations, such as~\emph{static} dependency
-analysis and~\emph{dynamic} simulation.
+To apply free selective functors to a larger example, we demonstrate
+how they can be used for describing the semantics of a hypothetical
+instruction set architecture. The features of the free selective construction will
+allow for static data-flow analysis of the instruction semantics, and the possibility
+to interpret free selective expressions in any monad will enable us to build a
+sequential simulator for programs.
 
 \subsubsection{Embedding}
 
@@ -110,17 +111,19 @@ data RW a = Read  Key             (Value -> a)
     deriving Functor
 \end{minted}
 
-The effect we require comprises two commands. We need to have an ability to (1)
-\emph{read} a value associated with a key and, (2) given a computation which produces a value,
-\emph{write} its result into the store.
+The \hs{RW} (pronounced read-write) functor encodes the effect of mutable key-value store
+comprising two commands.
+First, we need to have an ability to \emph{read} a value associated with a key from the store
+and second, given a computation which produces a value, \emph{write} its result into the store.
 This exact structure of the definition is required for accommodating a pattern that
 occurs frequently in instruction semantics: often we read a value from a register or a memory
 cell, do something with the value and then write it somewhere else.
 If we had the type of \hs{Write} to be \hs{k -> v -> (v -> a)}, i.e. required
 the second argument to be a pure value,
-we would not be able to grasp the desired pattern without resorting to the monadic interface. Additionally, we want the write
-operation to not just write the value and return \hs{()}, but to return the just written value
-back, so it may be used in the rest of the computations; such a generosity of the write
+we would not be able to grasp the desired pattern without resorting to the monadic interface.
+Additionally, we want the \hs{Write}
+operation to not just write the value and return \hs{()}, but to give the just written value
+back, so it may be used in the rest of the computations; such a generosity of the \hs{Write}
 command not consuming its arguments will be useful to avoid creating more data dependencies
 than necessary.
 
@@ -136,16 +139,17 @@ write :: Key -> ISA Value -> ISA Value
 write k p = p *> liftSelect (Write k p id)
 \end{minted}
 
-Whereas the \hs{read} combinator is exactly the lifted \hs{Read} data constructor, the \hs{write}'s implementation deserves attention, since it deviates from the trivial lifting of
-the \hs{Write} data constructor and \emph{evaluates its second argument}, thus executing its
-associated effects.
+Whereas the \hs{read} combinator is exactly the lifted \hs{Read} data constructor,
+the \hs{write}'s implementation deserves explanation, since it deviates from the trivial
+lifting of the \hs{Write} data constructor and \emph{evaluates its second argument},
+thus executing its associated effects.
 
 \subsubsection{\textbf{Example 1. Addition}}
 
-To get acquainted with the proposed vocabulary, we start with a simple semantics for
-the addition instruction, which will read the summands from the two locations, add them,
-write the result into the third location and also update the state of the \hs{zero}
-and \hs{overflow} flags to indicate if the sum was zero and if integer overflow occurred:
+To get acquainted with the vocabulary, we start with a simple semantics for
+the addition instruction, which will read the summands from a register and a memory cell,
+add them, write the result back into the register and also update the state of the \hs{Zero}
+and \hs{Overflow} flags to indicate if the sum was zero and if integer overflow occurred:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
 add :: Register -> Address -> ISA Value
@@ -167,7 +171,7 @@ again. We detect integer overflow by means of a pure function, thus there is not
 with calculating the sum.
 
 The free selective functor construction shines in the static analysis. By executing
-the analysis of the \hs{add} semantics, we can find obtain the list of all its effects,
+the analysis of the \hs{add} semantics, we can obtain the list of all its effects,
 in the order they appear in the computation:
 \begin{minted}[xleftmargin=10pt]{haskell}
 @\ghci@ getEffectsISA (add R0 1)
