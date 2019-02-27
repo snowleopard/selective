@@ -12,9 +12,9 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="68.712669pt"
-   height="69.090485pt"
-   viewBox="0 0 68.843136 68.887277"
+   width="186.46495pt"
+   height="20pt"
+   viewBox="0 0 186.819 19.941176"
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
@@ -47,8 +47,8 @@
      id="namedview55"
      showgrid="false"
      inkscape:zoom="2.7764706"
-     inkscape:cx="0.23412011"
-     inkscape:cy="63.209995"
+     inkscape:cx="88.276723"
+     inkscape:cy="41.760751"
      inkscape:window-x="0"
      inkscape:window-y="27"
      inkscape:window-maximized="1"
@@ -58,13 +58,13 @@
      fit-margin-right="0"
      fit-margin-bottom="0" />
   <polygon
-     points="15.2982,-160.892 108.298,-160.892 108.298,-124.892 15.2982,-124.892 15.2982,-124.892 "
+     points="15.2982,-124.892 15.2982,-124.892 15.2982,-160.892 108.298,-160.892 108.298,-124.892 "
      id="polygon19-6"
      style="fill:none;stroke:#000000"
-     transform="matrix(0.73237532,0,0,0.4821495,-10.837836,129.03001)" />
+     transform="matrix(0.73237532,0,0,0.4821495,44.108549,78.747098)" />
   <text
-     x="34.887177"
-     y="63.48605"
+     x="89.833565"
+     y="13.203138"
      font-size="14.00"
      id="text25-7"
      style="font-size:10.23268986px;font-family:Times, serif;text-anchor:middle">
@@ -73,93 +73,81 @@
        style="font-size:10.01898766px">JumpZero 42</tspan>
   </text>
   <g
-     id="g4447"
-     transform="translate(-7.0727292,0.1619184)">
-    <g
-       transform="matrix(1.00028,0,0,1.0002801,-154.91466,-143.50574)"
-       id="g4473">
-      <g
-         transform="translate(78.473325,-7.3087138e-6)"
-         id="g4442-3">
-        <ellipse
-           ry="9.6721182"
-           rx="15.86212"
-           style="fill:none;stroke:#000000;stroke-width:0.68812746"
-           id="ellipse12-3-8-6"
-           cy="153.15273"
-           cx="99.674904" />
-        <text
-           style="font-size:14px;font-family:Times, serif;text-anchor:middle"
-           id="text14-7-9-1"
-           font-size="14.00"
-           y="155.83305"
-           x="99.653496">
-          <tspan
-             style="font-size:8.01294613px"
-             id="tspan4405-7-2">PC</tspan>
-        </text>
-      </g>
-    </g>
+     id="g4190"
+     transform="translate(154.39758,-1.7663528e-6)">
+    <text
+       style="font-size:14.00392056px;font-family:Times, serif;text-anchor:middle"
+       id="text14-7-9-1"
+       font-size="14.00"
+       y="12.532872"
+       x="16.189308">
+      <tspan
+         style="font-size:8.01519012px"
+         id="tspan4405-7-2">PC</tspan>
+    </text>
+    <ellipse
+       ry="9.6748276"
+       rx="15.866561"
+       style="fill:none;stroke:#000000;stroke-width:0.68832016"
+       id="ellipse12-3-8-6"
+       cy="9.8517933"
+       cx="16.21072" />
+  </g>
+  <g
+     id="g4184"
+     transform="matrix(0,-0.9999999,1.0000001,0,103.894,27.233218)">
     <path
        style="fill:none;stroke:#000000;stroke-width:0.80151904;stroke-miterlimit:4;stroke-dasharray:none"
        inkscape:connector-curvature="0"
        id="path30-2-7"
-       d="m 26.162648,50.820689 c 2.62742,-7.35294 7.56316,-13.55942 0,-25.97369"
+       d="m 19.089919,50.982607 c 2.62742,-7.35294 7.56316,-13.55942 0,-25.97369"
        sodipodi:nodetypes="cc" />
     <polygon
-       transform="matrix(-0.47604941,0.3202077,-0.32020773,-0.47604945,0.98037766,-76.479741)"
+       transform="matrix(-0.47604941,0.3202077,-0.32020773,-0.47604945,-6.0923515,-76.317823)"
        style="fill:#000000;stroke:#000000"
        id="polygon32-9-9"
        points="65.2983,-171.291 65.2983,-171.291 61.7982,-161.291 58.2983,-171.291 " />
-    <g
-       transform="matrix(1.00028,0,0,1.0002801,-10.551142,-23.923031)"
-       id="g4609">
-      <path
-         sodipodi:nodetypes="cc"
-         d="m 33.287491,43.582691 c -2.626689,7.350881 -7.561048,13.555623 0,25.966411"
-         id="path30-2-7-3"
-         inkscape:connector-curvature="0"
-         style="fill:none;stroke:#000000;stroke-width:0.80129462;stroke-miterlimit:4;stroke-dasharray:none" />
-      <polygon
-         points="58.2983,-171.291 65.2983,-171.291 65.2983,-171.291 61.7982,-161.291 "
-         id="polygon32-9-9-1"
-         style="fill:#000000;stroke:#000000"
-         transform="matrix(0.47591615,-0.32011803,0.3201181,0.47591615,58.724806,170.84747)" />
-    </g>
-  </g>
-  <g
-     id="g4459"
-     transform="translate(-17.172392,0.1619184)">
-    <g
-       transform="matrix(1.00028,0,0,1.0002801,-29.898008,-142.17524)"
-       id="g4442">
-      <ellipse
-         cx="99.674904"
-         cy="153.15273"
-         id="ellipse12-3-8"
-         style="fill:none;stroke:#000000;stroke-width:0.68812746"
-         rx="15.86212"
-         ry="9.6721182" />
-      <text
-         x="99.653496"
-         y="155.83305"
-         font-size="14.00"
-         id="text14-7-9"
-         style="font-size:14px;font-family:Times, serif;text-anchor:middle">
-        <tspan
-           id="tspan4405-7"
-           style="font-size:8.01294613px">Zero</tspan>
-      </text>
-    </g>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.80151904;stroke-miterlimit:4;stroke-dasharray:none"
        inkscape:connector-curvature="0"
-       id="path30-5"
-       d="m 69.804802,20.400389 c 0,7.7119 0,17.03492 0,25.70038" />
+       id="path30-2-7-3"
+       d="m 15.67294,19.833786 c -2.627424,7.352939 -7.5631646,13.559419 0,25.973684"
+       sodipodi:nodetypes="cc" />
     <polygon
-       transform="matrix(0.57363936,0.0096894,-0.0096894,0.57363942,32.795542,142.23321)"
+       transform="matrix(0.47604941,-0.3202077,0.32020773,0.47604945,41.117378,147.13421)"
        style="fill:#000000;stroke:#000000"
-       id="polygon32-9-9-9"
+       id="polygon32-9-9-1"
        points="65.2983,-171.291 61.7982,-161.291 58.2983,-171.291 65.2983,-171.291 " />
   </g>
+  <g
+     id="g4442"
+     transform="matrix(1.00028,0,0,1.0002801,-83.492095,-143.34383)">
+    <ellipse
+       ry="9.6721182"
+       rx="15.86212"
+       style="fill:none;stroke:#000000;stroke-width:0.68812746"
+       id="ellipse12-3-8"
+       cy="153.15273"
+       cx="99.674904" />
+    <text
+       style="font-size:14px;font-family:Times, serif;text-anchor:middle"
+       id="text14-7-9"
+       font-size="14.00"
+       y="155.83305"
+       x="99.653496">
+      <tspan
+         style="font-size:8.01294613px"
+         id="tspan4405-7">Zero</tspan>
+    </text>
+  </g>
+  <path
+     d="m 32.173611,9.8517932 c 5.394685,0 11.916393,0 17.97812,0"
+     id="path30-5"
+     inkscape:connector-curvature="0"
+     style="fill:none;stroke:#000000;stroke-width:0.67037249;stroke-miterlimit:4;stroke-dasharray:none" />
+  <polygon
+     points="65.2983,-171.291 61.7982,-161.291 58.2983,-171.291 65.2983,-171.291 "
+     id="polygon32-9-9-9"
+     style="fill:#000000;stroke:#000000"
+     transform="matrix(0.0096894,-0.5736393,0.57363948,0.0096894,146.28418,46.86105)" />
 </svg>

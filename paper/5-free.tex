@@ -172,12 +172,30 @@ with calculating the sum.
 
 The free selective functor construction shines in the static analysis. By executing
 the analysis of the \hs{add} semantics, we can obtain the list of all its effects,
-in the order they appear in the computation:
+in the order they appear in the computation. We also visualise the effects as a data-flow
+graph\footnote{For didactic purposes,
+these graph was hand-crafted, but it is possible to get similar results automatically
+with GraphViz~\cite{graphviz}.}, where the instruction is enclosed in a rectangular block,
+and the data locations in ellipses with outcoming arrow denoting reads and incoming --- writes.
+
+\begin{figure}[!h]
+ \begin{minipage}{0.45\textwidth}
+\raggedleft
 \begin{minted}[xleftmargin=10pt]{haskell}
 @\ghci@ getEffectsISA (add R0 1)
-[Read R0,Read 1,Write R0,Write Zero,Write Oveflow
+[Read R0,Read 1,Write R0,Write Zero
 ,Read R0,Read 1,Write Overflow]
 \end{minted}
+  % \captionof{listing}{Sub caption}
+ \end{minipage}
+ \begin{minipage}{0.45\textwidth}
+  \centering
+  \includegraphics[width=7cm]{./img/ISA/add.pdf}
+  % \captionof{listing}{Another sub caption}
+ \end{minipage}
+ % \captionof{listing}{SomeCaption}
+ %  \label{lst:representation_examples}
+\end{figure}
 
 The addition instruction semantics has only used the applicative combinators and thus
 the same analysis capabilities could have been achieved with free applicative functors.
@@ -205,17 +223,31 @@ jumpZero offset =
 Here we use the aforementioned \hs{whenS} combinator to only execute the effect, i.e.
 to modify the program counter, if the flag is set. By implementing this semantics in terms of
 \hs{Selective} we achieve both the ability to implement an adequate simulator for the ISA and
-to retain the possibilities for the static analysis of programs by means of the \hs{getEffects} function:
+to retain the possibilities for the static analysis of programs by means of the \hs{getEffectsISA}
+function:
 
+\begin{figure}[!h]
+ \begin{minipage}{0.45\textwidth}
+\raggedleft
 \begin{minted}[xleftmargin=10pt]{haskell}
 @\ghci@ getEffectsISA (jumpZero 42)
 [Read Zero,Read PC,Write PC]
 \end{minted}
+  % \captionof{listing}{Sub caption}
+ \end{minipage}
+ \begin{minipage}{0.45\textwidth}
+  \centering
+  \includegraphics[width=7cm]{./img/ISA/jumpZero.pdf}
+  % \captionof{listing}{Another sub caption}
+ \end{minipage}
+ % \captionof{listing}{SomeCaption}
+ %  \label{lst:representation_examples}
+\end{figure}
 
-The \hs{getEffects} function informs us of all effects of the computation, thus
-effectively giving us an over-approximated list of the instructions
-data-dependencies dependencies. Note that it does not matter
-what argument we supply, since it will never get evaluated, e.g. the analysis will succeed and give us the same result even if we supply \hs{undefined}.
+Since the analysis is static, the resulting list of effects and data-flow graph are
+over-approximated and show all effects that can possibly happen in the computations.
+Note that it does not matter what argument we supply, since it will never get evaluated,
+e.g. the analysis will succeed and give us the same result even if we supply \hs{undefined}.
 
 \subsubsection{\textbf{Blocks of instructions}}
 
@@ -231,24 +263,37 @@ addAndJump = add R0 1 *> jumpZero 2
 We can analyse the composed computations for its effects in the same way we analyse the
 individual semantics:
 
+\begin{figure}[!h]
+ \begin{minipage}{0.45\textwidth}
+\raggedleft
 \begin{minted}[xleftmargin=10pt]{haskell}
 @\ghci@ getEffectsISA addAndJump
-[Read R0,Read 1,Write R0,Write Zero,Read R0,
- Read 1,Write Overflow,Read Zero,Read PC,Write PC]
+[Read R0,Read 1,Write R0,Write Zero
+,Read R0,Read 1,Write Overflow
+,Read Zero,Read PC,Write PC]
 \end{minted}
+  % \captionof{listing}{Sub caption}
+ \end{minipage}
+ \begin{minipage}{0.45\textwidth}
+  \centering
+\includegraphics[width=7cm]{./img/ISA/addAndJump.pdf}
+  % \captionof{listing}{Another sub caption}
+ \end{minipage}
+ % \captionof{listing}{SomeCaption}
+ %  \label{lst:representation_examples}
+\end{figure}
 
-However, getting a flat list of effects is not very useful, since it is does not
-carry much data-flow information. To mitigate this restriction, we take the following
-approach. We create a (1) deeply-embedded assembly language and (2) implement an
-interpreter which assigns a semantics to this language in terms of the free selective
-construction. By doing this, we can than can implement a mechanical procedure which
-would construct \emph{data-flow graphs} of sequences of instructions, similar to
-the ones shown in Fig.~\ref{fig-addAndJump-gcd}\footnote{For didactic purposes,
-these graphs were hand-crafted, but it is possible to get similar results automatically
-with GraphViz~\cite{graphviz}.}.
+
+Getting a flat list of effects that blocks of code perform is not very useful,
+since they does not carry any data-flow information. To mitigate this restriction,
+we take the following approach. We create a (1) deeply-embedded assembly language and
+(2) implement an interpreter which assigns a semantics to this language in terms of the
+free selective construction. By doing this, we can than can implement a mechanical procedure
+which would construct \emph{data-flow graphs} of sequences of instructions, similar to
+the ones shown in Fig.~\ref{fig-addAndJump-gcd}.
 
 \begin{figure}
-\includegraphics[width=2cm]{./img/ISA/addAndJump.pdf}
+
 \caption{Data-flow graphs of instructions and short programs}
 \label{fig-addAndJump-gcd}
 \end{figure}
