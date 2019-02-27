@@ -2,12 +2,14 @@
 {-# LANGUAGE StandaloneDeriving, DerivingVia #-}
 {-# LANGUAGE FlexibleInstances, TupleSections, ExplicitForAll #-}
 
+module ArrowLaws where
+
 import Prelude hiding (maybe)
 import Test.Tasty
 import Test.Tasty.QuickCheck as QC
-import Test.QuickCheck.Checkers as Check
+import Test.QuickCheck.Checkers as Checkers
 import Test.QuickCheck.Checkers (EqProp)
-import Test.QuickCheck.Classes as Check
+import Test.QuickCheck.Classes as Checkers
 import Test.Tasty.ExpectedFailure
 import Control.Selective
 import Control.Arrow
@@ -39,8 +41,6 @@ instance Monad (Over String) where
 -- | Will fail, since the the provided Monad instance in lawless.
 monadLawsOver = Checkers.verboseBatch (Checkers.monad (labrat @(Over String)))
 
-functorLawsOver = Checkers.verboseBatch (Checkers.functor (undefined :: Over String Labrat))
-
-applicativeLawsOver = Checkers.verboseBatch (Checkers.applicative (undefined :: Over String Labrat))
+applicativeLawsOver = Checkers.verboseBatch (Checkers.applicative (labrat @(Over String)))
 
 arrowLawsArrow = Checkers.verboseBatch (Checkers.arrow (labrat @((->) Int)))
