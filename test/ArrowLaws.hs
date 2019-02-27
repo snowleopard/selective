@@ -6,14 +6,12 @@ module ArrowLaws where
 
 import Prelude hiding (maybe)
 import Test.Tasty
-import Test.Tasty.QuickCheck as QC
+import Test.Tasty.QuickCheck()
 import Test.QuickCheck.Checkers as Checkers
 import Test.QuickCheck.Checkers (EqProp)
 import Test.QuickCheck.Classes as Checkers
-import Test.Tasty.ExpectedFailure
 import Control.Selective
-import Control.Arrow
-import Laws
+import Laws ()
 
 check :: IO ()
 check = defaultMain $ testGroup "Arrows instances"
@@ -36,7 +34,7 @@ instance Eq m => EqProp (Over m a) where
 -- | Silly Monad instance for 'Over String', used for sanity check of
 --   'Checkers.monad'.
 instance Monad (Over String) where
-    (Over m) >>= f = Over "c"
+    (Over _) >>= _ = Over "c"
 
 -- | Will fail, since the the provided Monad instance in lawless.
 monadLawsOver = Checkers.verboseBatch (Checkers.monad (labrat @(Over String)))
