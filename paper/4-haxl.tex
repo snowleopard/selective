@@ -1,9 +1,150 @@
 \section{Speculative execution}\label{sec-haxl}
 
-The Haxl section.
+\Haxl\cite{haxl} is a framework for efficiently executing code that
+fetches data from external sources, typically databases or remote
+services. The \Haxl framework allows such code to be written in a
+natural style using \hs{Applicative} and \hs{Monad} combinators, while
+automatically parallelising the data fetch operations and batching
+together multiple fetches from the same data source.
 
-1) What is Haxl?
-2) Why are functions like pOr and pAnd useful?
-3) Why can't they be expressed via the Applicative or Monad interface?
-4) The Selective instance for Haxl, which allows to get pOr, pAnd and other
-similar functions in the form of standard Selective combinators.
+To illustrate the idea using a fragment of the example code from
+\citep{Haxl}, suppose we're writing the code to render a blog into
+HTML. The blog consists of a set of posts, where each post is
+identified by a \hs{PostId}.  The data for the blog is stored in a
+remote database.  The API for fetching the data from the database is
+as follows:
+
+\begin{minted}[fontsize=\small]{haskell}
+getPostIds     :: Haxl [PostId]
+getPostContent :: PostId -> Haxl PostContent
+\end{minted}
+
+We can fetch the set of all \hs{PostId}s using \hs{getPostIds}, and we
+can fetch the content of one post using \hs{getPostContent}.
+
+To get the content of all posts we could write:
+
+\begin{minted}[fontsize=\small]{haskell}
+getAllPostsContent :: Haxl [PostContent]
+getAllPostsContent = mapM getPostContent =<< getPostIds
+\end{minted}
+
+Now, when we \hs{apM getPostContent} we would really like those
+database queries to happen in parallel, since there are no
+dependencies between them. Furthermore, we might even be able to batch
+up the queries into a single request to the remote database.
+
+These optimisations are performed automatically by \Haxl, using a
+special instance of \hs{Applicative} that exploits the lack of dependency
+between the two computations to explore the computations and collect
+the data fetch operations that can be performed in parallel or batched
+together.
+
+\Haxl has been in use at Facebook, at scale, to proactively detect and
+remediate various forms of abuse for several years now.  One of the
+key tools that we found to be useful in the kind of code we write is
+the ``lazy'' conditional operators:
+
+\begin{minted}[fontsize=\small]{haskell}
+(.||) :: Haxl Bool -> Haxl Bool -> Haxl Bool
+x .|| y = do b <- x; if b then return True else y
+
+(.&&) :: Haxl Bool -> Haxl Bool -> Haxl Bool
+x .&& y = do b <- x; if b then y else return False
+\end{minted}
+
+These are typically used to improve performance by guarding expensive
+checks with cheaper checks.  For example, we might write:
+
+\begin{minted}[fontsize=\small]{haskell}
+myDetector =
+  if cheapCondition .&& expensiveCondition
+    then ...
+    else ...
+\end{minted}
+
+\noindent The idea is that \hs{cheapCondition} is cheap to evaluate and
+returns \hs{False} in a large proportion of cases, so that we can
+often avoid needing to perform \hs{expensiveCondition}.
+
+This is all fine and doesn't require any additional extensions or
+special support in Haxl. But we also noticed that sometimes there is a
+pair of conditions where neither is obviously cheaper than the other,
+yet we would still like to benefit from bailing out early when the
+answer is known.  Therefore \Haxl contains two more conditional
+operators \hs{pOr} and \hs{pAnd} for ``parallel Or'' and ``parallel
+And'' respectively:
+
+\begin{minted}[fontsize=\small]{haskell}
+pOr, pAnd :: Haxl Bool -> Haxl Bool -> Haxl Bool
+\end{minted}
+
+These have the behaviour that
+
+\begin{itemize}
+\item Both arguments are evaluated in parallel.
+\item The computation is aborted as soon as the answer is known, even
+  if the other argument has not completed evaluation yet.
+\end{itemize}
+
+Data-fetches are not observable effects, so the parallelism is not
+observable to the programmer (this is the property that \Haxl relies
+on for the soundness of its parallel \hs{Applicative}
+instance). However, \hs{pOr} and \hs{pAnd} are non-deterministic with
+respect to exceptions: if an exception is thrown by either side, then
+it will be thrown by the computation as a whole immediately without
+waiting for the other side to complete.  One could imagine an
+alternative implementation which waits for the completion of the other
+argument when an exception is raised; this would be deterministic, but
+would be less efficient in the case of exceptions.
+
+We found that \hs{pOr} and \hs{pAnd} are not only useful by
+themselves, but also when chaining together a set of conditions:
+
+\begin{minted}[fontsize=\small]{haskell}
+pAny :: (a -> Haxl Bool) -> [a] -> Haxl Bool
+pAny f (x:xs) = f x `pOr` pAny f xs
+pAny _ [] = return False
+\end{minted}
+
+Indeed when there are a large number of conditions it becomes very
+hard to manually order them effectively using \hs{.||}, especially
+when the set of conditions changes often. In this case \hs{pAny} is
+very useful as a way to extract performance in a non-invasive way.
+
+It should come as no surprise that \hs{pOr} and \hs{pAnd} can be
+implemented using \hs{select}, indeed \hs{pOr = (<||>)} and
+\hs{pAnd = (<&&>)}.
+
+An implementation of \hs{select} in terms of the \Haxl implementation
+from \citet{haxl} is given in Figure~\ref{fig-haxl-select}.  For the
+purposes of the presentation here we have renamed \hs{Fetch} to
+\hs{Haxl} and added support for exceptions in the form of the
+\hs{Throw} cases.
+
+\begin{figure}
+\begin{minted}[fontsize=\small]{haskell}
+instance Selective Haxl where
+  select (Haxl x) (Haxl f) = Haxl $ do
+    rx <- x
+    case rx of
+      Done (Right b) -> return (Done b)
+      Done (Left  a) -> unHaxl (($a) <$> Haxl f)
+      Throw e -> return (Throw e)
+      Blocked br1 c -> do
+        rf <- f
+        case rf of
+          Done f  -> unHaxl (either f id <$> c)
+          Throw e -> return (Throw e)
+          Blocked br2 d -> return (Blocked (br1 <> br2) (select c d)
+\end{minted}
+\label{fig-haxl-select}
+\end{figure}
+
+There is one wrinkle in the implementation of \hs{pOr} and \hs{pAnd}
+in terms of \hs{select}. Ideally, \hs{pOr} and \hs{pAnd} would be
+symmetric: just as we can abort the right argument if the left
+argument determines the answer, we should be able to abort the left
+argument in the same way. Yet \hs{select} is inherently left-biased,
+so our implementations of \hs{pOr} and \hs{pAnd} using \hs{select} are
+suboptimal.  (TODO: what to do about this?)
