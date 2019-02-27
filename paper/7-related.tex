@@ -1,52 +1,98 @@
 \section{Related work}\label{sec-related}
 
 Composing effectful computations is a rich research area and there is a vast
-body of related works. We build on the fundamental notions of applicative
+body of related work. We build on the fundamental notions of applicative
 functors~\citep{mcbride2008applicative} and
 monads~\citep{moggi1991notions,1995_wadler_monads}, but these notions are not
-isolated points in space: the landscape between them is inhabited by
+isolated: the space between them is inhabited by
 \emph{arrows}~\citep{hughes2000arrows} and \emph{generalised
 arrows}~\citep{megacz2011hardware}, which we discuss in~\S\ref{sec-arrows}.
 
-The idea of extending the \hs{Applicative} interface with new methods to gain
-additional expressive power is not new. In particular, there are several works
-in the area of \emph{parser combinators}, where static analysis of parsers is
-desirable because it allows for their automated optimisation.
+The idea of extending the \hs{Applicative} interface to gain more expressive
+power is of course not new, and has been particularly popular in
+the area of \emph{applicative parser combinators}. In particular,
 \citet{swierstra1996parsers} used an extended version of applicative functors
-which was later abstracted into \hs{Alternative} type class, which we discuss
-in~\S\ref{sec-alternative-functors}. Other extensions include combinators for
-\emph{observable recursion}, e.g.
-see~\citep{devriese2012finally,devriese2013fixing}.
+that was later abstracted into the \hs{Alternative} type class, which is
+discussed in~\S\ref{sec-alternative-functors}. Other extensions include
+combinators for \emph{observable recursion}, e.g.
+see~\citep{devriese2012finally,devriese2013fixing}. Combining the latter with
+selective functors would give us the ability to statically analyse effectful
+computations with cycles.
 
 Our free construction for rigid selective functors is inspired by the works
 on free applicative functors~\citep{free-applicatives} and free
 monads~\citep{swierstra2008data}, as well as by insightful blog posts
 by~\citet{fancher2016free,fancher2017static}.
 
-\subsection{Arrows}\label{sec-arrows}
+\subsection{Arrows and profunctors}\label{sec-arrows}
 
 Arrows, introduced by~\citet{hughes2000arrows}, generalise monads by making the
 \emph{input} of a computation explicit. Rather than giving the type
 \hs{f}~\hs{a} to an effectful computation that yields a value of type~\hs{a}, as
 we have done in this paper so far, arrows give the type \hs{a}~\hs{i}~\hs{o} to
-an effectful computation (an \emph{arrow}~\hs{a}) that takes values of type
-\hs{i} as input and yields values of type \hs{o} as output.
-
-See \citet{lindley2011idioms} and \citet{rivas2017notions} [...]
+an effectful computation that takes values of type \hs{i} as input and yields
+values of type \hs{o} as output. There is a rich \emph{arrow hierarchy} of type
+classes, each providing a new ability, where \hs{ArrowChoice} is particularly
+relevant for us:
 
 \vspace{1mm}
-\begin{minted}[xleftmargin=10pt]{haskell}
-newtype ArrowMonad a b = ArrowMonad (a () b) -- From Control.Arrow
-
-instance ArrowChoice a => Selective (ArrowMonad a) where
-    select (ArrowMonad x) y = ArrowMonad $ x >>> (toStatic y ||| returnA)
-
-toStatic :: Arrow a => ArrowMonad a (b -> c) -> a b c
-toStatic (ArrowMonad f) = arr (\x -> ((), x)) >>> first f >>> arr (uncurry ($))
+\begin{minted}[xleftmargin=10pt,fontsize=\small]{haskell}
+class Category a                  -- identity arrow, sequential arrow composition
+class Category a => Arrow       a -- pure arrows, parallel arrow composition
+class Arrow    a => ArrowChoice a -- arrows with choice
+class Arrow    a => ArrowApply  a -- arrows that take arrows as input
+class Arrow    a => ArrowLoop   a -- arrows with loops
 \end{minted}
 \vspace{1mm}
 
-[...]
+\noindent
+The relationships between applicative functors, monads and arrows have been
+studied in depth. It is known, e.g. see~\citet{lindley2011idioms}
+and~\citet{rivas2017notions}, that applicative functors correspond to so called
+\emph{static arrows}, for which there is an isomorphism between
+\hs{a}~\hs{()}~\hs{(}\hs{i}~\hs{->}~\hs{o)} and~\hs{a}~\hs{i}~\hs{o}. The
+standard module \textsf{Control.Arrow} therefore provides the following
+definitions:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+newtype ArrowMonad a b = ArrowMonad (a () b) -- See Control.Arrow
+
+instance Arrow      a => Functor     (ArrowMonad a)
+instance Arrow      a => Applicative (ArrowMonad a)
+instance ArrowApply a => Monad       (ArrowMonad a)
+\end{minted}
+\vspace{1mm}
+
+\noindent
+Selective functors provide the missing equivalent for \hs{ArrowChoice} in the
+\emph{functor hierarchy}, as demonstrated by the following instance:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+instance ArrowChoice a => Selective (ArrowMonad a) where
+    select (ArrowMonad x) y = ArrowMonad $ x >>> (toArrow y ||| returnA)
+
+toArrow :: Arrow a => ArrowMonad a (b -> c) -> a b c
+toArrow (ArrowMonad f) = arr (\x -> ((), x)) >>> first f >>> arr (uncurry ($))
+\end{minted}
+\vspace{1mm}
+
+\noindent
+Here \hs{toArrow} witnesses one half of the aforementioned isomorphism between
+\hs{a}~\hs{()}~\hs{(}\hs{i}~\hs{->}~\hs{o)} and~\hs{a}~\hs{i}~\hs{o}. The
+obtained \hs{Selective} instance is lawful thanks to the \hs{ArrowChoice} laws.
+
+\emph{Profunctors} is an abstraction closely related to arrows;
+see~\citep{pickering2017profunctor} for a good overview of profunctors in the
+context of modular data accessors, or \emph{lenses}. Similarly to
+\hs{ArrowChoice}, so-called \emph{Cocartesian profunctors} can be viewed as an
+equivalent of selective functors, where the input of the computation is made
+explicit.
+
+Establishing a formal correspondence between \hs{ArrowChoice}, Cocartesian
+profunctors, and selective functors is beyond the scope of this paper and is
+left for future research.
 
 \subsection{Parsers and \hs{Alternative} type class}\label{sec-alternative-functors}
 
