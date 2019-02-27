@@ -56,7 +56,7 @@ Once we have embedded the \hs{pingPongS} program into the free selective datatyp
 we have access to the machinery allowing for static analysis of its effects:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
-ghci> getEffects pingPong
+@\ghci@ getEffects pingPong
 [GetLine,PutStrLn pong]
 \end{minted}
 
@@ -145,15 +145,14 @@ write the result into the third location and also update the state of the \hs{ze
 and \hs{overflow} flags to indicate if the sum was zero and if integer overflow occurred:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
-add :: Register -> Address  -> ISA Value
-add reg addr =
-    let arg1     = read (Reg reg)
-        arg2     = read (Mem addr)
-        result   = (+)  <$> arg1   <*> arg2
-        isZero   = (==) <$> pure 0 <*> write (Reg reg) result
-        overflow = willOverflowPure <$> arg1 <*> arg2
-    in write (F Zero)     (fromBool <$> isZero) *>
-       write (F Overflow) (fromBool <$> overflow)
+add :: Register -> Address -> ISA Value
+add reg addr = let arg1     = read (Reg reg)
+                   arg2     = read (Mem addr)
+                   result   = (+)  <$> arg1   <*> arg2
+                   isZero   = (==) <$> pure 0 <*> write (Reg reg) result
+                   overflow = willOverflowPure <$> arg1 <*> arg2
+               in write (F Zero)     (fromBool <$> isZero) *>
+                  write (F Overflow) (fromBool <$> overflow)
 \end{minted}
 
 Here, we get two effectful values from the two locations and calculate three intermediate
@@ -168,8 +167,9 @@ The free selective functor construction shines in the static analysis. By execut
 the analysis of the \hs{add} semantics, we can find obtain the list of all its effects,
 in the order they appear in the computation:
 \begin{minted}[xleftmargin=10pt]{haskell}
-> getEffects (add  R0 1)
-[Read R0,Read 1,Write R0,Write Zero,Read R0,Read 1,Write Overflow]
+@\ghci@ getEffectsISA (add R0 1)
+[Read R0,Read 1,Write R0,Write Zero,Write Oveflow
+,Read R0,Read 1,Write Overflow]
 \end{minted}
 
 The addition instruction semantics has only used the applicative combinators and thus
@@ -182,7 +182,9 @@ of the \hs{Applicative} interface, but still they do not require the heavy artil
 Selective functors allow to introduce limited dependencies between effectful computations.
 It turns out, that they give just enough power to implement the semantics of conditional
 jump instructions. A relative conditional jump offsets the program counter in case if a
-certain condition, materialised in a microarchitectural flag, holds. For instance, some instruction set might have a jump triggered by the fact that the result of the last addition was zero:
+certain condition, materialised in a microarchitectural flag, holds. For instance, some
+instruction set might have a jump triggered by the fact that the result of the last addition
+was zero:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
 jumpZero :: Value -> ISA ()
@@ -199,7 +201,7 @@ to modify the program counter, if the flag is set. By implementing this semantic
 to retain the possibilities for the static analysis of programs by means of the \hs{getEffects} function:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
-> analyse (jumpZero 42)
+@\ghci@ getEffectsISA (jumpZero 42)
 [Read Zero,Read PC,Write PC]
 \end{minted}
 
@@ -208,10 +210,45 @@ effectively giving us an over-approximated list of the instructions
 data-dependencies dependencies. Note that it does not matter
 what argument we supply, since it will never get evaluated, e.g. the analysis will succeed and give us the same result even if we supply \hs{undefined}.
 
-\subsubsection{Blocks of instructions}
+\subsubsection{\textbf{Blocks of instructions}}
 
 Once we have implemented the semantics for a desired subset of an ISA, we can construct the
 semantics of sequences, or blocks, of instructions by simply composing the \hs{ISA} computations
-with the applicative \hs{*>}:
+using the applicative sequencing operator \hs{*>}:
 
+\begin{minted}[xleftmargin=10pt]{haskell}
+addAndJump :: ISA Value
+addAndJump = add R0 1 *> jumpZero 2
+\end{minted}
+
+We can analyse the composed computations for its effects in the same way we analyse the
+individual semantics:
+
+\begin{minted}[xleftmargin=10pt]{haskell}
+@\ghci@ getEffectsISA addAndJump
+[Read R0,Read 1,Write R0,Write Zero,Read R0,
+ Read 1,Write Overflow,Read Zero,Read PC,Write PC]
+\end{minted}
+
+However, getting a flat list of effects is not very useful, since it is does not
+carry much data-flow information. To mitigate this restriction, we take the following
+approach. We create a (1) deeply-embedded assembly language and (2) implement an
+interpreter which assigns a semantics to this language in terms of the free selective
+construction. By doing this, we can than can implement a mechanical procedure which
+would construct \emph{data-flow graphs} of sequences of instructions, similar to
+the ones shown in Fig.~\ref{fig-addAndJump-gcd}\footnote{For didactic purposes,
+these graphs were hand-crafted, but it is possible to get similar results automatically
+with GraphViz~\cite{graphviz}.}.
+
+\begin{figure}
+\includegraphics[width=2cm]{./img/ISA/addAndJump.pdf}
+\caption{Data-flow graphs of instructions and short programs}
+\label{fig-addAndJump-gcd}
+\end{figure}
+
+\subsubsection{\textbf{Simulation}}
+
+
+
+\subsubsection{\textbf{Restrictions}}
 

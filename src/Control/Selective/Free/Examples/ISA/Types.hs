@@ -80,11 +80,13 @@ read k = liftSelect (Read k id)
 write :: Key -> ISA Value -> ISA Value
 write k p = liftSelect (Write k p id)
 
+-- | Interpret 'Read' and 'Write' commands in the 'Over' selective functor
 inOver :: RW a -> Over [RW ()] b
 inOver (Read  k t   ) = Over [void $ Read k (const ())]
 inOver (Write k fv t) = void (runSelect inOver fv) *>
                         Over [Write k fv (const ())]
 
+-- | Get effects of an ISA semantics computation
 getEffectsISA :: ISA a -> [RW ()]
 getEffectsISA = getOver . runSelect inOver
 
