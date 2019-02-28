@@ -274,6 +274,18 @@ class Applicative f => SelectiveM f where
 biselect :: Selective f => f (Either a b) -> f (Either a c) -> f (Either a (b, c))
 biselect x y = select ((fmap Left . swap) <$> x) ((\e a -> fmap (a,) e) <$> y)
 
+(?*?) :: Selective f => f (Either a b) -> f (Either a c) -> f (Either a (b, c))
+(?*?) = biselect
+
+a1M :: Selective f => f (Either a b) -> f (Either a c) -> f (Either a d)
+                   -> f (Either a (b, (c, d)))
+a1M x y z =
+    x ?*? (y ?*? z)
+    ===
+    second assoc <$> ((x ?*? y) ?*? z)
+  where
+    assoc ((a, b), c) = (a, (b, c))
+
 apM :: SelectiveM f => f (a -> b) -> f a -> f b
 apM f x = fmap (either absurd (uncurry ($))) (fmap Right f |**| fmap Right x)
 

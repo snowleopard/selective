@@ -83,6 +83,19 @@ Here \hs{toArrow} witnesses one half of the aforementioned isomorphism between
 \hs{a}~\hs{()}~\hs{(}\hs{i}~\hs{->}~\hs{o)} and~\hs{a}~\hs{i}~\hs{o}. The
 obtained \hs{Selective} instance is lawful thanks to the \hs{ArrowChoice} laws.
 
+Arrows are more general and powerful than selective functors. We could have used
+arrows to solve our static analysis and speculative execution examples, and not
+just in theory --- \Dune is a great example of successful application of arrows
+in practice. However, introducing arrows to an existing codebase built around
+applicative functors and monads, such as \Haxl, would require pervasive changes
+to the whole abstraction stack, as well as rewriting all existing \Haxl user
+code in the arrow notation~\citep{paterson2001new}. Needless to say,
+introduction of selective functors to \Haxl is a much easier task, which we have
+accomplished by adding 13 lines of new code (the definition of the
+\hs{Selective}~\hs{Haxl} instance in Fig.~\ref{fig-haxl-select}), and removing
+26 lines of code corresponding to similarly-sized definitions of \hs{pOr} and
+\hs{pAnd}, reusing the selective combinators \hs{<||>} and \hs{<&&>} instead.
+
 \emph{Profunctors} is an abstraction closely related to arrows;
 see~\citep{pickering2017profunctor} for a good overview of profunctors in the
 context of modular data accessors, or \emph{lenses}. Similarly to

@@ -1,9 +1,9 @@
 \section{Alternative formulations for selective functors}
 \label{sec-alternatives}
 
-This section discusses two alternative formulations for selective functors:
-adding multi-way generalisations of \hs{select} to the \hs{Selective} type
-class (\S\ref{sec-alt-multi}), and making \hs{select} more
+This section discusses alternative versions of the \hs{Selective} type class,
+which are based on multi-way generalisations of the \hs{select} operator
+(\S\ref{sec-alt-multi}), as well as on making it more
 symmetric~(\S\ref{sec-alt-symmetric}). Both of these ideas can be readily
 integrated into the presented definition of the \hs{Selective} type class by
 extending it with new methods and adding new laws that ensure that the
@@ -11,10 +11,8 @@ new methods interact with \hs{select} in an appropriate manner. This is common
 in standard Haskell libraries, where type classes \hs{Applicative} and
 \hs{Monad} include methods like \hs{*>} and \hs{>>} for performance reasons.
 
-% incorporating \hs{select} to \hs{Applicative} (\S\ref{sec-alt-applicative}),
-
-Another alternative that is worth a remark is to simply add the \hs{select}
-method to the \hs{Applicative} type class, with the default implementation
+Another alternative, which is worth a remark, is to simply move \hs{select}
+to the \hs{Applicative} type class, with the default implementation
 \hs{select}~\hs{=}~\hs{selectA}. While this works for the purposes discussed in
 this paper, it would make it harder to reason about code with the
 \hs{Applicative}~\hs{f} constraint, since the \hs{select} method makes it
@@ -23,7 +21,7 @@ by the \hs{Selective}~\hs{f} constraint is arguably a more prudent approach.
 
 \subsection{Multiway select operators}\label{sec-alt-multi}
 
-As discussed in~\S\ref{sec-selective}, \hs{branch} is a strong contender to be
+As mentioned in~\S\ref{sec-selective}, \hs{branch} is a strong contender to be
 the main method of the \hs{Selective} type class: it is parametric and all
 selective combinators, including \hs{select} itself, can be derived from it:
 
@@ -65,8 +63,8 @@ bindS :: Selective f => (Bounded a, Enum a, Eq a) => f a -> (a -> f b) -> f b
 The default implementation could be based on sequentially checking for every
 possible value using \hs{select}, but monadic instances would supply a much
 faster implementation, namely \hs{bindS}~\hs{=}~\hs{(>>=)}. This would allow
-static analysis instances to capture all possible dependencies without incurring
-$O(N)$ slowdown during the execution of an $N$-way branch.
+static analysis instances to record all possible cases, without incurring
+the $O(N)$ slowdown during the execution of an $N$-way branch.
 
 Interestingly, adding the ability to branch on infinite number of cases makes
 selective functors equivalent to monads, although it is worth pointing out that
@@ -100,11 +98,21 @@ This definition is pleasantly symmetric: if either of the arguments yields a
 result must be a \hs{Left}~\hs{a} too, by parametricity. On the other hand, if
 one of the arguments yields a \hs{Right} value, then the other argument
 \emph{must be executed} in order to either get an \hs{a} or the other half of
-the resulting pair.
+the resulting pair. As an added bonus, the rather obscure associativity law
+from~\S\ref{sec-laws} looks much more natural for
+\hs{(?*?)}~\hs{=}~\hs{biselect}:
 
-While beautiful, \hs{biselect} is a bit more awkward to work with than
-\hs{select} and is also more subtle when the order in which the arguments are
-executed is not fixed. So far we have identified only one example where the
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+@\blk{x}@ ?*? (y ?*? z) = second assoc <$> ((x ?*? y) ?*? z)
+  where
+    assoc ((a, b), c) = (a, (b, c))
+\end{minted}
+\vspace{1mm}
+
+While beautiful, we found \hs{biselect} to be a bit more awkward to work with
+than \hs{select}, and also more subtle when the order in which the arguments
+are executed is not fixed. So far we have identified only one example where the
 symmetry of \hs{biselect} is beneficial: speculative execution of parallel OR
 and AND combinators --- see the \Haxl case study~\S\ref{sec-haxl}. To support
 such use-cases it is possible to add \hs{biselect} to the \hs{Selective} type
