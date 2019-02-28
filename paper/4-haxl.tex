@@ -6,7 +6,6 @@ remote services. The \Haxl framework allows code written in a natural
 style using \hs{Applicative} and \hs{Monad} combinators to run
 efficiently, by automatically parallelising the data fetch operations
 and batching together multiple fetches from the same data source.
-
 \Haxl has been in use at Facebook, at scale, for several years now in
 a system that proactively detects and remediates various forms of
 abuse. \Haxl allows the engineers working on the anti-abuse code to
@@ -15,84 +14,93 @@ abstracts away from the details of concurrency and efficient
 data-fetching.
 
 To illustrate the idea using a fragment of the example code from
-\citep{marlow2014haxl}, suppose we're writing the code to render a blog into
+\citep{marlow2014haxl}, suppose we are writing the code to render a blog into
 HTML. The blog consists of a set of posts, where each post is
 identified by a \hs{PostId}.  The data for the blog is stored in a
 remote database.  The API for fetching the data from the database is
 as follows:
 
-\begin{minted}[fontsize=\small]{haskell}
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
 getPostIds     :: Haxl [PostId]
 getPostContent :: PostId -> Haxl PostContent
 \end{minted}
+\vspace{1mm}
 
+\noindent
 We can fetch the set of all \hs{PostId}s using \hs{getPostIds}, and we
 can fetch the content of one post using \hs{getPostContent}. To get
 the content of all posts we could write:
 
-\begin{minted}[fontsize=\small]{haskell}
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
 getAllPostsContent :: Haxl [PostContent]
-getAllPostsContent = mapM getPostContent =<< getPostIds
+getAllPostsContent = getPostIds >>= mapM getPostContent
 \end{minted}
+\vspace{1mm}
 
-Now, when we \hs{mapM getPostContent} we would really like the
+\noindent
+Now, when we \hs{mapM}~\hs{getPostContent} we would really like the
 database queries to happen in parallel, because there are no
 dependencies between them. Furthermore, we might even be able to batch
 up the queries into a single request to the remote database.
 
 These optimisations are performed automatically by \Haxl, using a
-special instance of \hs{Applicative} that exploits the lack of
+special \hs{Applicative} instance that exploits the lack of
 dependency between the two computations to explore the computations
 and collect the data fetch operations that can be performed in
 parallel or batched together. \Haxl also has a \hs{Monad} instance
-that sequentializes operations as you would expect, but code written
+that sequentialises operations as you would expect, but code written
 to use \hs{Applicative} operations benefits from the automatic
 concurrency. This optimisation is further exploited by using a
 transformation on the monadic \hs{do} syntax to automatically use
-\hs{Applicative} operators where possible \cite{applicative-do}.
+\hs{Applicative} operators where possible \cite{marlow2016applicativedo}.
 
 One of the key tools found to be useful in the kind of code written
 using \Haxl at Facebook is the ``lazy'' conditional operators:
 
-\begin{minted}[fontsize=\small]{haskell}
-(.||) :: Haxl Bool -> Haxl Bool -> Haxl Bool
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+(.||), (.&&) :: Haxl Bool -> Haxl Bool -> Haxl Bool
 x .|| y = do b <- x; if b then return True else y
-
-(.&&) :: Haxl Bool -> Haxl Bool -> Haxl Bool
-x .&& y = do b <- x; if b then y else return False
+x .&& y = do b <- x; if b then y           else return False
 \end{minted}
+\vspace{1mm}
 
 These are typically used to improve performance by guarding expensive
 checks with cheaper checks.  For example, we might write:
 
-\begin{minted}[fontsize=\small]{haskell}
-myDetector =
-  if cheapCondition .&& expensiveCondition
-    then ...
-    else ...
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+if cheapCondition .&& expensiveCondition then ... else ...
 \end{minted}
+\vspace{1mm}
 
-\noindent The idea is that \hs{cheapCondition} is cheap to evaluate and
+\noindent
+The idea is that \hs{cheapCondition} is cheap to evaluate and
 returns \hs{False} in a large proportion of cases, so that we can
 often avoid needing to evaluate \hs{expensiveCondition}.
 
-This doesn't require any additional extensions or special support in
-Haxl. But we also noticed that sometimes there is a pair of conditions
+This does not require any additional extensions or special support in
+\Haxl. But we also noticed that sometimes there is a pair of conditions
 where neither is obviously cheaper than the other, yet we would still
 like to benefit from bailing out early when the answer is known.
 Therefore, \Haxl contains two more conditional operators \hs{pOr} and
-\hs{pAnd} for ``parallel Or'' and ``parallel And'' respectively:
+\hs{pAnd} for ``parallel OR'' and ``parallel AND'':
 
-\begin{minted}[fontsize=\small]{haskell}
-pOr, pAnd :: Haxl Bool -> Haxl Bool -> Haxl Bool
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+pOr, @\blu{pAnd}@ :: Haxl Bool -> Haxl Bool -> Haxl Bool
 \end{minted}
+\vspace{1mm}
 
+\noindent
 These have the behaviour that
 
 \begin{itemize}
 \item Both arguments are evaluated in parallel.
 \item The computation is aborted as soon as the answer is known, even
-  if the other argument has not completed evaluation yet.
+    if the other argument has not completed evaluation yet.
 \end{itemize}
 
 Data-fetches are not observable effects, so the parallelism is not
@@ -107,30 +115,30 @@ argument when an exception is raised; this would be deterministic, but
 would be less efficient in the case of exceptions.
 
 It should come as no surprise that \hs{pOr} and \hs{pAnd} can be
-implemented using \hs{select}, indeed \hs{pOr = (<||>)} and \hs{pAnd =
-  (<&&>)}.  An implementation of \hs{select} in terms of the \Haxl
-implementation from \citet{marlow2014haxl} is given in
-Figure~\ref{fig-haxl-select}.  For the purposes of the presentation
+implemented using \hs{select}, indeed \hs{pOr}~\hs{=}~\hs{(<||>)} and
+\hs{pAnd}~\hs{=}~\hs{(<&&>)} from Fig.~\ref{fig-library}. A \hs{Selective}
+instance in terms of the \Haxl implementation from \citet{marlow2014haxl} is
+given in Fig.~\ref{fig-haxl-select}.  For the purposes of the presentation
 here we have renamed \hs{Fetch} to \hs{Haxl} and added support for
 exceptions in the form of the \hs{Throw} cases.
 
 \begin{figure}
 \begin{minted}[fontsize=\small]{haskell}
 instance Selective Haxl where
-  select (Haxl x) (Haxl f) = Haxl $ do
-    rx <- x
-    case rx of
-      Done (Right b) -> return (Done b)
-      Done (Left  a) -> unHaxl (($a) <$> Haxl f)
-      Throw e -> return (Throw e)
-      Blocked br1 c -> do
-        rf <- f
-        case rf of
-          Done f  -> unHaxl (either f id <$> c)
-          Throw e -> return (Blocked br1 (select c (Haxl (return rf))))
-          Blocked br2 d -> return (Blocked (br1 <> br2) (select c d)
+    select (Haxl x) (Haxl f) = Haxl $ do
+        rx <- x
+        case rx of
+            Done (Right b) -> return (Done b)
+            Done (Left  a) -> unHaxl (($a) <$> Haxl f)
+            Throw e        -> return (Throw e)
+            Blocked bx c   -> do
+                rf <- f
+                case rf of
+                    Done f  -> unHaxl (either f id <$> c)
+                    Throw e -> return (Blocked bx (select c (Haxl (return rf))))
+                    Blocked by d -> return (Blocked (bx <> by) (select c d)
 \end{minted}
-\caption{An implementation of \hs{Selective} for \hs{Haxl}}
+\caption{An implementation of \hs{Selective} instance for \Haxl.}
 \label{fig-haxl-select}
 \end{figure}
 
@@ -140,16 +148,22 @@ symmetric: just as we can abort the right argument if the left
 argument determines the answer, we should be able to abort the left
 argument in the same way. Yet \hs{select} is inherently left-biased:
 it requires that all the effects of the first argument are performed.
-In Section~\ref{sec-alt-either} we will consider an alternative
-combinator related to \hs{select} that will allow this kind of
-symmetry to be expressed.
+In~\S\ref{sec-alt-either} we consider an alternative combinator
+related to \hs{select} that allows this kind of symmetry to be expressed.
 
 In \Haxl we found \hs{pOr} and \hs{pAnd} to be occasionally useful by
 themselves, but a more compelling use case is when there is a list of
-conditionals, where we can use the \hs{anyS} and \hs{allS}
-combinators.  When there are a large number of conditions it becomes
+conditionals, where we can use the \hs{anyS} and \hs{allS} combinators
+from Fig.~\ref{fig-library}. When there are a large number of conditions it becomes
 very hard to manually order them effectively using \hs{.||},
 especially when the set of conditions changes often. In this case
 \hs{anyS} is very useful as a way to extract performance in a
 non-invasive way.
 
+We have prototyped an implementation of \Haxl with the \hs{Selective}~\hs{Haxl}
+instance, which allowed us to reuse generic selective combinators
+\hs{<||>}, \hs{<&&>}, \hs{anyS} and \hs{allS} instead of providing custom
+implementations for conditional operators operators \hs{pOr} and \hs{pAnd} and
+their generalisations on lists. This case study highlights the fact that
+selective functors are useful not only in the static context, but in the dynamic
+context too, by allowing us to benefit from speculative execution.
