@@ -1,24 +1,89 @@
-\section{Alternative formulations and further research opportunitites}
+\section{Alternative formulations for selective functors}
 \label{sec-alternatives}
 
-\subsection{Adding \hs{select} to \hs{Applicative}}\label{sec-alt-applicative}
+This section discusses two alternative formulations for selective functors:
+adding multi-way generalisations of \hs{select} to the \hs{Selective} type
+class (\S\ref{sec-alt-multi}), and making \hs{select} more
+symmetric~(\S\ref{sec-alt-symmetric}). Both of these ideas can be readily
+integrated into the presented definition of the \hs{Selective} type class by
+extending it with new methods and adding new laws that ensure that the
+new methods interact with \hs{select} in an appropriate manner. This is common
+in standard Haskell libraries, where type classes \hs{Applicative} and
+\hs{Monad} include methods like \hs{*>} and \hs{>>} for performance reasons.
 
-One might argue that the \hs{select} method should simply be added to the
-\hs{Applicative} type class, with the default implementation
-\hs{select}~\hs{=}~\hs{selectA}. This is indeed a viable approach, however, it
-would make it harder to reason about code with the \hs{Applicative}~\hs{f}
-constraint, since the \hs{select} method makes it possible for "new applicative"
-effects to depend on values; declaring such a significant ability by the
-\hs{Selective}~\hs{f} constraint would arguably be a more prudent approach.
+% incorporating \hs{select} to \hs{Applicative} (\S\ref{sec-alt-applicative}),
 
-\subsection{Using \hs{branch} instead of \hs{select}}\label{sec-alt-branch}
+Another alternative that is worth a brief discussion is to simply add the
+\hs{select} method to the \hs{Applicative} type class, with the default
+implementation \hs{select}~\hs{=}~\hs{selectA}. While this is a viable approach
+from the technical viewpoint, it would make it harder to reason about code with
+the \hs{Applicative}~\hs{f} constraint, since the \hs{select} method makes it
+possible for effects to depend on values; declaring such a significant ability
+by the \hs{Selective}~\hs{f} constraint is arguably a more prudent approach.
 
-Use \hs{branch} instead of \hs{select}, or use both
-...
-multi-way version, i.e. select1, select2, selectN, etc. up to infinite version
+\subsection{Multiway select operators}\label{sec-alt-multi}
 
-\subsection{Making \hs{Either} explicit}\label{sec-alt-either}
+As discussed in~\S\ref{sec-selective}, \hs{branch} is a strong contender to be
+the main method of the \hs{Selective} type class: it is parametric and all
+selective combinators, including \hs{select} itself, can be derived from it:
 
-Arseniy's raise/catch
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
 
-\subsection{Multiway \hs{select} and \hs{SelectiveDo}}\label{sec-selectivedo}
+selectB :: Selective f => f (Either a b) -> f (a -> b) -> f b
+selectB x y = branch x y (pure id)
+\end{minted}
+\vspace{1mm}
+
+\noindent
+While we prefer \hs{select} for its simplicity, \hs{branch} does provide an
+interesting advantage in the context of static analysis. Specifically, it makes
+it statically apparent that the two branches are \emph{mutually exclusive}. When
+\hs{branch} is ``desugared'' into a sequence of two \hs{select} operations, the
+information about the mutual exclusion between the two branches is lost, which
+rules out some static analysis scenarios. For example, it may be useful to know
+that in our build systems example in~\S\ref{sec-static-example} we never depend
+on both \cmd{lib.c} and \cmd{lib.ml}.
+
+Another point in favour of \hs{branch} is performance: the \hs{select}-based
+implementation of the \hs{ifS} combinator checks for the \hs{Left} and
+\hs{Right} cases in sequence, instead of directly jumping to the correct case,
+so a \hs{branch}-based implementation would be more efficient. Furthermore,
+$N$-way generalisations of \hs{select} are possible, although the design space
+here is quite large. As an example, one might consider adding \hs{bindS} to the
+\hs{Selective} type class, i.e. a special case of the monadic bind operator that
+is applicable only to enumerable types:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+bindS :: (Bounded a, Enum a, Eq a) => f a -> (a -> f b) -> f b
+\end{minted}
+\vspace{1mm}
+
+\noindent
+The default implementation could be based on sequentially checking for every
+possible value using \hs{select}, but monadic instances would supply a much
+faster implementation, namely \hs{bindS}~\hs{=}~\hs{(>>=)}. This would allow
+static analysis instances to capture all possible dependencies without incurring
+$O(N)$ slowdown during the execution of an $N$-way branch.
+
+Interestingly, adding the ability to branch on infinite number of cases makes
+selective functors equivalent to monads, although it is worth pointing out that
+static analysis of such infinitely-branching selective functors might take
+infinite time too.
+
+Investigation of the design space for ``multiway selective functors'', and
+exploiting it for efficient translation of Haskell's \cmd{do}-notation into
+selective functors in the spirit of the \cmd{ApplicativeDo}
+extension~\citep{marlow2016applicativedo} is left for future work. For now, we
+believe that adding \hs{branch} and/or an equivalent of \hs{bindS} into the
+\hs{Selective} type class would be beneficial for performance-sensitive
+applications.
+
+\subsection{Symmetric select operators}\label{sec-alt-symmetric}
+
+
+% Arseniy's raise/catch
+
+% Loops

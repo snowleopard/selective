@@ -128,6 +128,10 @@ infixl 4 <*?
 branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
 branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 
+-- Implementing select via branch:
+-- selectB :: Selective f => f (Either a b) -> f (a -> b) -> f b
+-- selectB x y = branch x y (pure id)
+
 -- | We can write a function with the type signature of 'select' using the
 -- 'Applicative' type class, but it will always execute the effects associated
 -- with the second argument, hence being potentially less efficient.

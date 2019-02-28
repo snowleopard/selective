@@ -311,7 +311,7 @@ To fix the mismatch, we convert them to
 \hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{Either}~\hs{b}~\hs{c)}, respectively. The second
 application of \hs{<*?} is then straightforward.
 
-As will be discussed in~\S\ref{sec-alt-branch}, we could have chosen to use
+As will be discussed in~\S\ref{sec-alt-multi}, we could have chosen to use
 \hs{branch} instead of \hs{select} as the method of the \hs{Selective} type
 class. Our choice of \hs{select} follows the Occam's razor principle:
 \hs{select} is simpler than \hs{branch}, which, in particular, leads to a
@@ -348,7 +348,7 @@ bindBool x f = ifS x (f False) (f True)
 
 \noindent
 This can be achieved not only for \hs{Bool}, but for any \emph{enumerable}
-type, as we will discuss in \S\ref{sec-selectivedo}.
+type, as we will discuss in \S\ref{sec-alt-multi}.
 
 \subsection{Examples of selective functors}\label{sec-instances}
 

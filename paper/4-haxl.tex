@@ -148,14 +148,14 @@ symmetric: just as we can abort the right argument if the left
 argument determines the answer, we should be able to abort the left
 argument in the same way. Yet \hs{select} is inherently left-biased:
 it requires that all the effects of the first argument are performed.
-In~\S\ref{sec-alt-either} we consider an alternative combinator
+In~\S\ref{sec-alt-symmetric} we consider an alternative combinator
 related to \hs{select} that allows this kind of symmetry to be expressed.
 
 In \Haxl we found \hs{pOr} and \hs{pAnd} to be occasionally useful by
 themselves, but a more compelling use case is when there is a list of
 conditionals, where we can use the \hs{anyS} and \hs{allS} combinators
-from Fig.~\ref{fig-library}. When there are a large number of conditions it becomes
-very hard to manually order them effectively using \hs{.||},
+from Fig.~\ref{fig-library}. When there are a large number of conditions it
+becomes very hard to manually order them effectively using \hs{.||},
 especially when the set of conditions changes often. In this case
 \hs{anyS} is very useful as a way to extract performance in a
 non-invasive way.
