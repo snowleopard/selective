@@ -12,15 +12,15 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="190.34433pt"
-   height="52.252743pt"
-   viewBox="0 0 190.42781 52.337301"
+   width="453.32639pt"
+   height="113.39246pt"
+   viewBox="0 0 454.18713 113.05894"
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
    sodipodi:docname="add.svg">
   <metadata
-     id="metadata87">
+     id="metadata59">
     <rdf:RDF>
       <cc:Work
          rdf:about="">
@@ -32,7 +32,7 @@
     </rdf:RDF>
   </metadata>
   <defs
-     id="defs85" />
+     id="defs57" />
   <sodipodi:namedview
      pagecolor="#ffffff"
      bordercolor="#666666"
@@ -44,11 +44,11 @@
      inkscape:pageshadow="2"
      inkscape:window-width="1920"
      inkscape:window-height="1027"
-     id="namedview83"
+     id="namedview55"
      showgrid="false"
-     inkscape:zoom="3.13361"
-     inkscape:cx="138.69749"
-     inkscape:cy="82.863868"
+     inkscape:zoom="0.98163059"
+     inkscape:cx="184.778"
+     inkscape:cy="137.07296"
      inkscape:window-x="0"
      inkscape:window-y="27"
      inkscape:window-maximized="1"
@@ -57,163 +57,257 @@
      fit-margin-left="0"
      fit-margin-right="0"
      fit-margin-bottom="0" />
-  <polygon
-     points="108.298,-124.892 15.2982,-124.892 15.2982,-124.892 15.2982,-160.892 108.298,-160.892 "
-     id="polygon19"
-     style="fill:none;stroke:#000000"
-     transform="matrix(0.73217031,0,0,0.48201449,47.64487,78.892197)" />
   <text
-     x="93.357056"
-     y="13.406647"
-     font-size="14.00"
-     id="text25"
-     style="font-size:10.22982502px;font-family:Times, serif;text-anchor:middle">
-    <tspan
-       id="tspan4530"
-       style="font-size:10.0161829px">Add R0 1</tspan>
-  </text>
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:32.0607605px;line-height:125%;font-family:'PT Serif';-inkscape-font-specification:'PT Serif, Normal';text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="-297.24899"
+     y="2.1766787"
+     id="text4395"
+     sodipodi:linespacing="125%"><tspan
+       sodipodi:role="line"
+       id="tspan4397"
+       x="-297.24899"
+       y="2.1766787" /></text>
   <g
-     id="g4389"
-     transform="translate(27.60956,-7.1598617)">
+     id="g5128"
+     transform="translate(-27.546053,-98.730742)">
+    <rect
+       rx="0"
+       style="color:#000000;clip-rule:nonzero;display:inline;overflow:visible;visibility:visible;opacity:1;isolation:auto;mix-blend-mode:normal;color-interpolation:sRGB;color-interpolation-filters:linearRGB;solid-color:#000000;solid-opacity:1;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.20227849;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:8;stroke-opacity:1;color-rendering:auto;image-rendering:auto;shape-rendering:auto;text-rendering:auto;enable-background:accumulate"
+       id="rect4205-0-6-1"
+       width="91.045837"
+       height="45.625023"
+       x="388.89554"
+       y="99.800858"
+       ry="0" />
     <text
-       style="font-size:14px;font-family:Times, serif;text-anchor:middle"
-       id="text14-7-9-1"
-       font-size="14.00"
-       y="19.828329"
-       x="146.79182">
-      <tspan
-         style="font-size:8.01294613px"
-         id="tspan4405-7-2">R0</tspan>
-    </text>
-    <ellipse
-       transform="scale(-1,1)"
-       ry="9.6721182"
-       rx="15.86212"
-       style="fill:none;stroke:#000000;stroke-width:0.68812746"
-       id="ellipse12-3-8-6"
-       cy="17.176044"
-       cx="-146.76378" />
-    <g
-       transform="matrix(0,1,1,0,79.47065,-1.322285)"
-       id="g4234">
-      <polygon
-         points="65.2983,-171.291 61.7982,-161.291 58.2983,-171.291 65.2983,-171.291 "
-         id="polygon32-9-9"
-         style="fill:#000000;stroke:#000000"
-         transform="matrix(-0.47591615,0.32011803,-0.3201181,-0.47591615,-6.1412847,-76.129302)" />
-      <path
-         sodipodi:nodetypes="cc"
-         d="m 19.033932,51.135477 c 2.62669,-7.350881 7.561047,-13.555623 0,-25.966411"
-         id="path30-2-7"
-         inkscape:connector-curvature="0"
-         style="fill:none;stroke:#000000;stroke-width:0.80129462;stroke-miterlimit:4;stroke-dasharray:none" />
-      <path
-         sodipodi:nodetypes="cc"
-         d="m 15.617909,19.995384 c -2.626689,7.350881 -7.561048,13.555623 0,25.966411"
-         id="path30-2-7-3"
-         inkscape:connector-curvature="0"
-         style="fill:none;stroke:#000000;stroke-width:0.80129462;stroke-miterlimit:4;stroke-dasharray:none" />
-      <polygon
-         points="65.2983,-171.291 65.2983,-171.291 61.7982,-161.291 58.2983,-171.291 "
-         id="polygon32-9-9-1"
-         style="fill:#000000;stroke:#000000"
-         transform="matrix(0.47591615,-0.32011803,0.3201181,0.47591615,41.055224,147.26016)" />
-    </g>
-  </g>
-  <g
-     id="g4488"
-     transform="translate(55.370948,-50.228783)">
+       sodipodi:linespacing="125%"
+       id="text4212-2-2"
+       y="133.83464"
+       x="435.64447"
+       style="font-style:normal;font-weight:normal;font-size:32.0607605px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'PT Mono';-inkscape-font-specification:'PT Mono'"
+         y="133.83464"
+         x="435.64447"
+         id="tspan4214-9-7"
+         sodipodi:role="line">R0</tspan></text>
     <text
-       style="font-size:14px;font-family:Times, serif;text-anchor:middle"
-       id="text14-7-9"
-       font-size="14.00"
-       y="62.953339"
-       x="-39.257622">
-      <tspan
-         style="font-size:8.01294613px"
-         id="tspan4405-7">1</tspan>
-    </text>
-    <ellipse
-       transform="scale(-1,1)"
-       ry="9.6721182"
-       rx="15.86212"
-       style="fill:none;stroke:#000000;stroke-width:0.68812746"
-       id="ellipse12-3-8"
-       cy="60.244965"
-       cx="39.237587" />
+       sodipodi:linespacing="125%"
+       id="text4534-1"
+       y="125.61907"
+       x="412.39688"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:32.0607605px;line-height:125%;font-family:'PT Serif';-inkscape-font-specification:'PT Serif, Normal';text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#00d400;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:20.03797722px;font-family:'PT mono';-inkscape-font-specification:'PT mono';fill:#00d400"
+         y="125.61907"
+         x="412.39688"
+         id="tspan4536-5"
+         sodipodi:role="line">reg</tspan></text>
   </g>
   <path
-     d="m 32.381887,10.056234 c 6.275724,0 13.862528,0 20.914231,0"
-     id="path30"
+     d="m 120.18904,23.881822 c 5.31375,-0.0658 11.73759,-0.14543 17.70838,-0.21941"
+     id="path30-5-7-2-2"
      inkscape:connector-curvature="0"
-     style="fill:none;stroke:#000000;stroke-width:0.7218892;stroke-miterlimit:4;stroke-dasharray:none" />
+     style="fill:none;stroke:#000000;stroke-width:1.20227861;stroke-miterlimit:4;stroke-dasharray:none" />
   <polygon
-     points="65.2983,-171.291 65.2983,-171.291 61.7982,-161.291 58.2983,-171.291 "
-     id="polygon32-9-9-9"
-     style="fill:#000000;stroke:#000000"
-     transform="matrix(0.00999821,0.57180775,0.59192164,-0.00965846,152.49234,-26.834856)" />
+     points="61.7982,-161.291 58.2983,-171.291 65.2983,-171.291 65.2983,-171.291 "
+     id="polygon32-9-9-8-6-6-69-8"
+     style="fill:#000000;stroke:#000000;stroke-width:0.72569799;stroke-miterlimit:4;stroke-dasharray:none"
+     transform="matrix(-0.00586955,-1.0718765,1.0718767,-0.00586935,321.75862,88.981282)" />
+  <rect
+     rx="24.773476"
+     style="color:#000000;clip-rule:nonzero;display:inline;overflow:visible;visibility:visible;opacity:1;isolation:auto;mix-blend-mode:normal;color-interpolation:sRGB;color-interpolation-filters:linearRGB;solid-color:#000000;solid-opacity:1;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.20227849;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:8;stroke-opacity:1;color-rendering:auto;image-rendering:auto;shape-rendering:auto;text-rendering:auto;enable-background:accumulate"
+     id="rect4219-6"
+     width="187.84125"
+     height="46.794273"
+     x="150.19807"
+     y="0.48549193"
+     ry="23.397137" />
+  <text
+     x="245.21855"
+     y="35.103893"
+     font-size="14.00"
+     id="text25-75"
+     style="font-size:10.2326889px;font-family:Times, serif;text-anchor:middle;fill:#000000;stroke-width:1.41387951;stroke-miterlimit:4;stroke-dasharray:none">
+    <tspan
+       id="tspan4530-6-3"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:32.0607605px;font-family:'PT Mono';-inkscape-font-specification:'PT Mono';fill:#000000;stroke-width:1.41387951;stroke-miterlimit:4;stroke-dasharray:none">Add R0 1</tspan>
+  </text>
   <g
-     id="g4466"
-     transform="translate(57.183897,0.57997632)">
-    <text
-       style="font-size:14px;font-family:Times, serif;text-anchor:middle"
-       id="text14-7"
-       font-size="14.00"
-       y="44.421474"
-       x="17.480549">
-      <tspan
-         style="font-size:8.01294613px"
-         id="tspan4405">Overflow</tspan>
-    </text>
-    <ellipse
-       transform="scale(1,-1)"
-       ry="9.6721182"
-       rx="15.86212"
-       style="fill:none;stroke:#000000;stroke-width:0.68812746"
-       id="ellipse12-3"
-       cy="-41.741142"
-       cx="17.501959" />
+     id="g5189"
+     transform="translate(-27.546053,-132.60858)">
     <path
-       style="fill:none;stroke:#000000;stroke-width:0.80129462;stroke-miterlimit:4;stroke-dasharray:none"
+       style="fill:none;stroke:#000000;stroke-width:1.20227861;stroke-miterlimit:4;stroke-dasharray:none"
        inkscape:connector-curvature="0"
-       id="path30-7"
-       d="m 17.123743,18.005578 c 0,2.680317 0,5.920585 0,8.932317" />
+       id="path30-5-7-2-2-2"
+       d="m 361.73999,145.8464 c 4.44344,-0.0734 9.81517,-0.16226 14.80803,-0.24479" />
     <polygon
-       transform="matrix(0.57347879,0.00968669,-0.00968669,0.57347879,-19.982025,123.55484)"
-       style="fill:#000000;stroke:#000000"
-       id="polygon32-9-9-9-8"
-       points="65.2983,-171.291 61.7982,-161.291 58.2983,-171.291 65.2983,-171.291 " />
+       transform="matrix(-0.00586955,-1.0718765,1.0718767,-0.00586935,560.41599,210.93317)"
+       style="fill:#000000;stroke:#000000;stroke-width:0.72569799;stroke-miterlimit:4;stroke-dasharray:none"
+       id="polygon32-9-9-8-6-6-69-8-5"
+       points="61.7982,-161.291 58.2983,-171.291 65.2983,-171.291 65.2983,-171.291 " />
   </g>
   <g
-     id="g4473"
-     transform="translate(44.174226,0.57997632)">
-    <text
-       style="font-size:14px;font-family:Times, serif;text-anchor:middle"
-       id="text14-7-1"
-       font-size="14.00"
-       y="44.353363"
-       x="67.007263">
-      <tspan
-         style="font-size:8.01294613px"
-         id="tspan4405-2">Zero</tspan>
-    </text>
-    <ellipse
-       transform="scale(1,-1)"
-       ry="9.6721182"
-       rx="15.86212"
-       style="fill:none;stroke:#000000;stroke-width:0.68812746"
-       id="ellipse12-3-9"
-       cy="-41.741142"
-       cx="66.923126" />
+     id="g5185"
+     transform="translate(-27.546053,-132.60858)">
     <path
-       style="fill:none;stroke:#000000;stroke-width:0.80129462;stroke-miterlimit:4;stroke-dasharray:none"
+       style="fill:none;stroke:#000000;stroke-width:1.20227861;stroke-miterlimit:4;stroke-dasharray:none"
        inkscape:connector-curvature="0"
-       id="path30-7-7"
-       d="m 66.544912,18.005578 c 0,2.680317 0,5.920585 0,8.932317" />
+       id="path30-5-7-2-2-2-7"
+       d="m 388.90905,167.29371 c -4.50856,-0.0734 -9.95901,-0.16216 -15.02504,-0.24465" />
     <polygon
-       transform="matrix(0.57347879,0.00968669,-0.00968669,0.57347879,29.439144,123.55484)"
-       style="fill:#000000;stroke:#000000"
-       id="polygon32-9-9-9-8-0"
+       transform="matrix(0.00586955,-1.0718765,-1.0718767,-0.00586935,190.01629,232.38055)"
+       style="fill:#000000;stroke:#000000;stroke-width:0.72569799;stroke-miterlimit:4;stroke-dasharray:none"
+       id="polygon32-9-9-8-6-6-69-8-5-6"
+       points="65.2983,-171.291 65.2983,-171.291 61.7982,-161.291 58.2983,-171.291 " />
+  </g>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:32.0607605px;line-height:125%;font-family:'PT Serif';-inkscape-font-specification:'PT Serif, Normal';text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="-281.73639"
+     y="-99.247757"
+     id="text4395-8"
+     sodipodi:linespacing="125%"><tspan
+       sodipodi:role="line"
+       id="tspan4397-5"
+       x="-281.73639"
+       y="-99.247757" /></text>
+  <g
+     id="g5703"
+     transform="translate(-30.812703,201.52894)">
+    <rect
+       rx="0"
+       style="color:#000000;clip-rule:nonzero;display:inline;overflow:visible;visibility:visible;opacity:1;isolation:auto;mix-blend-mode:normal;color-interpolation:sRGB;color-interpolation-filters:linearRGB;solid-color:#000000;solid-opacity:1;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.1705004;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:8;stroke-opacity:1;color-rendering:auto;image-rendering:auto;shape-rendering:auto;text-rendering:auto;enable-background:accumulate"
+       id="rect4205-0"
+       width="119.05735"
+       height="45.319771"
+       x="31.397953"
+       y="-200.3062"
+       ry="0" />
+    <text
+       transform="scale(1.0017886,0.9982146)"
+       sodipodi:linespacing="125%"
+       id="text4212"
+       y="-166.76262"
+       x="127.62342"
+       style="font-style:normal;font-weight:normal;font-size:32.00406647px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'PT Mono';-inkscape-font-specification:'PT Mono'"
+         y="-166.76262"
+         x="127.62342"
+         id="tspan4214"
+         sodipodi:role="line">1</tspan></text>
+    <text
+       transform="scale(1.0017886,0.9982146)"
+       sodipodi:linespacing="125%"
+       id="text4534-0"
+       y="-171.08319"
+       x="76.038414"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:32.00406647px;line-height:125%;font-family:'PT Serif';-inkscape-font-specification:'PT Serif, Normal';text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#0000d4;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:20.0025425px;font-family:'PT mono';-inkscape-font-specification:'PT mono';fill:#0000d4"
+         y="-171.08319"
+         x="76.038414"
+         id="tspan4536-8"
+         sodipodi:role="line">address</tspan></text>
+  </g>
+  <g
+     id="g5738"
+     transform="translate(-42.846147,10.337753)">
+    <text
+       sodipodi:linespacing="125%"
+       id="text4212-2-3"
+       y="91.064346"
+       x="335.70605"
+       style="font-style:normal;font-weight:normal;font-size:32.0607605px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'PT Mono';-inkscape-font-specification:'PT Mono'"
+         y="91.064346"
+         x="335.70605"
+         id="tspan4214-9-5"
+         sodipodi:role="line">Overflow</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4467-3"
+       y="91.623596"
+       x="314.93057"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:32.0607605px;line-height:125%;font-family:'PT Serif';-inkscape-font-specification:'PT Serif, Normal';text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#d40000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         y="91.623596"
+         x="314.93057"
+         id="tspan4469-4"
+         sodipodi:role="line">⚐</tspan></text>
+    <rect
+       transform="scale(1,-1)"
+       rx="0"
+       style="color:#000000;clip-rule:nonzero;display:inline;overflow:visible;visibility:visible;opacity:1;isolation:auto;mix-blend-mode:normal;color-interpolation:sRGB;color-interpolation-filters:linearRGB;solid-color:#000000;solid-opacity:1;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.20227849;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:8;stroke-opacity:1;color-rendering:auto;image-rendering:auto;shape-rendering:auto;text-rendering:auto;enable-background:accumulate"
+       id="rect4205-0-6-11"
+       width="196.0715"
+       height="45.177265"
+       x="300.36063"
+       y="-102.44775"
+       ry="0" />
+    <g
+       transform="translate(-50.624112,0)"
+       id="g5734">
+      <path
+         d="m 405.63332,37.302771 c -0.0544,4.79582 -0.12018,10.59355 -0.18131,15.98236"
+         id="path30-5-7-2-7"
+         inkscape:connector-curvature="0"
+         style="fill:none;stroke:#000000;stroke-width:1.20227849;stroke-miterlimit:4;stroke-dasharray:none" />
+      <polygon
+         points="61.7982,-161.291 58.2983,-171.291 65.2983,-171.291 65.2983,-171.291 "
+         id="polygon32-9-9-8-6-6-69-2"
+         style="fill:#000000;stroke:#000000;stroke-width:0.72532767;stroke-miterlimit:4;stroke-dasharray:none"
+         transform="matrix(-1.0718897,-0.00246654,-0.00246634,1.07189,471.36619,229.5942)" />
+    </g>
+  </g>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-weight:normal;font-size:32.0607605px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="163.40894"
+     y="101.37559"
+     id="text4212-2-3-9"
+     sodipodi:linespacing="125%"><tspan
+       sodipodi:role="line"
+       id="tspan4214-9-5-0"
+       x="163.40894"
+       y="101.37559"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'PT Mono';-inkscape-font-specification:'PT Mono'">Zero</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:32.0607605px;line-height:125%;font-family:'PT Serif';-inkscape-font-specification:'PT Serif, Normal';text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#d40000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="142.63345"
+     y="101.93484"
+     id="text4467-3-8"
+     sodipodi:linespacing="125%"><tspan
+       sodipodi:role="line"
+       id="tspan4469-4-3"
+       x="142.63345"
+       y="101.93484">⚐</tspan></text>
+  <rect
+     ry="0"
+     y="-112.89097"
+     x="-246.66875"
+     height="45.441212"
+     width="118.73723"
+     id="rect4205-0-6-11-8"
+     style="color:#000000;clip-rule:nonzero;display:inline;overflow:visible;visibility:visible;opacity:1;isolation:auto;mix-blend-mode:normal;color-interpolation:sRGB;color-interpolation-filters:linearRGB;solid-color:#000000;solid-opacity:1;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.20227849;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:8;stroke-opacity:1;color-rendering:auto;image-rendering:auto;shape-rendering:auto;text-rendering:auto;enable-background:accumulate"
+     rx="0"
+     transform="scale(-1,-1)" />
+  <g
+     id="g5734-7"
+     transform="matrix(-1,0,0,1,583.31866,10.311246)">
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.20227849;stroke-miterlimit:4;stroke-dasharray:none"
+       inkscape:connector-curvature="0"
+       id="path30-5-7-2-7-3"
+       d="m 405.63332,37.302771 c -0.0544,4.79582 -0.12018,10.59355 -0.18131,15.98236" />
+    <polygon
+       transform="matrix(-1.0718897,-0.00246654,-0.00246634,1.07189,471.36619,229.5942)"
+       style="fill:#000000;stroke:#000000;stroke-width:0.72532767;stroke-miterlimit:4;stroke-dasharray:none"
+       id="polygon32-9-9-8-6-6-69-2-1"
        points="58.2983,-171.291 65.2983,-171.291 65.2983,-171.291 61.7982,-161.291 " />
   </g>
 </svg>

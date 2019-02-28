@@ -12,9 +12,9 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="186.46495pt"
-   height="20pt"
-   viewBox="0 0 186.819 19.941176"
+   width="494.90286pt"
+   height="47.788986pt"
+   viewBox="0 0 495.84255 47.648428"
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
@@ -46,9 +46,9 @@
      inkscape:window-height="1027"
      id="namedview55"
      showgrid="false"
-     inkscape:zoom="2.7764706"
-     inkscape:cx="88.276723"
-     inkscape:cy="41.760751"
+     inkscape:zoom="0.98163059"
+     inkscape:cx="435.81939"
+     inkscape:cy="30.457526"
      inkscape:window-x="0"
      inkscape:window-y="27"
      inkscape:window-maximized="1"
@@ -57,97 +57,154 @@
      fit-margin-left="0"
      fit-margin-right="0"
      fit-margin-bottom="0" />
-  <polygon
-     points="15.2982,-124.892 15.2982,-124.892 15.2982,-160.892 108.298,-160.892 108.298,-124.892 "
-     id="polygon19-6"
-     style="fill:none;stroke:#000000"
-     transform="matrix(0.73237532,0,0,0.4821495,44.108549,78.747098)" />
   <text
-     x="89.833565"
-     y="13.203138"
-     font-size="14.00"
-     id="text25-7"
-     style="font-size:10.23268986px;font-family:Times, serif;text-anchor:middle">
-    <tspan
-       id="tspan4530"
-       style="font-size:10.01898766px">JumpZero 42</tspan>
-  </text>
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:32.0607605px;line-height:125%;font-family:'PT Serif';-inkscape-font-specification:'PT Serif, Normal';text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="-254.40285"
+     y="1.7984785"
+     id="text4395"
+     sodipodi:linespacing="125%"><tspan
+       sodipodi:role="line"
+       id="tspan4397"
+       x="-254.40285"
+       y="1.7984785" /></text>
   <g
-     id="g4190"
-     transform="translate(154.39758,-1.7663528e-6)">
+     id="g5120"
+     transform="translate(-9.0062618e-5,-99.207884)">
+    <rect
+       rx="0"
+       style="color:#000000;clip-rule:nonzero;display:inline;overflow:visible;visibility:visible;opacity:1;isolation:auto;mix-blend-mode:normal;color-interpolation:sRGB;color-interpolation-filters:linearRGB;solid-color:#000000;solid-opacity:1;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.20468307;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:8;stroke-opacity:1;color-rendering:auto;image-rendering:auto;shape-rendering:auto;text-rendering:auto;enable-background:accumulate"
+       id="rect4205-0-6"
+       width="119.02299"
+       height="45.283249"
+       x="0.6024316"
+       y="100.07069"
+       ry="0" />
     <text
-       style="font-size:14.00392056px;font-family:Times, serif;text-anchor:middle"
-       id="text14-7-9-1"
-       font-size="14.00"
-       y="12.532872"
-       x="16.189308">
-      <tspan
-         style="font-size:8.01519012px"
-         id="tspan4405-7-2">PC</tspan>
-    </text>
-    <ellipse
-       ry="9.6748276"
-       rx="15.866561"
-       style="fill:none;stroke:#000000;stroke-width:0.68832016"
-       id="ellipse12-3-8-6"
-       cy="9.8517933"
-       cx="16.21072" />
+       sodipodi:linespacing="125%"
+       id="text4212-2"
+       y="133.64229"
+       x="36.076645"
+       style="font-style:normal;font-weight:normal;font-size:32.0607605px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'PT Serif';-inkscape-font-specification:'PT Serif'"
+         y="133.64229"
+         x="36.076645"
+         id="tspan4214-9"
+         sodipodi:role="line"><tspan
+           id="tspan4462"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'PT Mono';-inkscape-font-specification:'PT Mono'">Zero</tspan></tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4467"
+       y="134.37787"
+       x="12.851607"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:32.0607605px;line-height:125%;font-family:'PT Serif';-inkscape-font-specification:'PT Serif, Normal';text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="fill:#d40000"
+         y="134.37787"
+         x="12.851607"
+         id="tspan4469"
+         sodipodi:role="line">⚐</tspan></text>
   </g>
   <g
-     id="g4184"
-     transform="matrix(0,-0.9999999,1.0000001,0,103.894,27.233218)">
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.80151904;stroke-miterlimit:4;stroke-dasharray:none"
-       inkscape:connector-curvature="0"
-       id="path30-2-7"
-       d="m 19.089919,50.982607 c 2.62742,-7.35294 7.56316,-13.55942 0,-25.97369"
-       sodipodi:nodetypes="cc" />
-    <polygon
-       transform="matrix(-0.47604941,0.3202077,-0.32020773,-0.47604945,-6.0923515,-76.317823)"
-       style="fill:#000000;stroke:#000000"
-       id="polygon32-9-9"
-       points="65.2983,-171.291 65.2983,-171.291 61.7982,-161.291 58.2983,-171.291 " />
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.80151904;stroke-miterlimit:4;stroke-dasharray:none"
-       inkscape:connector-curvature="0"
-       id="path30-2-7-3"
-       d="m 15.67294,19.833786 c -2.627424,7.352939 -7.5631646,13.559419 0,25.973684"
-       sodipodi:nodetypes="cc" />
-    <polygon
-       transform="matrix(0.47604941,-0.3202077,0.32020773,0.47604945,41.117378,147.13421)"
-       style="fill:#000000;stroke:#000000"
-       id="polygon32-9-9-1"
-       points="65.2983,-171.291 61.7982,-161.291 58.2983,-171.291 65.2983,-171.291 " />
-  </g>
-  <g
-     id="g4442"
-     transform="matrix(1.00028,0,0,1.0002801,-83.492095,-143.34383)">
-    <ellipse
-       ry="9.6721182"
-       rx="15.86212"
-       style="fill:none;stroke:#000000;stroke-width:0.68812746"
-       id="ellipse12-3-8"
-       cy="153.15273"
-       cx="99.674904" />
+     id="g5128"
+     transform="translate(15.300094,-99.108942)">
+    <rect
+       rx="0"
+       style="color:#000000;clip-rule:nonzero;display:inline;overflow:visible;visibility:visible;opacity:1;isolation:auto;mix-blend-mode:normal;color-interpolation:sRGB;color-interpolation-filters:linearRGB;solid-color:#000000;solid-opacity:1;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.20227849;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:8;stroke-opacity:1;color-rendering:auto;image-rendering:auto;shape-rendering:auto;text-rendering:auto;enable-background:accumulate"
+       id="rect4205-0-6-1"
+       width="91.045837"
+       height="45.625023"
+       x="388.89554"
+       y="99.800858"
+       ry="0" />
     <text
-       style="font-size:14px;font-family:Times, serif;text-anchor:middle"
-       id="text14-7-9"
-       font-size="14.00"
-       y="155.83305"
-       x="99.653496">
-      <tspan
-         style="font-size:8.01294613px"
-         id="tspan4405-7">Zero</tspan>
-    </text>
+       sodipodi:linespacing="125%"
+       id="text4212-2-2"
+       y="133.83464"
+       x="435.64447"
+       style="font-style:normal;font-weight:normal;font-size:32.0607605px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'PT Mono';-inkscape-font-specification:'PT Mono'"
+         y="133.83464"
+         x="435.64447"
+         id="tspan4214-9-7"
+         sodipodi:role="line">PC</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4534-1"
+       y="125.61907"
+       x="412.39688"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:32.0607605px;line-height:125%;font-family:'PT Serif';-inkscape-font-specification:'PT Serif, Normal';text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#00d400;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:20.03797722px;font-family:'PT mono';-inkscape-font-specification:'PT mono';fill:#00d400"
+         y="125.61907"
+         x="412.39688"
+         id="tspan4536-5"
+         sodipodi:role="line">reg</tspan></text>
   </g>
   <path
-     d="m 32.173611,9.8517932 c 5.394685,0 11.916393,0 17.97812,0"
-     id="path30-5"
+     d="m 120.071,23.503622 c 5.31375,-0.0658 11.73759,-0.14543 17.70838,-0.21941"
+     id="path30-5-7-2-2"
      inkscape:connector-curvature="0"
-     style="fill:none;stroke:#000000;stroke-width:0.67037249;stroke-miterlimit:4;stroke-dasharray:none" />
+     style="fill:none;stroke:#000000;stroke-width:1.20227861;stroke-miterlimit:4;stroke-dasharray:none" />
   <polygon
      points="65.2983,-171.291 61.7982,-161.291 58.2983,-171.291 65.2983,-171.291 "
-     id="polygon32-9-9-9"
-     style="fill:#000000;stroke:#000000"
-     transform="matrix(0.0096894,-0.5736393,0.57363948,0.0096894,146.28418,46.86105)" />
+     id="polygon32-9-9-8-6-6-69-8"
+     style="fill:#000000;stroke:#000000;stroke-width:0.72569799;stroke-miterlimit:4;stroke-dasharray:none"
+     transform="matrix(-0.00586955,-1.0718765,1.0718767,-0.00586935,321.64058,88.603082)" />
+  <g
+     id="g5193"
+     transform="translate(15.300094,-132.98678)">
+    <g
+       transform="translate(326.73211,303.44092)"
+       id="g4595">
+      <rect
+         rx="30.469013"
+         style="color:#000000;clip-rule:nonzero;display:inline;overflow:visible;visibility:visible;opacity:1;isolation:auto;mix-blend-mode:normal;color-interpolation:sRGB;color-interpolation-filters:linearRGB;solid-color:#000000;solid-opacity:1;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1.20227849;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:8;stroke-opacity:1;color-rendering:auto;image-rendering:auto;shape-rendering:auto;text-rendering:auto;enable-background:accumulate"
+         id="rect4219-6"
+         width="231.02682"
+         height="46.677452"
+         x="-192.23196"
+         y="-170.28844"
+         ry="23.338726" />
+      <text
+         x="-76.820992"
+         y="-138.74216"
+         font-size="14.00"
+         id="text25-75"
+         style="font-size:10.2326889px;font-family:Times, serif;text-anchor:middle;fill:#000000;stroke-width:1.41387951;stroke-miterlimit:4;stroke-dasharray:none">
+        <tspan
+           id="tspan4530-6-3"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:32.0607605px;font-family:'PT Mono';-inkscape-font-specification:'PT Mono';fill:#000000;stroke-width:1.41387951;stroke-miterlimit:4;stroke-dasharray:none">JumpZero 42</tspan>
+      </text>
+    </g>
+    <g
+       id="g5189">
+      <path
+         d="m 361.73999,145.8464 c 4.44344,-0.0734 9.81517,-0.16226 14.80803,-0.24479"
+         id="path30-5-7-2-2-2"
+         inkscape:connector-curvature="0"
+         style="fill:none;stroke:#000000;stroke-width:1.20227861;stroke-miterlimit:4;stroke-dasharray:none" />
+      <polygon
+         points="65.2983,-171.291 61.7982,-161.291 58.2983,-171.291 65.2983,-171.291 "
+         id="polygon32-9-9-8-6-6-69-8-5"
+         style="fill:#000000;stroke:#000000;stroke-width:0.72569799;stroke-miterlimit:4;stroke-dasharray:none"
+         transform="matrix(-0.00586955,-1.0718765,1.0718767,-0.00586935,560.41599,210.93317)" />
+    </g>
+    <g
+       id="g5185">
+      <path
+         d="m 388.90905,167.29371 c -4.50856,-0.0734 -9.95901,-0.16216 -15.02504,-0.24465"
+         id="path30-5-7-2-2-2-7"
+         inkscape:connector-curvature="0"
+         style="fill:none;stroke:#000000;stroke-width:1.20227861;stroke-miterlimit:4;stroke-dasharray:none" />
+      <polygon
+         points="58.2983,-171.291 65.2983,-171.291 65.2983,-171.291 61.7982,-161.291 "
+         id="polygon32-9-9-8-6-6-69-8-5-6"
+         style="fill:#000000;stroke:#000000;stroke-width:0.72569799;stroke-miterlimit:4;stroke-dasharray:none"
+         transform="matrix(0.00586955,-1.0718765,-1.0718767,-0.00586935,190.01629,232.38055)" />
+    </g>
+  </g>
 </svg>
