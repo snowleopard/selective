@@ -1,3 +1,12 @@
 \section{Conclusions}\label{sec-conclusions}
 
-...
+We have introduced selective functors, an abstraction between applicative
+functors and monads. Like applicative functors, selective functors require all
+effects to be known statically, before the execution starts. Like monads,
+selective functors allow for effects to depend on values of earlier effects but
+in a limited way: it is possible to skip some of the effects, but not create
+new ones. In this sense selective functors allow you to describe computations
+that are very much like hardware circuits: statically fixed, yet dynamically
+reconfigurable. We have demonstrated usefulness of the new abstraction on
+several examples, and hope that the reader will find it useful in their next
+project too.
