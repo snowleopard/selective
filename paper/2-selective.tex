@@ -695,12 +695,12 @@ requirements loose.
     \item Finally, there is a good precedent: the \hs{Applicative} type class
     has no requirements on the order in which effects are executed:
     left-to-right, right-to-left, or in parallel. This loose specification
-    allows instances like \hs{Const} to execute effects sequentially from left
-    to right, and instances like \Haxl (\S\ref{sec-haxl}) to execute effects in
-    parallel. Note that as soon as we also have a \hs{Monad}, we gain an
-    additional requirement \hs{(<*>)}~\hs{=}~\hs{ap}, which tells us that, at
-    the semantic level, the result should be as if the effects were executed in
-    sequence from left to right. We follow the same approach by requiring
+    allows some instances to execute effects sequentially (typically from left
+    to right), and other instances to execute effects in parallel. Note that as
+    soon as we also have a \hs{Monad}, we gain an additional requirement
+    \hs{(<*>)}~\hs{=}~\hs{ap}, which tells us that, at the semantic level, the
+    result should be as if the effects were executed in sequence from left to
+    right. We follow the same approach by requiring
     \hs{select}~\hs{=}~\hs{selectM} if \hs{f} is also a \hs{Monad} (see below).
 \end{itemize}
 
