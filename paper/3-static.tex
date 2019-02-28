@@ -193,7 +193,7 @@ dependencies \emph{before the build}, under-approximation is useful for
 maximising parallelism \emph{during the build}: for example, if all input files
 in our example are actually generated, e.g. by running a text preprocessor, then
 we can start the three preprocessing tasks that are definitely needed
-(\cmd{LICENSE}, \cmd{config}, \cmd{src.ml}) in parallel, i.e. without waiting
+(\cmd{LICENSE}, \cmd{src.ml}, \cmd{config}) in parallel, i.e. without waiting
 for the outcome of parsing the \cmd{config} file.
 
 % Dune is another example where the extra power provided by selective
