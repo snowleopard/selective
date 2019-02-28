@@ -301,11 +301,12 @@ deliberately merge them in the resulting graph.
 \subsubsection{\textbf{Simulation}}
 
 To implement a sequential simulator for the ISA, we need to follow the same path we did
-when running the \hs{pingPongS} example in the \hs{IO} monad earlier. We need a natural
-transformation from the functor \hs{RW} to an appropriate target functor, for example
-\hs{MonadState ISAState}, where \hs{ISAState} is a product type representing the state of the architecture. For brevity, we present a simplified
-partial implementation of such a transformation which only assigns interpretation to reading
-and writing registers:
+when running the \hs{pingPongS} example in the \hs{IO} monad earlier in this section.
+We need a natural transformation from the functor \hs{RW} to an appropriate target functor,
+for example, an instance of \hs{MonadState ISAState}, where \hs{ISAState} is a product
+type representing the state of the architecture, e.g. the registers, memory and flags.
+For brevity, we present a simplified partial implementation of such a transformation which
+only assigns interpretation to reading and writing registers:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
 inState :: MonadState ISAState m => RW a -> m a
@@ -318,13 +319,15 @@ inState (Write k p t) = case k of
 \end{minted}
 
 To read a register, we simply lift the \hs{Data.Map} access combinator (the register bank
-is represented as a mapping from register tags to words). In order to write a value into a
-register, we first need to acknowledge its own effects and evaluate it, hence the call to
-\hs{runSelect} function. We then adjust the register bank with the new value and construct
-a \hs{MonadState} computation with the \hs{state} function.
+is represented as a mapping from register tags to data words). We need to apply the
+continuation \hs{t :: Value -> a} to the result to make the types match. In order to write
+an effectful value \hs{p} into a register, we need to evaluate it first; hence we call the
+\hs{runSelect} function, which internally makes a recursive call to the \hs{inState} function
+and thus acknowledges the effects of \hs{p}. We then adjust the register bank with the evaluated
+value and construct a \hs{MonadState} computation with the \hs{state} function.
 
 The \hs{inState} natural transformation gives interpretation to individual \hs{Read} and
-\hs{Write} commands, and now this interpretations can be extended to any \hs{ISA}
+\hs{Write} commands, and now this interpretation can be extended to any \hs{ISA}
 computation by plugging it into a \hs{runSelect} call, which has already been once done in
 the implementation of \hs{inState} itself.
 
