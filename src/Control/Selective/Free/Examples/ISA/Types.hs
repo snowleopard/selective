@@ -13,6 +13,7 @@ import Prelude hiding (read)
 import Data.Either (partitionEithers)
 import Data.Word (Word8)
 import Data.Functor (void)
+import Data.Int (Int8)
 import Data.Int (Int16)
 import Data.Functor (void)
 import qualified Data.Map.Strict as Map
@@ -28,7 +29,7 @@ fromBool False = 0
 --------------------------------------------------------------------------------
 
 -- | The ISA operates signed 16-bit words
-type Value = Int16
+type Value = Int8
 
 -- | The ISA has 4 registers
 data Register = R0 | R1 | R2 | R3

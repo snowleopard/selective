@@ -334,13 +334,28 @@ The free selective applicative construction in combination with the \hs{RW} func
 provide an abstraction expressive enough to express the
 semantics of arithmetical, load and store instructions and conditional jumps. However,
 they still lack the full expressive power of the monadic interface and are unable
-to accommodate a very important instruction's semantics, namely the memory-indirect load:
+to accommodate a very important instruction's semantics, namely the memory-indirect
+load semantics. If we had a \hs{Monad} instance for \hs{ISA}, we could have written
+the follow implementation:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
-loadMI :: Monad m => Register -> Address -> m Value
-loadMI reg addr = do
-    addr' <- read (Memory addr)
-    write (Reg reg) (read (Memory addr'))
+loadMI :: Register -> Address -> ISA Value
+loadMI reg addr =
+    read (Mem addr) >>= \x ->
+    write (Reg reg) (read (Mem (toAddress x)))
 \end{minted}
 
-Cannot express memory-indirect load.
+Here, we read from a memory cell and use the monadic bind operator to
+peel of the \hs{ISA} type constructor of the value we read and use it in a consequent
+memory read. However this semantics is, in principle, implementable using the
+selective \hs{bindS} combinator, it is not feasible to do it this way since we would
+not get any strong benefits. Specifically, since the \hs{getEffectsISA} function, which
+performs static analysis of effects, constructs a conservative over-approximation, it
+would always report something similar to this: \hs{[Read addr,Write reg, Write reg...},
+which would contain as much instances of the \hs{Write} effects as much inhabitants there
+are in the address datatype (usually a large power of two). Therefore, we lose static analysis.
+Maybe we could get some benefit in simulation? No, unfortunately we, again, will not, since
+\hs{bindS} cannot get magically translated to the monadic \hs{>>=}, but instead performs
+explicit enumeration of inhabitants of the bound variable's type, which causes terrible performance regression comparing to a monadic implementation. Considering these arguments,
+using \hs{bindS} for mimicking monadic behaviour is not feasible in our case and memory-indirect
+load cannot be modelled in by means of the \hs{ISA} datatype.

@@ -284,6 +284,14 @@ mod reg addr =
     let result = Prelude.mod <$> read (Reg reg) <*> read (Mem addr)
     in  write (F Zero) (fromBool . (== 0) <$> write (Reg reg) result)
 
+toAddress :: Value -> Address
+toAddress = fromIntegral
+
+loadMI :: Register -> Address -> ISA Value
+loadMI reg addr =
+    read (Mem addr) `bindS` \x ->
+    write (Reg reg) (read (Mem . toAddress $ x))
+
 -- --------------------------------------------------------------------------------
 
 partition :: [RW a] -> ([Key], [Key])
