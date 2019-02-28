@@ -88,12 +88,12 @@ inIO (PutStrLn s x) = Prelude.putStrLn s *> pure x
 
 To apply free selective functors to a larger example, we demonstrate
 how they can be used for describing the semantics of a hypothetical
-instruction set architecture. The features of the free selective construction will
+instruction set architecture (ISA). The features of the free selective construction will
 allow for static data-flow analysis of the instruction semantics, and the possibility
 to interpret free selective expressions in any monad will enable us to build a
 sequential simulator for programs.
 
-\subsubsection{Embedding}
+\subsubsection{\textbf{ISA semantics}}
 
 We will represent the semantics of instructions in terms of the following datatype:
 
@@ -115,6 +115,9 @@ The \hs{RW} (pronounced read-write) functor encodes the effect of mutable key-va
 comprising two commands.
 First, we need to have an ability to \emph{read} a value associated with a key from the store
 and second, given a computation which produces a value, \emph{write} its result into the store.
+In this example, we fix the values to be machine words and the keys to be the ISA concepts, such
+as registers, memory locations and flags.
+
 This exact structure of the definition is required for accommodating a pattern that
 occurs frequently in instruction semantics: often we read a value from a register or a memory
 cell, do something with the value and then write it somewhere else.
@@ -214,17 +217,16 @@ was zero:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
 jumpZero :: Value -> ISA ()
-jumpZero offset =
-    let pc       = read PC
-        zeroSet  = (/=) <$> pure 0 <*> read (F Zero)
-        modifyPC = void $ write PC (fmap (+ offset) pc)
-    in whenS zeroSet modifyPC
+jumpZero offset = let pc       = read PC
+                      zeroSet  = (/=) <$> pure 0 <*> read (F Zero)
+                      modifyPC = void $ write PC (fmap (+ offset) pc)
+                  in whenS zeroSet modifyPC
 \end{minted}
 
 Here we use the aforementioned \hs{whenS} combinator to only execute the effect, i.e.
 to modify the program counter, if the flag is set. By implementing this semantics in terms of
 \hs{Selective} we achieve both the ability to implement an adequate simulator for the ISA and
-to retain the possibilities for the static analysis of programs by means of the \hs{getEffectsISA}
+to retain the possibilities for static analysis of programs by means of the \hs{getEffectsISA}
 function:
 
 \begin{figure}[!h]
@@ -287,12 +289,14 @@ individual semantics:
 
 
 Getting a flat list of effects that blocks of code perform is not very useful,
-since they does not carry any data-flow information. To mitigate this restriction,
+since they does not carry any explicit data-flow information. To mitigate this restriction,
 we take the following approach. We create a (1) deeply-embedded assembly language and
 (2) implement an interpreter which assigns a semantics to this language in terms of the
-free selective construction. By doing this, we can than can implement a mechanical procedure
+free selective construction. By doing this, we can then implement a mechanical procedure
 which would construct \emph{data-flow graphs} of sequences of instructions, similar to
-the ones shown in Fig.~\ref{fig-addAndJump-gcd}.
+the ones shown in Fig.~\ref{fig-addAndJump-gcd} by overlaying the graphs for single instructions.
+Note that if an instruction performs multiple read/writes of the same location, we will
+deliberately merge them in the resulting graph.
 
 \subsubsection{\textbf{Simulation}}
 
