@@ -3,7 +3,7 @@
 Free construction with examples
 
 The methodology of building effectful computations with free constructions such
-as free~\cite{free-monads} and freer~\cite{freer-monads} monads and free
+as free~\cite{swierstra2008data} and freer~\cite{kiselyov2015freer} monads and free
 applicatives~\cite{free-applicatives} is a widespread in the functional programming community.
 It allows to focus on the internal aspects of the effect under consideration and receive the
 desired \hs{Applicative} of \hs{Monadic} structure of the computation~\emph{for free},
@@ -175,8 +175,9 @@ the analysis of the \hs{add} semantics, we can obtain the list of all its effect
 in the order they appear in the computation. We also visualise the effects as a data-flow
 graph\footnote{For didactic purposes,
 these graph was hand-crafted, but it is possible to get similar results automatically
-with GraphViz~\cite{graphviz}.}, where the instruction is enclosed in a rectangular block,
-and the data locations in ellipses with outcoming arrow denoting reads and incoming --- writes.
+with Graphviz~\cite{ellson2001graphviz}.}, where the instruction is enclosed in a rounded block,
+and the data locations in rectangles with outcoming arrow denoting reads and incoming --- writes; we denote registers with a green \texttt{reg} label, memory address with blue \texttt{address} and
+flags with a red Unicode flag character.
 
 \begin{figure}[!h]
  \begin{minipage}{0.45\textwidth}
