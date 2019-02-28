@@ -82,7 +82,41 @@ inIO (PutStrLn s x) = Prelude.putStrLn s *> pure x
 
 \subsection{Build systems, freely}\label{sec-free-build}
 
-...
+Software build systems can be modelled with purely functional
+abstractions~\cite{mokhov2018build} that enable the model to accommodate many
+different build systems and express their features in a way that allow for deriving
+new build systems by combining the best parts of the existing ones. The approach
+presented on~\cite{mokhov2018build} allows to distinguish the \emph{static} build
+dependencies from the \emph{dynamic} ones by expressing the build tasks which
+may only have static dependencies with the \hs{Applicative} interface, and using
+\hs{Monad} for constructing build tasks with dynamic dependencies.
+As selective functors give us the best of both worlds, we show how we could adopt
+their free construction to build a deep embedding of the \hs{fetch} callback from
+the original paper.
+
+To use any free construction, we need to invent an underlying functor, which would
+be the essence of the effect we are trying to implement. In case of the \hs{fetch}
+callback, we require an effect of a read-only store:
+
+\begin{minted}[xleftmargin=10pt]{haskell}
+data Fetch k v a = Fetch k (v -> a)
+   deriving Functor
+\end{minted}
+
+That is, the \hs{Fetch} functor has only one data constructor, which represents a
+command with a suggested semantics of extracting a value associated with a key from
+the store.
+
+We cannot directly use the \hs{Fetch} command in a selective computations, thus we
+embed it into a free selective construction by simply lifting the data constructor
+in the following way:
+
+\begin{minted}[xleftmargin=10pt]{haskell}
+fetch :: k -> Select (F k v) v
+fetch key = liftSelect $ Fetch key id
+\end{minted}
+
+
 
 \subsection{Analysis and simulation of processor instructions}\label{sec-free-isa}
 
