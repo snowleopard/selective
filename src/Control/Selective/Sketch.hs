@@ -1,8 +1,8 @@
-{-# LANGUAGE TupleSections, ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleInstances, ScopedTypeVariables, TupleSections #-}
 module Control.Selective.Sketch where
 
-import Control.Selective.Free.Rigid
 import Control.Monad
+import Control.Selective.Free.Rigid
 import Data.Bifunctor
 import Data.Void
 
@@ -264,6 +264,59 @@ class Applicative f => SelectiveA f where
 -- See: https://duplode.github.io/posts/applicative-archery.html
 class Applicative f => SelectiveS f where
     (|.|) :: f (Either e (b -> c)) -> f (Either e (a -> b)) -> f (Either e (a -> c))
+
+
+-- newtype LiftedArrow f a b c = LiftedArrow (a (f b) (f c))
+
+-- instance (Category a, Functor f) => Category (LiftedArrow f a) where
+--     id = LiftedArrow A.id
+--     LiftedArrow f . LiftedArrow g = LiftedArrow (f A.. g)
+
+-- instance (Arrow a, Applicative f) => Arrow (LiftedArrow f a) where
+--     arr f = LiftedArrow (A.arr (fmap f))
+--     first (LiftedArrow f) = LiftedArrow (_)
+
+-- a (f a) (f b)
+
+-- a (f a, d) (f b, d)
+
+-- newtype StaticArrow f a b c = StaticArrow (f (a b c))
+
+-- newtype StaticArrow f a b c = StaticArrow (a () (f b))
+
+-- instance (Category a, Applicative f) => Category (StaticArrow f a) where
+--     id = StaticArrow (pure A.id)
+--     StaticArrow f . StaticArrow g = StaticArrow ((A..) <$> f <*> g)
+
+-- instance (Arrow a, Applicative f) => Arrow (StaticArrow f a) where
+--     arr f = StaticArrow (pure (A.arr f))
+--     first (StaticArrow f) = StaticArrow (A.first <$> f)
+
+-- s :: f (a b (Either c d)) -> f (a b (c -> d)) -> f (a b d)
+-- s :: f (Either e (a b c)) -> f (e -> a b c) -> f (a b c)
+
+-- split :: (Arrow a, Selective f) => StaticArrow f a (Either b d)
+
+-- instance (Arrow a, Selective f) => ArrowChoice (StaticArrow f a) where
+    -- left (StaticArrow f) = StaticArrow (A.left <$> f)
+    -- left (StaticArrow f) = StaticArrow (select _ f)
+
+-- instance (ArrowChoice a, Selective f) => ArrowChoice (StaticArrow f a) where
+--     left
+
+-- instance SelectiveArr f => Category (SelectiveArrow f e) where
+--     id          = SA (pure Right)
+--     SA x . SA y = SA $ x /./ y
+
+-- instance SelectiveArr f => Arrow (SelectiveArrow f e) where
+--     arr          = SA . pure . (Right .)
+--     first (SA x) = SA $ (\f (b, d) -> (,d) <$> f b) <$> x
+
+-- instance SelectiveArr f => ArrowChoice (SelectiveArrow f e) where
+    -- left :: a b c -> a (Either b d) (Either c d)
+    -- left :: f (b -> Either e c) -> f (Either b d -> Either e (Either c d))
+    -- left (SA x) =
+
 
 -- Composition of Monoidal and Either monad
 -- See: http://blog.ezyang.com/2012/08/applicative-functors/

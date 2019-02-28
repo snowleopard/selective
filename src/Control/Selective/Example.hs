@@ -3,10 +3,11 @@ module Control.Selective.Example where
 
 import Algebra.Graph
 import Algebra.Graph.Export.Dot
-import Build.Task
 import Control.Monad
-import Control.Selective.Free.Rigid
+import Control.Selective.Free.Rigid hiding (dependencies)
 
+import qualified Build.Task as B
+import qualified Control.Selective.Free.Rigid as S
 import qualified Data.Set as Set
 
 ------------------------------- Ping-pong example ------------------------------
@@ -49,30 +50,29 @@ pingPongMP = mplus x y
 
 ------------------------------- Task dependencies ------------------------------
 
-
 -- dependencies task "B1" = ["A2","B2","C1"]
 -- dependencies task "B2" = ["A1","B1","C1"]
 -- dependencies task "A1" = []
-task :: Tasks Selective String Integer
-task "B1" = Just $ Task $ \fetch -> ifS ((1==) <$> fetch "C1") (fetch "B2") (fetch "A2")
-task "B2" = Just $ Task $ \fetch -> ifS ((1==) <$> fetch "C1") (fetch "A1") (fetch "B1")
+task :: B.Tasks Selective String Integer
+task "B1" = Just $ B.Task $ \fetch -> ifS ((1==) <$> fetch "C1") (fetch "B2") (fetch "A2")
+task "B2" = Just $ B.Task $ \fetch -> ifS ((1==) <$> fetch "C1") (fetch "A1") (fetch "B1")
 task _    = Nothing
 
 -- dependencies task2 "B1" == ["A1","A2","C5","C6","D5","D6"]
-task2 :: Tasks Selective String Integer
-task2 "B1" = Just $ Task $ \fetch -> (odd <$> fetch "A1") `bindS` \x ->
-                                     (odd <$> fetch "A2") `bindS` \y ->
-                                        let c = if x then "C" else "D"
-                                            n = if y then "5" else "6"
-                                        in fetch (c ++ n)
+task2 :: B.Tasks Selective String Integer
+task2 "B1" = Just $ B.Task $ \fetch -> (odd <$> fetch "A1") `bindS` \x ->
+                                       (odd <$> fetch "A2") `bindS` \y ->
+                                          let c = if x then "C" else "D"
+                                              n = if y then "5" else "6"
+                                          in fetch (c ++ n)
 task2 _    = Nothing
 
 data Key = A Int | B Int | C Int Int deriving (Eq, Show)
 
-editDistance :: Tasks Selective Key Int
-editDistance (C i 0) = Just $ Task $ const $ pure i
-editDistance (C 0 j) = Just $ Task $ const $ pure j
-editDistance (C i j) = Just $ Task $ \fetch ->
+editDistance :: B.Tasks Selective Key Int
+editDistance (C i 0) = Just $ B.Task $ const $ pure i
+editDistance (C 0 j) = Just $ B.Task $ const $ pure j
+editDistance (C i j) = Just $ B.Task $ \fetch ->
     ((==) <$> fetch (A i) <*> fetch (B j)) `bindS` \equals ->
         if equals
             then fetch (C (i - 1) (j - 1))
@@ -82,11 +82,44 @@ editDistance (C i j) = Just $ Task $ \fetch ->
                  <*> fetch (C (i - 1) (j - 1))
 editDistance _ = Nothing
 
-sprsh1 :: Tasks Applicative String Int
-sprsh1 "B1" = Just $ Task $ \fetch -> ((+)  <$> fetch "A1" <*> fetch "A2")
-sprsh1 "B2" = Just $ Task $ \fetch -> ((*2) <$> fetch "B1")
-sprsh1 "C8" = Just $ Task $ \_ -> pure 8
+sprsh1 :: B.Tasks Applicative String Int
+sprsh1 "B1" = Just $ B.Task $ \fetch -> ((+)  <$> fetch "A1" <*> fetch "A2")
+sprsh1 "B2" = Just $ B.Task $ \fetch -> ((*2) <$> fetch "B1")
+sprsh1 "C8" = Just $ B.Task $ \_ -> pure 8
 sprsh1 _    = Nothing
+
+-- Code from the paper:
+
+newtype Task k v = Task { run :: forall f. Selective f => (k -> f v) -> f v }
+
+type Script k v = k -> Maybe (Task k v)
+
+tar :: Applicative f => [f String] -> f String
+tar xs = concat <$> sequenceA xs
+
+parse :: Functor f => f String -> f Bool
+parse = fmap null
+
+compile :: Applicative f => [f String] -> f String
+compile xs = concat <$> sequenceA xs
+
+script :: Script FilePath String
+script "release.tar" = Just $ Task $ \fetch -> tar [fetch "LICENSE", fetch "exe"]
+script "exe" = Just $ Task $ \fetch ->
+    let src  = fetch "src.ml"
+        cfg  = fetch "config"
+        lib1 = fetch "lib.c"
+        lib2 = fetch "lib.ml"
+    in compile [src, ifS (parse cfg) lib1 lib2]
+script _ = Nothing
+
+dependenciesOver :: Task k v -> [k]
+dependenciesOver task = getOver $ run task (\k -> Over [k])
+
+dependenciesUnder :: Task k v -> [k]
+dependenciesUnder task = getUnder $ run task (\k -> Under [k])
+
+--------------------------------- Free example ---------------------------------
 
 data F k v a = Fetch k (v -> a)
     deriving Functor
@@ -119,15 +152,15 @@ graph deps key = transpose $ overlays [ star k (deps k) | k <- keys Set.empty [k
         | x `Set.member` seen = keys seen xs
         | otherwise           = keys (Set.insert x seen) (deps x ++ xs)
 
-draw :: Tasks Selective String v -> String -> String
+draw :: B.Tasks Selective String v -> String -> String
 draw tasks = exportAsIs . graph deps
   where
-    deps k = maybe [] dependencies $ tasks k
-
----------------------------------- Validation ----------------------------------
+    deps k = maybe [] S.dependencies $ tasks k
 
 fetchIO :: Read a => String -> IO a
 fetchIO prompt = do putStr (prompt ++ ": "); read <$> getLine
+
+---------------------------------- Validation ----------------------------------
 
 type Radius = Word
 type Width  = Word

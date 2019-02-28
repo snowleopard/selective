@@ -9,7 +9,7 @@ static analysis of build system dependencies using selective functors
 
 \subsection{Dune build system}\label{sec-dune-intro}
 
-\Dune was originally developed at Jane Street and has by now become the standard
+\Dune was originally developed at Jane Street and has by now become a standard
 build system for OCaml packages~\citep{dune}. At the time of writing, more than
 1000 OCaml packages are using Dune as the build system. The original motivation
 for developing \Dune (earlier known as \textsf{jbuilder}) was to make it easier
@@ -50,16 +50,16 @@ is used instead.
 
 In general, one can view such static dependency analysis as a function from a
 build script to a set of package dependencies, and implement it directly by
-parsing the script and extracting all possible dependencies. \Dune adopts a
-different approach: it reuses the existing script execution engine that executes
-build commands, but in a mock environment where commands are skipped, but their
-dependencies are recorded in all branches of conditional statements. By doing
-static analysis at this level, one can reuse a lot of code, e.g. for parsing and
-interpreting build scripts.
+parsing the script and extracting all possible dependencies from it. \Dune
+adopts a different approach: it reuses the existing script execution engine that
+executes build commands, but in a mock environment where commands are skipped,
+but their dependencies are recorded in all branches of conditional statements.
+By doing static analysis at this level, one can reuse a lot of code, e.g. for
+parsing and interpreting build scripts.
 
 % giving us good confidence in these parts of the implementation.
 
-In this mock environment, some part of the code cannot be fully evaluated as
+In this mock environment, some parts of the code cannot be fully evaluated as
 they need the output produced by external commands. However, these parts still
 need to be analysed. To achieve this, the original implementation of \Dune uses
 the \emph{arrow} abstraction discussed in~\S\ref{sec-arrows}. To evaluate
@@ -73,14 +73,14 @@ instead of arrows.
 % successful attempt was made at replacing arrows by applicatives in
 % Dune in the past.
 
-\subsection{Static analysis of dependencies}\label{sec-static-example}
+\subsection{Static analysis of build dependencies}\label{sec-static-example}
 
 \Dune is written in OCaml, and we therefore developed an OCaml library for
 selective functors. In this section, however, we choose to continue using
 Haskell to avoid confusion.
 
 We follow the approach by~\citet{mokhov2018build} for modelling \emph{build
-tasks}, where a task is represented as a higher-order effectful function
+tasks}, where a single task is represented as a higher-order effectful function
 parameterised by the type of \emph{keys} \hs{k}, e.g. file names, and the type
 of \emph{values} \hs{v}, e.g. file contents. A task takes a \emph{callback} of
 type \hs{k}~\hs{->}~\hs{f}~\hs{v}, that the task can use to find values of its
@@ -96,41 +96,118 @@ newtype Task k v = Task { run :: forall f. Selective f => (k -> f v) -> f v }
 The task needs to be polymorphic over the \hs{f} so that it can be run both in
 \emph{build mode}, by actually executing build commands, and in the \emph{mock
 mode}, where build commands are skipped but dependencies are recorded, as
-explained in \S\ref{sec-dune-intro}.
-
-[...]
+explained in \S\ref{sec-dune-intro}. For example, to compute over- and
+under-approximation of build dependencies we can run the task in selective
+functors \hs{f}~\hs{=}~\hs{Over} and \hs{f}~\hs{=}~\hs{Under}, respectively:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-dependencies :: Task k v -> [k]
-dependencies task = getOver $ run task (Over . pure)
+dependenciesOver :: Task k v -> [k]
+dependenciesOver task = getOver $ run task (\k -> Over [k])
+
+dependenciesUnder :: Task k v -> [k]
+dependenciesUnder task = getUnder $ run task (\k -> Under [k])
 \end{minted}
 \vspace{1mm}
 
-[...]
+\noindent
+Thanks to the polymorphism of the task description over \hs{f}, we can
+``execute'' a given task with a mock callback like
+\hs{(\}\hs{k}~\hs{->}~\hs{Over}~\hs{[}\hs{k])}~\hs{::}~\hs{k}~\hs{->}~\hs{Over}~\hs{v},
+whose only effect is recording the given key.
 
+To demonstrate this on an example, we need a way to model a \emph{build script},
+i.e. a collection of build tasks. One simple approach~\citep{mokhov2018build}
+is to use a function that, given a key~\hs{k} returns either the corresponding
+build \hs{Task} or \hs{Nothing} to indicate that this key is an input~(external)
+dependency that cannot be built and should therefore be available before the
+build starts:
 
-Dune is another example where the extra power provided by selective
-functions is relevant. To understand why, let's consider the following
-example: a user wants to use some optimized C function if it is
-available on the system, and fallback to an OCaml implementation if
-not. The C and OCaml implementations might have different external
-dependencies. Such a test is dynamic since it depends on the system
-the users builds the software on. During compilation, we only want to
-follow one of the branch, as we clearly don't want to build
-implementation only to keep a single one. However, during dependency
-analysis for the project manifest we need to scan both branches. The
-dependencies discovered in both branches will be considered as
-optional dependencies given that neither is always required.
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+type Script k v = k -> Maybe (Task k v)
+\end{minted}
+\vspace{1mm}
 
+\noindent
+Now we have all the ingredients for creating a simple build script comprising
+two tasks: (i)~the top-level task for building \cmd{release.tar} by archiving
+the file \cmd{LICENSE} and the executable \cmd{exe}; and (ii)~the task for
+compiling the executable from the source \cmd{src.ml} and one of the two
+libraries: \cmd{lib.c} or \cmd{lib.ml}, depending on the configuration option
+stored in the \cmd{config} file (it is common to use an optimised low-level C
+implementation of a performance-critical function, falling back to high-level
+OCaml implementation if the former is unavailable on the system):
 
-Applicative non-implementation
-Monadic non-implementation
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+script :: Script FilePath String
+script "release.tar" = Just $ Task $ \fetch -> tar [fetch "LICENSE", fetch "exe"]
+script "exe" = Just $ Task $ \fetch ->
+    let src  = fetch "src.ml"
+        cfg  = fetch "config"
+        lib1 = fetch "lib.c"
+        lib2 = fetch "lib.ml"
+    in compile [src, ifS (parse cfg) lib1 lib2]
+script _ = Nothing
+\end{minted}
+\vspace{1mm}
 
-Selective implementation
-Arrow implementation
+\noindent
+We assume the existence of functions \hs{tar} (creating an archive),
+\hs{compile} (compiling an OCaml executable from source and libraries), and
+\hs{parse} (parsing a configuration file); their implementation is irrelevant
+for our purposes.
 
-Discussion.
+\begin{figure}
+\centerline{\includegraphics[scale=0.3]{fig/build-dependencies.pdf}}
+\caption{An example build dependency graph. Input files are shown in rectangles,
+intermediate and output files are shown in rounded rectangles. Approximate
+dependencies are highlighted with dashed lines.}
+\label{fig-build}
+\end{figure}
 
-For parallelism use underapproximation: take intersection of optional
-dependencies, and then union with necessary dependencies.
+By analysing individual build tasks using \hs{dependenciesOver} and
+\hs{dependenciesUnder}, we can obtain an approximate build dependency
+information for the whole dependency graph:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+@\ghci@ dependenciesOver (fromJust $ script "release.tar")
+["LICENSE","exe"]
+@\ghci@ dependenciesUnder (fromJust $ script "release.tar")
+["LICENSE","exe"]
+@\ghci@ dependenciesOver (fromJust $ script "exe")
+["src.ml","config","lib.c","lib.ml"]
+@\ghci@ dependenciesUnder (fromJust $ script "exe")
+["src.ml","config"]
+\end{minted}
+\vspace{1mm}
+
+\noindent
+Fig.~\ref{fig-build} visualises the graph obtained by traversing approximate
+dependencies starting from the target key \cmd{release.tar}.
+
+Note that while over-approximation is useful for installing all possible
+dependencies \emph{before the build}, under-approximation is useful for
+maximising parallelism \emph{during the build}: for example, if all input files
+in our example are actually generated, e.g. by running a text preprocessor, then
+we can start the three preprocessing tasks that are definitely needed
+(\cmd{LICENSE}, \cmd{config}, \cmd{src.ml}) in parallel, i.e. without waiting
+for the outcome of parsing the \cmd{config} file.
+
+% Dune is another example where the extra power provided by selective
+% functions is relevant. To understand why, let's consider the following
+% example: a user wants to use some optimized C function if it is
+% available on the system, and fallback to an OCaml implementation if
+% not. The C and OCaml implementations might have different external
+% dependencies. Such a test is dynamic since it depends on the system
+% the users builds the software on. During compilation, we only want to
+% follow one of the branch, as we clearly don't want to build
+% implementation only to keep a single one. However, during dependency
+% analysis for the project manifest we need to scan both branches. The
+% dependencies discovered in both branches will be considered as
+% optional dependencies given that neither is always required.
+
+% For parallelism use underapproximation: take intersection of optional
+% dependencies, and then union with necessary dependencies.
