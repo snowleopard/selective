@@ -13,11 +13,11 @@ in standard Haskell libraries, where type classes \hs{Applicative} and
 
 % incorporating \hs{select} to \hs{Applicative} (\S\ref{sec-alt-applicative}),
 
-Another alternative that is worth a brief discussion is to simply add the
-\hs{select} method to the \hs{Applicative} type class, with the default
-implementation \hs{select}~\hs{=}~\hs{selectA}. While this is a viable approach
-from the technical viewpoint, it would make it harder to reason about code with
-the \hs{Applicative}~\hs{f} constraint, since the \hs{select} method makes it
+Another alternative that is worth a remark is to simply add the \hs{select}
+method to the \hs{Applicative} type class, with the default implementation
+\hs{select}~\hs{=}~\hs{selectA}. While this works for the purposes discussed in
+this paper, it would make it harder to reason about code with the
+\hs{Applicative}~\hs{f} constraint, since the \hs{select} method makes it
 possible for effects to depend on values; declaring such a significant ability
 by the \hs{Selective}~\hs{f} constraint is arguably a more prudent approach.
 
@@ -57,7 +57,7 @@ is applicable only to enumerable types:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-bindS :: (Bounded a, Enum a, Eq a) => f a -> (a -> f b) -> f b
+bindS :: Selective f => (Bounded a, Enum a, Eq a) => f a -> (a -> f b) -> f b
 \end{minted}
 \vspace{1mm}
 
@@ -74,15 +74,62 @@ static analysis of such infinitely-branching selective functors might take
 infinite time too.
 
 Investigation of the design space for ``multiway selective functors'', and
-exploiting it for efficient translation of Haskell's \cmd{do}-notation into
-selective functors in the spirit of the \cmd{ApplicativeDo}
+exploiting them for efficient translation of Haskell's \cmd{do}-notation into
+selective combinators in the spirit of the \cmd{ApplicativeDo}
 extension~\citep{marlow2016applicativedo} is left for future work. For now, we
-believe that adding \hs{branch} and/or an equivalent of \hs{bindS} into the
+believe that adding \hs{branch} and/or an equivalent of \hs{bindS} to the
 \hs{Selective} type class would be beneficial for performance-sensitive
 applications.
 
 \subsection{Symmetric select operators}\label{sec-alt-symmetric}
 
+In this section we address the asymmetry of \hs{select} that we remarked on
+in~\S\ref{sec-haxl}. The asymmetry can be seen in the fact that the first
+argument of \hs{select} must always be executed, while the second argument may
+sometimes be skipped. Consider the following more symmetric alternative:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=5pt]{haskell}
+biselect :: Selective f => f@\,@(Either a b) -> f@\,@(Either a c) -> f@\,@(Either a (b,c))
+\end{minted}
+\vspace{1mm}
+
+\noindent
+This definition is pleasantly symmetric: if either of the arguments yields a
+\hs{Left}~\hs{a} value, the other argument \emph{may be skipped} since the
+result must be a \hs{Left}~\hs{a} too, by parametricity. On the other hand, if
+one of the arguments yields a \hs{Right} value, then the other argument
+\emph{must be executed} in order to either get an \hs{a} or the other half of
+the resulting pair.
+
+While beautiful, \hs{biselect} is a bit more awkward to work with than
+\hs{select} and is also more subtle when the order in which the arguments are
+executed is not fixed. So far we have identified only one example where the
+symmetry of \hs{biselect} is beneficial: speculative execution of parallel OR
+and AND combinators --- see the \Haxl case study~\S\ref{sec-haxl}. To support
+such use-cases it is possible to add \hs{biselect} to the \hs{Selective} type
+class with the following default implementation:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=5pt]{haskell}
+biselect :: Selective f => f@\,@(Either a b) -> f@\,@(Either a c) -> f@\,@(Either a (b,c))
+biselect x y = select ((fmap Left . swap) <$> x) ((\e a -> fmap (a,) e) <$> y)
+  where
+    swap (Left  a) = Right a
+    swap (Right b) = Left  b
+\end{minted}
+\vspace{1mm}
+
+\noindent
+This implementation breaks the symmetry, which may be acceptable for most
+instances of selective functors, but instances like \hs{Haxl} would override it
+in order to gain additional performance benefits. Note that the selective
+combinators like \hs{<||>} would need to be redefined via \hs{biselect} in order
+to take advantage of the symmetry.
+
+From the theoretical viewpoint, the type signature of \hs{biselect} makes it
+more apparent that a selective functor \hs{f} is a composition of an applicative
+functor \hs{f} and the \hs{Either} monad.
 
 % Arseniy's raise/catch
 

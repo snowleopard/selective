@@ -11,7 +11,10 @@ module Control.Selective (
 
     -- * Static analysis
     ViaSelectA (..), Over (..), getOver, Under (..), getUnder, Validation (..),
-    dependencies
+    dependencies,
+
+    -- * Miscellaneous
+    swap
     ) where
 
 import Build.Task
@@ -159,7 +162,7 @@ selectM x y = x >>= \e -> case e of Left  a -> ($a) <$> y -- execute y
 
 -- | Branch on a Boolean value, skipping unnecessary effects.
 ifS :: Selective f => f Bool -> f a -> f a -> f a
-ifS i t e = branch (bool (Right ()) (Left ()) <$> i) (const <$> t) (const <$> e)
+ifS x t e = branch (bool (Right ()) (Left ()) <$> x) (const <$> t) (const <$> e)
 
 -- Implementation used in the paper:
 -- ifS x t e = branch selector (fmap const t) (fmap const e)
