@@ -152,7 +152,7 @@ thus executing its associated effects.
 To get acquainted with the vocabulary, we start with a simple semantics for
 the addition instruction, which will read the summands from a register and a memory cell,
 add them, write the result back into the register and also update the state of the \hs{Zero}
-and \hs{Overflow} flags to indicate if the sum was zero and if integer overflow occurred:
+and flag to indicate if the sum was zero:
 
 \begin{minted}[xleftmargin=10pt]{haskell}
 add :: Register -> Address -> ISA Value
@@ -160,9 +160,7 @@ add reg addr = let arg1     = read (Reg reg)
                    arg2     = read (Mem addr)
                    result   = (+)  <$> arg1   <*> arg2
                    isZero   = (==) <$> pure 0 <*> write (Reg reg) result
-                   overflow = willOverflowPure <$> arg1 <*> arg2
-               in write (F Zero)     (fromBool <$> isZero) *>
-                  write (F Overflow) (fromBool <$> overflow)
+               in write (F Zero)     (fromBool <$> isZero)
 \end{minted}
 
 Here, we get two effectful values from the two locations and calculate three intermediate
@@ -170,8 +168,7 @@ results. To calculate the sum we just lift \hs{+} into the free selective using 
 combinators. We calculate the state of the \hs{Zero} flag in a similar way, but here we
 exploit the fact that the \hs{write} combinator returns the value it has just written, thus we
 can reuse the value of the sum without recalculating it and triggering its associated effects
-again. We detect integer overflow by means of a pure function, thus there is not much difference
-with calculating the sum.
+again.
 
 The free selective functor construction shines in the static analysis. By executing
 the analysis of the \hs{add} semantics, we can obtain the list of all its effects,
@@ -187,8 +184,7 @@ flags with a red Unicode flag character.
 \raggedleft
 \begin{minted}[xleftmargin=10pt]{haskell}
 @\ghci@ getEffectsISA (add R0 1)
-[Read R0,Read 1,Write R0,Write Zero
-,Read R0,Read 1,Write Overflow]
+[Read R0,Read 1,Write R0,Write Zero]
 \end{minted}
   % \captionof{listing}{Sub caption}
  \end{minipage}
@@ -273,7 +269,6 @@ individual semantics:
 \begin{minted}[xleftmargin=10pt]{haskell}
 @\ghci@ getEffectsISA addAndJump
 [Read R0,Read 1,Write R0,Write Zero
-,Read R0,Read 1,Write Overflow
 ,Read Zero,Read PC,Write PC]
 \end{minted}
   % \captionof{listing}{Sub caption}
