@@ -595,8 +595,71 @@ allowed to sneak in any effects if the first computation is pure, which allows
 \hs{pure}~\hs{x}~\hs{<*?} to be distributed through the applicative sequencing
 operator \hs{*>}. When applied in reverse, the distributivity law allows us to
 simplify sequences of conditional operations \emph{as long as the conditions are
-pure}. The \emph{generalised identity} theorem follows from the identity law as
-a free theorem.
+pure}. The \emph{generalised identity} theorem follows from the identity law by
+parametricity.
+
+\begin{figure}
+\begin{minted}{haskell}
+-- Identity
+@\blk{x}@ <*? pure id = either id id <$> x
+\end{minted}
+\vspace{1mm}
+\begin{minted}{haskell}
+-- Distributivity; note that y and z have the same type f (a -> b)
+@\blk{pure}@ x <*? (y *> z) = (pure x <*? y) *> (pure x <*? z)
+\end{minted}
+\vspace{1mm}
+\begin{minted}{haskell}
+-- Associativity
+@\blk{x}@ <*? (y <*? z) = (f <$> x) <*? (g <$> y) <*? (h <$> z)
+  where
+    f x = Right <$> x
+    g y = \a -> bimap (,a) ($a) y
+    h z = uncurry z
+\end{minted}
+\vspace{1mm}
+\begin{minted}{haskell}
+-- For selective functors that are also monads:
+@\blk{select}@ = selectM
+\end{minted}
+\vspace{2mm}
+\hrule
+\vspace{2mm}
+\begin{minted}{haskell}
+-- Apply a pure function to the result
+@\blk{f}@ <$> select x y = select (second f <$> x) ((f .) <$> y)
+\end{minted}
+\vspace{1mm}
+\begin{minted}{haskell}
+-- Apply a pure function to the Left case of the first argument
+@\blk{select}@ (first f <$> x) y = select x ((. f) <$> y)
+\end{minted}
+\vspace{1mm}
+\begin{minted}{haskell}
+-- Apply a pure function to the second argument
+@\blk{select}@ x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
+\end{minted}
+\vspace{1mm}
+\begin{minted}{haskell}
+-- Generalised identity
+@\blk{x}@ <*? pure y = either y id <$> x
+\end{minted}
+\vspace{1mm}
+\begin{minted}{haskell}
+-- Theorems for rigid selective functors (in particular, for monads)
+(<*>) = apS                     -- Selective apply
+@\blk{x}@ *> (y <*? z) = (x *> y) <*? z -- Interchange
+\end{minted}
+\caption{Laws (top) and theorems (bottom) of selective functors.}
+\label{fig-laws}
+\end{figure}
+% -- General interchange
+% x <*> (y <*? z) = (f <$> x <*> y) <*? (g <$> z)
+%   where
+%     f ab = bimap (\c ca -> ab (ca c)) ab
+%     g ca = ($ca)
+% -- General distributivity (?)
+% ifS (pure x) a1 b1 *> ifS (pure x) a2 b2 = ifS (pure x) (a1 *> a2) (b1 *> b2)
 
 Note that it is not a requirement for selective functors to skip unnecessary
 effects. In particular, we do not require that
@@ -614,51 +677,44 @@ thus legalising under-approximating instances like \hs{Under} and
 \hs{Validation}. It is worth noting, however, that the monadic select operator
 \hs{selectM} does satisfy the \emph{pure Left} and \emph{pure Right} properties.
 
-\begin{figure}
-\begin{minted}{haskell}
-------------------------------------- Laws: ------------------------------------
--- Identity
-@\blk{x}@ <*? pure id = either id id <$> x
+Such loose requirements on \hs{select} with respect to unnecessary effects might
+seem troublesome. Below we list three reasons why we chose to keep the
+requirements loose.
+\begin{itemize}
+    \item Requiring unnecessary effects to be skipped rules out any instances
+    that could be used for static analysis. Indeed, the only way to obey this
+    law would be to look at actual values at runtime, since it is impossible to
+    statically know if \hs{f}~\hs{(Either}~\hs{a}~\hs{b)} contains a \hs{Right}
+    value.
+    \item One might suggest having two classes \hs{Selective} and
+    \hs{StrictSelective}, the latter with stricter requirements. But this second
+    class would be useless: to statically analyse a computation you would have
+    to express it via \hs{Selective}, since it is inhabited by instances like
+    \hs{Over}. As for the execution, a \hs{Monad} is perfectly suitable, as we
+    will see in~\S\ref{sec-free-ping-pong}.
+    \item Finally, there is a good precedent: the \hs{Applicative} type class
+    has no requirements on the order in which effects are executed:
+    left-to-right, right-to-left, or in parallel. This loose specification
+    allows instances like \hs{Const} to execute effects sequentially from left
+    to right, and instances like \Haxl (\S\ref{sec-haxl}) to execute effects in
+    parallel. Note that as soon as we also have a \hs{Monad}, we gain an
+    additional requirement \hs{(<*>)}~\hs{=}~\hs{ap}, which tells us that, at
+    the semantic level, the result should be as if the effects were executed in
+    sequence from left to right. We follow the same approach by requiring
+    \hs{select}~\hs{=}~\hs{selectM} if \hs{f} is also a \hs{Monad} (see below).
+\end{itemize}
 
--- Distributivity; note that y and z have the same type f (a -> b)
-@\blk{pure}@ x <*? (y *> z) = (pure x <*? y) *> (pure x <*? z)
-
--- Associativity
-@\blk{x}@ <*? (y <*? z) = (f <$> x) <*? (g <$> y) <*? (h <$> z)
-  where
-    f x = Right <$> x
-    g y = \a -> bimap (,a) ($a) y
-    h z = uncurry z
-
--- For selective functors that are also monads:
-@\blk{select}@ = selectM
----------------------------------- Theorems: -----------------------------------
--- Apply a pure function to the result
-@\blk{f}@ <$> select x y = select (second f <$> x) ((f .) <$> y)
-
--- Apply a pure function to the Left case of the first argument
-@\blk{select}@ (first f <$> x) y = select x ((. f) <$> y)
-
--- Apply a pure function to the second argument
-@\blk{select}@ x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
-
--- Generalised identity
-@\blk{x}@ <*? pure y = either y id <$> x
-
--- Theorems for rigid selective functors (in particular, for monads)
-(<*>) = apS                     -- Selective apply
-@\blk{x}@ *> (y <*? z) = (x *> y) <*? z -- Interchange
-\end{minted}
-\caption{Laws and theorems of selective functors.}
-\label{fig-laws}
-\end{figure}
-% -- General interchange
-% x <*> (y <*? z) = (f <$> x <*> y) <*? (g <$> z)
-%   where
-%     f ab = bimap (\c ca -> ab (ca c)) ab
-%     g ca = ($ca)
-% -- General distributivity (?)
-% ifS (pure x) a1 b1 *> ifS (pure x) a2 b2 = ifS (pure x) (a1 *> a2) (b1 *> b2)
+% General limitation of reasoning using laws:
+% \item One might argue that stricter requirements would make it easier to
+% reason about functions with the \hs{Selective}~\hs{f} constraint. This is
+% not the case, since effect skipping/duplication is
+% is not typically tracked in types at all
+% as evidenced by a simple example:
+% \hs{Selective}~\hs{f}~\hs{=>}~\hs{f}~\hs{()}~\hs{->}~\hs{f}~\hs{()}.
+% Regardless of the laws we choose, we cannot distinguish implementations
+% \hs{id}, \hs{\x}~\hs{->}~\hs{pure}~\hs{()} and
+% \hs{\x}~\hs{->}~\hs{x}~\hs{*>}~\hs{x}. Same for \hs{Applicative}~\hs{f} or
+% \hs{Monad}~\hs{f}.
 
 The \emph{associativity} law states that it should always be possible to
 re-associate a sequence of select operators to the left, by doing the necessary
