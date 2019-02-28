@@ -1,69 +1,114 @@
 \section{Static analysis}\label{sec-static}
 
-Using build systems as example
+In this section we discuss a real-life application that benefits from static
+analysis of effectful computations -- the \Dune build system~\citep{dune}. We
+start by introducing \Dune and motivating the need for static analysis with
+over-approximation (\S\ref{sec-dune-intro}), and then show how one can implement
+static analysis of build system dependencies using selective functors
+(\S\ref{sec-static-example}).
 
-\subsection{Dune build system}
+\subsection{Dune build system}\label{sec-dune-intro}
 
-Dune was originally developed at Jane Street and has by now become the standard
-build system for OCaml packages. At the time of writing, more than 1000 OCaml
-packages are using Dune as the build system. The original motivation for
-developing Dune (which was earlier known as \textsf{jbuilder}) was to make it
-easier to open source code developed in an industrial environment, and so Dune
-was not meant to be used for everyday software development. However, Dune's
-ability to extract maximum parallelism from build scripts meant it was faster
-than existing build systems, such as OCamlbuild, and it quickly became very
-popular, with major projects switching to Dune, for example, the Coq proof
-assistant [ref].
+\Dune was originally developed at Jane Street and has by now become the standard
+build system for OCaml packages~\citep{dune}. At the time of writing, more than
+1000 OCaml packages are using Dune as the build system. The original motivation
+for developing \Dune (earlier known as \textsf{jbuilder}) was to make it easier
+to open source code developed in an industrial environment, and so \Dune was not
+meant to be used for everyday software development. However, \Dune's ability to
+extract maximum parallelism from build scripts meant it was faster than existing
+build systems, such as OCamlbuild, and it quickly became popular, with major
+projects switching to \Dune, for example, the Coq proof
+assistant~\citep{bertot2013coq}.
 
 % TODO: Can we get any performance improvement figures on how much more
 % parallelism can be gained through static analysis?
 
-One unusual feature of Dune is the ability to statically approximate all build
-dependencies of a package instead of requiring the programmer to manually list
-them in a package manifest file.
+One unusual feature of \Dune is the ability to statically over-approximate all
+build dependencies of a package instead of requiring the programmer to manually
+list them in a \emph{package manifest file}. Package manifest files are consumed
+by \emph{package managers}, such as OPAM~\citep{opam} for the purpose of
+downloading and installing all required dependencies.
 
-Package manifest files are typically consumed by package managers like
-OPAM [ref] for the purpose of downloading and installing all required
-dependencies.
+% The original aim of this feature was to automatically generate package manifest
+% files, so that they do not need to be maintained. An alternative approach would
+% be to integrate the build system with the package manager itself, i.e. whenever
+% the build system discovers a new external dependency, the package manager would
+% download and install it, temporarily suspending the build.
+
+% The reason Dune could not follow this approach is because package managers are
+% typically designed to be build system agnostic.
 
 % There are also optional package dependencies. Shall we give more details?
 
-The original aim of this feature was to automatically generate package manifest
-files, so that they do not need to be maintained. An alternative approach would
-be to integrate the build system with the package manager itself, i.e. whenever
-the build system discovers a new external dependency, the package manager would
-download and install it, temporarily suspending the build.
+To generate a manifest file automatically \Dune needs to analyse the build graph
+statically, i.e. \emph{without actually running any build commands}, because at
+this point the project cannot yet be built (due to missing dependencies).
+Package dependencies can be conditional and depend on values that can only be
+computed during the build, therefore in many situations it is impossible to
+statically compute an exact set of dependencies, and hence an over-approximation
+is used instead.
 
-The reason Dune could not follow this approach is because package managers are
-typically designed to be build system agnostic.
+In general, one can view such static dependency analysis as a function from a
+build script to a set of package dependencies, and implement it directly by
+parsing the script and extracting all possible dependencies. \Dune adopts a
+different approach: it reuses the existing script execution engine that executes
+build commands, but in a mock environment where commands are skipped, but their
+dependencies are recorded in all branches of conditional statements. By doing
+static analysis at this level, one can reuse a lot of code, e.g. for parsing and
+interpreting build scripts.
 
-Therefore, the only way to generate the manifest file automatically is to
-analyse the build graph statically, i.e. \emph{without actually running any
-build commands}, because at this point the project cannot yet be built (due
-to missing dependencies). Package dependencies can be conditional and depend
-on values that can only be computed during the build, therefore in many
-situations it is impossible to statically compute an accurate list of
-dependencies, and an over-approximation needs to be computed instead.
+% giving us good confidence in these parts of the implementation.
 
-In general, one can view this static analysis as a function from a build script
-to a list of external dependencies. One way to implement such function would be
-to parse the script and extract all possible dependencies.
+In this mock environment, some part of the code cannot be fully evaluated as
+they need the output produced by external commands. However, these parts still
+need to be analysed. To achieve this, the original implementation of \Dune uses
+the \emph{arrow} abstraction discussed in~\S\ref{sec-arrows}. To evaluate
+suitability of selective functors for this task, we have successfully prototyped
+an alternative core for \Dune, which uses applicative and selective functors
+instead of arrows.
 
-Another approach, which is adopted in Dune, is to reuse the existing script
-execution engine that runs the build commands, but in a mock environment where
-commands are skipped, but their dependencies are recorded in all branches of
-conditional statements. By doing static analysis at this level, one can reuse
-a lot of code, e.g. for parsing and interpreting build scripts, giving us good
-confidence in these parts of the implementation.
+% The reason Dune uses an arrow
+% rather than an applicative is discussed later, however applicatives
+% would be suitable as well in this context. In particular, a
+% successful attempt was made at replacing arrows by applicatives in
+% Dune in the past.
 
-In this mock environment, some part of the code cannot be fully
-evaluated as they need the output produced by external
-commands. However, these parts still need to be analysed. To achieve
-this, Dune uses an arrow data structure. The reason Dune uses an arrow
-rather than an applicative is discussed later, however applicatives
-would be suiitable as well in this context. In particular, a
-successful attempt was made at replacing arrows by applicatives in
-Dune in the past.
+\subsection{Static analysis of dependencies}\label{sec-static-example}
+
+\Dune is written in OCaml, and we therefore developed an OCaml library for
+selective functors. In this section, however, we choose to continue using
+Haskell to avoid confusion.
+
+We follow the approach by~\citet{mokhov2018build} for modelling \emph{build
+tasks}, where a task is represented as a higher-order effectful function
+parameterised by the type of \emph{keys} \hs{k}, e.g. file names, and the type
+of \emph{values} \hs{v}, e.g. file contents. A task takes a \emph{callback} of
+type \hs{k}~\hs{->}~\hs{f}~\hs{v}, that the task can use to find values of its
+dependencies, and returns the result embedded in a selective context~\hs{f}:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+newtype Task k v = Task { run :: forall f. Selective f => (k -> f v) -> f v }
+\end{minted}
+\vspace{1mm}
+
+\noindent
+The task needs to be polymorphic over the \hs{f} so that it can be run both in
+\emph{build mode}, by actually executing build commands, and in the \emph{mock
+mode}, where build commands are skipped but dependencies are recorded, as
+explained in \S\ref{sec-dune-intro}.
+
+[...]
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+dependencies :: Task k v -> [k]
+dependencies task = getOver $ run task (Over . pure)
+\end{minted}
+\vspace{1mm}
+
+[...]
+
 
 Dune is another example where the extra power provided by selective
 functions is relevant. To understand why, let's consider the following
@@ -77,9 +122,6 @@ implementation only to keep a single one. However, during dependency
 analysis for the project manifest we need to scan both branches. The
 dependencies discovered in both branches will be considered as
 optional dependencies given that neither is always required.
-
-\subsection{Static analysis of dependencies}
-
 
 
 Applicative non-implementation
