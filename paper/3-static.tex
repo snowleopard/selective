@@ -196,6 +196,14 @@ we can start the three preprocessing tasks that are definitely needed
 (\cmd{LICENSE}, \cmd{src.ml}, \cmd{config}) in parallel, i.e. without waiting
 for the outcome of parsing the \cmd{config} file.
 
+\emph{Applicative and monadic build systems} studied in~\citep{mokhov2018build}
+cannot support such over- and under-approximating static analysis, and the
+associated abstractions are therefore unsuitable for \Dune. This explains why
+\Dune developers have chosen to use the \emph{arrow} abstraction
+(\S\ref{sec-arrows}). As our case study and the developed prototype demonstrate,
+selective functors provide a viable alternative to arrows in the context of
+build systems.
+
 % Dune is another example where the extra power provided by selective
 % functions is relevant. To understand why, let's consider the following
 % example: a user wants to use some optimized C function if it is
