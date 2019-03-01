@@ -152,9 +152,6 @@ selectA x y = (\e f -> either f id e) <$> x <*> y
 apS :: Selective f => f (a -> b) -> f a -> f b
 apS f x = select (Left <$> f) (flip ($) <$> x)
 
-apS' :: Selective f => f (a -> b) -> f a -> f b
-apS' f x = select (Left <$> f) ((\y f -> f y) <$> x)
-
 -- | One can easily implement a monadic 'selectM' that satisfies the laws,
 -- hence any 'Monad' is 'Selective'.
 selectM :: Monad f => f (Either a b) -> f (a -> b) -> f b
