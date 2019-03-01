@@ -61,9 +61,10 @@ instance Functor f => Selective (Select f) where
 selectOpt :: Functor f => Select f (Either a b) -> Select f (a -> b) -> Select f b
 selectOpt x y = go x y id
 
+-- We turn @Select f (a -> b)@ to @(Select f c, c -> (a -> b))@. Hey, co-Yoneda!
 go :: Functor f => Select f (Either a b) -> Select f c -> (c -> (a -> b)) -> Select f b
 go x (Pure y)     k = either (k y) id <$> x
-go x (Select y z) k = Select (go (f <$> x) y (g . fmap k)) ((h . fmap k) <$> z)
+go x (Select y z) k = Select (go (f <$> x) y (g . second k)) ((h . (k.)) <$> z)
   where
     f x = Right <$> x
     g y = \a -> bimap (,a) ($a) y
