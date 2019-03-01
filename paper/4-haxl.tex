@@ -151,15 +151,6 @@ it requires that all the effects of the first argument are performed.
 In~\S\ref{sec-alt-symmetric} we consider an alternative combinator
 related to \hs{select} that allows this kind of symmetry to be expressed.
 
-In \Haxl we found \hs{pOr} and \hs{pAnd} to be occasionally useful by
-themselves, but a more compelling use case is when there is a list of
-conditionals, where we can use the \hs{anyS} and \hs{allS} combinators
-from Fig.~\ref{fig-library}. When there are a large number of conditions it
-becomes very hard to manually order them effectively using \hs{.||},
-especially when the set of conditions changes often. In this case
-\hs{anyS} is very useful as a way to extract performance in a
-non-invasive way.
-
 We have prototyped an implementation of \Haxl with the \hs{Selective}~\hs{Haxl}
 instance, which allowed us to reuse generic selective combinators
 \hs{<||>}, \hs{<&&>}, \hs{anyS} and \hs{allS} instead of providing custom
@@ -167,3 +158,38 @@ implementations for conditional operators operators \hs{pOr} and \hs{pAnd} and
 their generalisations on lists. This case study highlights the fact that
 selective functors are useful not only in the static context, but in the dynamic
 context too, by allowing us to benefit from speculative execution.
+
+
+\subsection{Complex conditionals}
+
+We mentioned above that \hs{pOr} and \hs{pAnd} are effective when the
+relative size of the conditional computations is unknown, so
+evaluating them in parallel with early exit is an effective
+alternative to either sequencing them manually (with \hs{Monad}) or
+evaluating them in parallel to completion (with
+\hs{Applicative}). This argument becomes even more compelling as the
+set of conditions to evaluate grows: imagine trying to efficiently
+sequence a set of ten or more conditions, and then repeating the
+exercise every time the set changes.
+
+For this reason, in \Haxl we found that list operations built on top
+of \hs{pOr} and \hs{pAnd}, which in this paper we call \hs{andS} and
+\hs{allS} (see Fig.~\ref{fig-library}), offer an important balance
+between performance and maintainability that isn't provided by the
+\hs{Applicative} or \hs{Monad}-based combinators.
+
+
+\subsection{Results}
+
+One could construct examples to demonstrate arbitrarily large
+performance gains from using \hs{pOr} and \hs{pAnd}, however that
+wouldn't be particularly useful. Perhaps more useful would be a
+real-world measurement showing how much performance was improved in an
+actual application - but again, the value of that would depend to a
+large extent on how the application uses \hs{pOr} and \hs{pAnd}, and
+unfortunately the application code in our case is
+proprietary. Therefore instead we offer this anecdote: we first
+introduced a use of \hs{pOr} to solve some performance issues in a
+complex production workload where we had long chains of conditionals
+that were difficult to optimise by hand, and \hs{pOr} resulted in
+significant performance improvements.
