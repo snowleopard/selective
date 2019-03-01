@@ -9,15 +9,15 @@
 
 
 
-module Control.Selective.Free.Examples.ISA.Programs where
+module Control.Selective.Example.ISA.Programs where
 
 import Prelude hiding (mod, read)
 import Data.List.NonEmpty (NonEmpty (..), fromList, toList)
 import Control.Selective
 import Control.Selective.Free.Rigid
-import Control.Selective.Free.Examples.ISA.Types
-import Control.Selective.Free.Examples.ISA.Instruction
-import Control.Selective.Free.Examples.ISA.Simulate
+import Control.Selective.Example.ISA.Types
+import Control.Selective.Example.ISA.Instruction
+import Control.Selective.Example.ISA.Simulate
 
 addProgram :: Program
 addProgram = fromList $ zip [0..]
