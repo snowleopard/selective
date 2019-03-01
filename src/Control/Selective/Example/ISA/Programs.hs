@@ -12,9 +12,7 @@
 module Control.Selective.Example.ISA.Programs where
 
 import Prelude hiding (mod, read)
-import Data.List.NonEmpty (NonEmpty (..), fromList, toList)
-import Control.Selective
-import Control.Selective.Free.Rigid
+import Data.List.NonEmpty (fromList, toList)
 import Control.Selective.Example.ISA.Types
 import Control.Selective.Example.ISA.Instruction
 import Control.Selective.Example.ISA.Simulate
