@@ -7,10 +7,9 @@ by~\citet{1995_wadler_monads}, are a powerful and general approach for
 describing effectful (or impure) computations using pure functions. The key
 ingredient of the monad abstraction is the \emph{bind} operator, denoted by
 \hs{>>=} in Haskell\footnote{We use Haskell throughout this paper, but the
-presented results are not specific to Haskell and do not require any advanced
-features of the Glasgow Haskell Compiler (any Haskell98~\citep{haskell98}
-compliant compiler will do). Furthermore, we release two libraries for selective
-applicative functors along with this paper: for Haskell and OCaml.}:
+presented ideas are not language specific. We release two libraries for
+selective applicative functors along with this paper, for Haskell and OCaml, and
+are also aware of a PureScript fork.}:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}

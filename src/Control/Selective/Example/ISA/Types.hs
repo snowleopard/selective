@@ -7,22 +7,19 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
-module Control.Selective.Free.Examples.ISA.Types where
+module Control.Selective.Example.ISA.Types where
 
 import Prelude hiding (read)
-import Data.Either (partitionEithers)
 import Data.Word (Word8)
 import Data.Functor (void)
 import Data.Int (Int8)
-import Data.Int (Int16)
-import Data.Functor (void)
-import qualified Data.Map.Strict as Map
 import Control.Selective
 import Control.Selective.Free.Rigid
 
 fromBool :: Num a => Bool -> a
 fromBool True  = 1
 fromBool False = 0
+-- fromBool = bool 0 1
 
 --------------------------------------------------------------------------------
 -------- Types -----------------------------------------------------------------
@@ -36,8 +33,10 @@ data Register = R0 | R1 | R2 | R3
     deriving (Show, Eq, Ord)
 
 r0, r1, r2, r3 :: Register
-[r0, r1, r2, r3] = [R0, R1, R2, R3]
-_ = undefined
+r0 = R0
+r1 = R1
+r2 = R2
+r3 = R3
 
 -- | The address space is indexed by one byte
 type Address = Word8
@@ -83,8 +82,8 @@ write k p = liftSelect (Write k p id)
 
 -- | Interpret 'Read' and 'Write' commands in the 'Over' selective functor
 inOver :: RW a -> Over [RW ()] b
-inOver (Read  k t   ) = Over [void $ Read k (const ())]
-inOver (Write k fv t) = void (runSelect inOver fv) *>
+inOver (Read  k _   ) = Over [void $ Read k (const ())]
+inOver (Write k fv _) = void (runSelect inOver fv) *>
                         Over [Write k fv (const ())]
 
 -- | Get effects of an ISA semantics computation

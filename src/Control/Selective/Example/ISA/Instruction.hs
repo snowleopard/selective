@@ -8,21 +8,20 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Control.Selective.Free.Examples.ISA.Instruction where
+module Control.Selective.Example.ISA.Instruction where
 
 import Prelude hiding (div, mod, read)
 import qualified Prelude (div, mod)
 import qualified Data.List.NonEmpty as NonEmpty
-import Data.List.NonEmpty (NonEmpty (..), fromList)
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.Functor (void)
 -- import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe (fromJust)
 import Control.Selective
-import Control.Selective.Free.Rigid
 import Algebra.Graph
 import Algebra.Graph.Export.Dot
-import Control.Selective.Free.Examples.ISA.Types
+import Control.Selective.Example.ISA.Types
 
 --------------------------------------------------------------------------------
 -------- Instructions ----------------------------------------------------------
@@ -51,7 +50,7 @@ semantics :: Instruction -> ISA Value
 semantics i = case i of
     Halt            -> halt
     Load reg addr   -> load reg addr
-    LoadMI reg addr -> undefined -- loadMI reg addr
+    LoadMI _ _      -> undefined -- loadMI reg addr
     Set reg val     -> set reg val
     Store reg addr  -> store reg addr
     Add reg1 addr   -> addOverflow reg1 addr
@@ -59,7 +58,7 @@ semantics i = case i of
     Mul reg addr    -> mul reg addr
     Div reg addr    -> div reg addr
     Mod reg addr    -> mod reg addr
-    Abs reg         -> undefined -- abs (Register reg)
+    Abs _           -> undefined -- abs (Register reg)
     Jump simm8      -> jump simm8
     JumpZero simm8  -> jumpZero simm8
 

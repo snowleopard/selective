@@ -34,9 +34,9 @@ infixl 0 ===
 
 -- First, we typecheck the laws
 
--- F1 (Free): f <$> select x y = select (second f <$> x) ((f .) <$> y)
+-- F1 (Free): f <$> select x y = select (fmap f <$> x) (fmap f <$> y)
 f1 :: Selective f => (b -> c) -> f (Either a b) -> f (a -> b) -> f c
-f1 f x y = f <$> select x y === select (second f <$> x) ((f .) <$> y)
+f1 f x y = f <$> select x y === select (fmap f <$> x) (fmap f <$> y)
 
 -- F2 (Free): select (first f <$> x) y = select x ((. f) <$> y)
 f2 :: Selective f => (a -> c) -> f (Either a b) -> f (c -> b) -> f b

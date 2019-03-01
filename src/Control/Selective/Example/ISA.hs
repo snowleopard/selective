@@ -7,7 +7,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
-module Control.Selective.Free.Examples.ISA where
+module Control.Selective.Example.ISA where
 
 import Prelude hiding (read)
 import Data.Word (Word8)
@@ -37,8 +37,10 @@ data Reg = R1 | R2 | R3 | R4
     deriving (Show, Eq, Ord)
 
 r0, r1, r2, r3 :: Key
-[r0, r1, r2, r3] = map Register [R1, R2, R3, R4]
-_ = undefined
+r0 = Register R1
+r1 = Register R2
+r2 = Register R3
+r3 = Register R4
 
 type RegisterBank = Map.Map Reg Value
 
@@ -196,7 +198,7 @@ jumpZero offset =
     let pc       = read PC
         zeroSet  = (/=) <$> pure 0 <*> read (Flag Zero)
         -- modifyPC = void $ write PC (pure offset) -- (fmap (+ offset) pc)
-        modifyPC = void $ write PC (fmap (+ offset) pc)
+        modifyPC = void $ write PC ((+offset) <$> pc)
     in whenS zeroSet modifyPC
 
 -- jumpZeroMemory :: Map.Map Key Value

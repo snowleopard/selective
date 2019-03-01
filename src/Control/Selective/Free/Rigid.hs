@@ -33,8 +33,8 @@ data Select f a where
 
 -- TODO: Verify that this is a lawful 'Functor'.
 instance Functor f => Functor (Select f) where
-    fmap k (Pure a)     = Pure (k a)
-    fmap k (Select x f) = Select (fmap k <$> x) (fmap k <$> f)
+    fmap f (Pure a)     = Pure (f a)
+    fmap f (Select x y) = Select (fmap f <$> x) (fmap f <$> y)
 
 -- TODO: Verify that this is a lawful 'Applicative'.
 instance Functor f => Applicative (Select f) where
@@ -44,7 +44,7 @@ instance Functor f => Applicative (Select f) where
 -- TODO: Verify that this is a lawful 'Selective'.
 instance Functor f => Selective (Select f) where
     -- Law P1
-    select x (Pure f) = either f id <$> x
+    select x (Pure y) = either y id <$> x
 
     -- Law A1
     select x (Select y z) = Select (select (f <$> x) (g <$> y)) (h <$> z)
@@ -74,7 +74,7 @@ liftSelect f = Select (Pure (Left ())) (const <$> f)
 -- natural transformation from @Select f@ to @g@.
 runSelect :: Selective g => (forall a. f a -> g a) -> Select f a -> g a
 runSelect _ (Pure a)     = pure a
-runSelect t (Select x f) = select (runSelect t x) (t f)
+runSelect t (Select x y) = select (runSelect t x) (t y)
 
 -- | Concatenate all effects of a free selective computation.
 foldSelect :: Monoid m => (forall a. f a -> m) -> Select f a -> m
@@ -88,7 +88,10 @@ getPure = runSelect (const Nothing)
 -- | Collect all possible effects in the order they appear in a free selective
 -- computation.
 getEffects :: Functor f => Select f a -> [f ()]
-getEffects = foldSelect (pure . void)
+-- getEffects = foldSelect (pure . void)
+
+getEffects = getOver . runSelect (Over . pure . void)
+
 
 -- | Extract the necessary effect from a free selective computation. Note: there
 -- can be at most one effect that is statically guaranteed to be necessary.

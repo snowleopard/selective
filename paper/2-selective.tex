@@ -627,7 +627,7 @@ parametricity.
 \vspace{2mm}
 \begin{minted}{haskell}
 -- Apply a pure function to the result
-@\blk{f}@ <$> select x y = select (second f <$> x) ((f .) <$> y)
+@\blk{f}@ <$> select x y = select (fmap f <$> x) (fmap f <$> y)
 \end{minted}
 \vspace{1mm}
 \begin{minted}{haskell}
@@ -738,8 +738,8 @@ p :: f (Either a (Either (c,a) b))   @\blu{q}@ :: f (a -> Either (c,a) b)   @\bl
 \noindent
 To adjust \hs{x}, we inject it in a larger sum type, \hs{y} is turned into a
 function accepting a value of type \hs{a} from \hs{p}, and \hs{z} is simply
-\hs{uncurry}ed. As we will see in~\S\ref{sec-alt-either}, the associativity law
-can be expressed much more naturally if we switch to a different select
+\hs{uncurry}ed. As we will see in~\S\ref{sec-alt-symmetric}, the associativity
+law can be expressed much more naturally if we switch to a different select
 operator (a similar phenomenon occurs with the \emph{composition} law of
 the \hs{Applicative} type class when the latter is expressed using an equivalent
 but more symmetric \hs{Monoidal} interface~\citep{mcbride2008applicative}).
