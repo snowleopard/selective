@@ -57,7 +57,10 @@ transformation on the monadic \hs{do} syntax to automatically use
 \hs{Applicative} operators where possible \cite{marlow2016applicativedo}.
 
 One of the key tools found to be useful in the kind of code written
-using \Haxl at Facebook is the ``lazy'' conditional operators:
+using \Haxl in production is the ``lazy'' conditional operators:
+
+% Andrey: The above read "using \Haxl at Facebook"
+% Replaced "at Facebook" with "in production" for blind review
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -70,11 +73,9 @@ x .&& y = do b <- x; if b then y           else return False
 These are typically used to improve performance by guarding slow
 checks with faster checks.  For example, we might write:
 
-\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 if simpleCondition .&& complexCondition then ... else ...
 \end{minted}
-\vspace{1mm}
 
 \noindent
 The idea is that \hs{simpleCondition} is quick to evaluate and
@@ -88,20 +89,14 @@ like to benefit from bailing out early when the answer is known.
 Therefore, \Haxl contains two more conditional operators \hs{pOr} and
 \hs{pAnd} for ``parallel OR'' and ``parallel AND'':
 
-\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 pOr, @\blu{pAnd}@ :: Haxl Bool -> Haxl Bool -> Haxl Bool
 \end{minted}
-\vspace{1mm}
 
 \noindent
-These have the behaviour that
-
-\begin{itemize}
-\item Both arguments are evaluated in parallel.
-\item The computation is aborted as soon as the answer is known, even
-    if the other argument has not completed evaluation yet.
-\end{itemize}
+These have the behaviour that: (i)~both arguments are evaluated in parallel;
+(ii)~the computation is aborted as soon as the answer is known, even if the
+other argument is still being evaluated.
 
 Data-fetches are not observable effects, so the parallelism is not
 observable to the programmer (this is the property that \Haxl relies
@@ -138,8 +133,10 @@ instance Selective Haxl where
                     Throw e -> return (Blocked bx (select c (Haxl (return rf))))
                     Blocked by d -> return (Blocked (bx <> by) (select c d)
 \end{minted}
+\vspace{-1mm}
 \caption{An implementation of \hs{Selective} instance for \Haxl.}
 \label{fig-haxl-select}
+\vspace{-3mm}
 \end{figure}
 
 There is one wrinkle with implementing \hs{pOr} and \hs{pAnd}
@@ -159,8 +156,7 @@ their generalisations on lists. This case study highlights the fact that
 selective functors are useful not only in the static context, but in the dynamic
 context too, by allowing us to benefit from speculative execution.
 
-
-\subsection{Complex conditionals}
+\subsection{Results}
 
 We mentioned above that \hs{pOr} and \hs{pAnd} are effective when the
 relative size of the conditional computations is unknown, so
@@ -175,17 +171,14 @@ exercise every time the set changes.
 For this reason, in \Haxl we found that list operations built on top
 of \hs{pOr} and \hs{pAnd}, which in this paper we call \hs{andS} and
 \hs{allS} (see Fig.~\ref{fig-library}), offer an important balance
-between performance and maintainability that isn't provided by the
+between performance and maintainability that is not provided by the
 \hs{Applicative} or \hs{Monad}-based combinators.
-
-
-\subsection{Results}
 
 One could construct examples to demonstrate arbitrarily large
 performance gains from using \hs{pOr} and \hs{pAnd}, however that
-wouldn't be particularly useful. Perhaps more useful would be a
+would not be particularly useful. Perhaps more useful would be a
 real-world measurement showing how much performance was improved in an
-actual application - but again, the value of that would depend to a
+actual application --- but again, the value of that would depend to a
 large extent on how the application uses \hs{pOr} and \hs{pAnd}, and
 unfortunately the application code in our case is
 proprietary. Therefore instead we offer this anecdote: we first

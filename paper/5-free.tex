@@ -20,7 +20,7 @@ In the free structures methodology, the essence of an effect is captured by a
 data type that encodes the ``commands'' which the effect provides, acting as a
 deep embedding of the effect's interface. This data type needs only have enough
 structure to be a~\hs{Functor}. The purpose of a free construction is then to
-build a richer structure on top of this \emph{base} functor, which would have
+build a richer structure on top of this \emph{base functor}, which would have
 the desired instances, in our case \hs{Applicative} and \hs{Selective}. In this
 section we will denote the base functor by \hs{f}.
 
@@ -30,7 +30,6 @@ which tells us that the apply operator \hs{<*>} is redundant and can be
 implemented via the selective interface. This normal form has the following
 linear structure:
 
-\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 pure x <*? fa <*? fb <*? ... <*? fy
   where
@@ -40,7 +39,6 @@ pure x <*? fa <*? fb <*? ... <*? fy
     ...
     fy :: f (y ->                           z)
 \end{minted}
-\vspace{1mm}
 
 \noindent
 In words, any rigid selective computation can be rewritten as a left-associated
@@ -50,10 +48,10 @@ and each effect in the sequence of select operators eliminates one of the
 alternatives, in order, until only one remains (namely, \hs{z}). Interestingly,
 there is no right-associative version of the normal form, because the
 associativity law can only be used to re-associate a given expression to the
-left. To apply it in reverse, we would need a way to ``factor out'' the
-reshaping functions \hs{f}, \hs{g} and \hs{h} from the base functor. This is
-different from applicative functors, which have two normal forms corresponding
-to left and right re-association~\citep{free-applicatives}.
+left (\S\ref{sec-laws}). To apply it in reverse, we would need a way to
+``factor out'' the reshaping functions \hs{f}, \hs{g} and \hs{h} from the base
+functor. This is different from applicative functors, which have two normal
+forms corresponding to left and right re-association~\citep{free-applicatives}.
 
 \begin{figure}
 \begin{minted}[fontsize=\small]{haskell}
@@ -61,19 +59,19 @@ data Select f a where
     Pure   :: a -> Select f a
     Select :: Select f (Either a b) -> f (a -> b) -> Select f b
 \end{minted}
-\vspace{1mm}
+\vspace{0mm}
 \begin{minted}[fontsize=\small]{haskell}
 instance Functor f => Functor (Select f) where
     fmap f (Pure a)     = Pure (f a)
     fmap f (Select x y) = Select (fmap f <$> x) (fmap f <$> y) -- Free theorem from Fig. 4
 \end{minted}
-\vspace{1mm}
+\vspace{0mm}
 \begin{minted}[fontsize=\small]{haskell}
 instance Functor f => Applicative (Select f) where
     pure  = Pure
     (<*>) = apS -- Law of rigid selective functors
 \end{minted}
-\vspace{1mm}
+\vspace{0mm}
 \begin{minted}[fontsize=\small]{haskell}
 instance Functor f => Selective (Select f) where
     select x (Pure y)     = either y id <$> x -- Generalised identity
@@ -83,34 +81,35 @@ instance Functor f => Selective (Select f) where
         g y = \a -> bimap (,a) ($a) y
         h z = uncurry z
 \end{minted}
-\vspace{1mm}
+\vspace{0mm}
 \begin{minted}[fontsize=\small]{haskell}
 -- Lift a base functor into Select
 liftSelect :: Functor f => f a -> Select f a
 liftSelect f = Select (Pure (Left ())) (const <$> f)
 \end{minted}
-\vspace{1mm}
+\vspace{0mm}
 \begin{minted}[fontsize=\small]{haskell}
 -- Interpret a free selective structure given a natural transformation from f to g
 runSelect :: Selective g => (forall x. f x -> g x) -> Select f a -> g a
 runSelect _ (Pure a)     = pure a
 runSelect t (Select x y) = select (runSelect t x) (t y)
 \end{minted}
-\vspace{1mm}
+\vspace{0mm}
 \begin{minted}[fontsize=\small]{haskell}
 -- Extract the resulting value from a pure selective computation
 getPure :: Select f a -> Maybe a
 getPure = runSelect (const Nothing)
 \end{minted}
-\vspace{1mm}
+\vspace{0mm}
 \begin{minted}[fontsize=\small]{haskell}
 -- Extract all possible effects from a selective computation
 getEffects :: Functor f => Select f a -> [f ()]
 getEffects = getOver . runSelect (Over . pure . void)
 \end{minted}
 \vspace{-1mm}
-\caption{Free rigid selective functors.}\label{fig-free}
-\vspace{-4mm}
+\caption{Free rigid selective functors (various performance improvements
+omitted for clarity).}\label{fig-free}
+\vspace{-3mm}
 \end{figure}
 
 Fig.~\ref{fig-free} gives an encoding of this normal form in Haskell. The free
@@ -149,11 +148,9 @@ two commands: \emph{reading} a string form the input stream and \emph{writing}
 a string to the output stream. The base functor has two corresponding
 constructors:
 
-\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 data Teletype a = Read (String -> a) | Write String a deriving Functor
 \end{minted}
-\vspace{1mm}
 
 \noindent
 For convenience, we provide the following functions that embed the commands into
@@ -164,7 +161,7 @@ the free selective construction, mimicking Haskell's \hs{IO} API:
 getLine :: Select Teletype String
 getLine = liftSelect (Read id)
 \end{minted}
-\vspace{1mm}
+\vspace{0mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 putStrLn :: String -> Select Teletype ()
 putStrLn s = liftSelect (Write s ())
@@ -216,7 +213,7 @@ toIO :: Teletype a -> IO a
 toIO (Read f)    = f <$> Prelude.getLine
 toIO (Write s a) = a <$  Prelude.putStrLn s
 \end{minted}
-\vspace{1mm}
+\vspace{0mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 @\ghci@ runSelect toIO pingPongS
 hello
@@ -291,13 +288,13 @@ symbolic program verification, which eventually led us to \hs{select}. We use a
 hypothetical ISA in this section instead of the real one, because of the
 complexity of the latter.}. By expressing the ISA semantics in our
 free construction with an unusual base functor, we will be able to build
-tools both for static data-flow analysis, and sequential program simulation.
+tools both for static data flow analysis, and sequential program simulation.
 
 \subsubsection{ISA semantics}
 
 To work around some of the aforementioned limitations of the selective
 interface (namely, the lack of the bind operator), we represent the semantics of
-instructions thus.
+instructions thus:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -317,7 +314,7 @@ mutable key-value store comprising two commands: (i)~we need the ability to
 computation which produces a value, \emph{write} its result into the store.
 Think of \hs{Value} as a machine word, and \hs{Key} as an ISA memory location
 (a register, a memory cell, or a processor flag). The base commands are similar
-to \hs{Teletype}, with one key difference: the \hs{Write} constructor takes
+to \cmd{Teletype}, with one key difference: the \hs{Write} constructor takes
 \hs{ISA}~\hs{Value}, i.e. a computation producing a value instead of just plain
 \hs{Value}.
 
@@ -344,7 +341,7 @@ read k = liftSelect (Read k id)
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 write :: Key -> ISA Value -> ISA Value
-write k p = p *> liftSelect (Write k p id)
+write k fv = fv *> liftSelect (Write k fv id)
 \end{minted}
 \vspace{1mm}
 
@@ -358,18 +355,17 @@ thus executing the associated effects.
 
 To get acquainted with the introduced vocabulary, we start by describing the
 semantics for the addition instruction, which reads the summands from a
-register and a memory cell, adds them, writes the result back into the register,
-and also updates the state of the \hs{Zero} flag to indicate if the result is
-zero:
+register and a memory cell, adds them, writes the result back into the same
+register, and also updates the state of the \hs{Zero} flag to indicate if the
+result is zero.
 
-\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 add :: Register -> Address -> ISA Value
 add reg addr = let arg1     = read (Reg reg)
                    arg2     = read (Mem addr)
                    result   = (+)  <$> arg1   <*> arg2
                    isZero   = (==) <$> pure 0 <*> write (Reg reg) result
-               in write (F Zero) (bool 0 1 <$> isZero)
+               in write (Flag Zero) (bool 0 1 <$> isZero)
 \end{minted}
 \vspace{1mm}
 
@@ -382,15 +378,13 @@ the \hs{write} combinator returns the value it has just written, thus we can
 reuse the \hs{result} without recalculating it from scratch and triggering the
 associated effects again.
 
-% The free selective functor construction (\S\ref{sec-free-construction}) shines
-% in the static analysis.
-
 By analysing the free semantics of the \hs{add} instruction, we can obtain the
 list of all its effects, in the order they appear in the computation. We also
-visualise the effects as a data flow graph, where data locations are shown in
-rectangles, and instructions in rounded rectangles, with arcs denoting reads
-and writes; we denote registers with green \cmd{reg} label, memory addresses
-with blue \cmd{address} and flags with the red Unicode flag character.
+visualise the effects as a data flow graph, where instructions are shown as
+rectangles, data locations as rounded rectangles, and reads/writes as arcs.
+
+% ; we denote registers with green \cmd{reg} label, memory addresses
+% with blue \cmd{address} and flags with the red Unicode flag character.
 
 % \footnote{For didactic purposes,
 % these graph was hand-crafted, but it is possible to get similar results automatically
@@ -400,7 +394,7 @@ with blue \cmd{address} and flags with the red Unicode flag character.
 \begin{figure}[!h]
 \begin{minipage}{0.45\textwidth}
 \raggedleft
-\begin{minted}[xleftmargin=10pt]{haskell}
+\begin{minted}{haskell}
 @\ghci@ getEffectsISA (add R0 1)
 [Read R0,Read 1,Write R0,Write Zero]
 \end{minted}
@@ -416,6 +410,7 @@ with blue \cmd{address} and flags with the red Unicode flag character.
 \end{figure}
 \vspace{-1mm}
 
+\noindent
 The semantics of the addition instruction has only used applicative combinators
 and we thus could have analysed it statically using free applicative functors.
 However, there are important instructions whose semantics cannot be expressed
@@ -424,34 +419,31 @@ free selective construction becomes irreplaceable.
 
 \subsubsection{Example 2. Conditional jump}
 
-Selective functors allow us to introduce limited dependencies between
-effectful computations. It turns out that they give just enough power to
-express the semantics of conditional jump instructions, which modify the program
-counter by a given offset if a certain processor flag is set. As an example,
-consider the following instruction that performs a jump if the result of the
-previous operation was zero:
+Selective functors introduce limited dependencies between effectful
+computations, giving as enough power to express the semantics of branching
+instructions, which modify the program counter by a given offset if a certain
+condition holds. Consider the following instruction that performs a jump if the
+result of the previous operation was zero.
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 jumpZero :: Value -> ISA ()
-jumpZero offset = let pc       = read PC
-                      zeroSet  = (/=) <$> pure 0 <*> read (F Zero)
-                      modifyPC = void $ write PC ((+offset) <$> pc)
+jumpZero offset = let zeroSet  = (/=) <$> pure 0 <*> read (Flag Zero)
+                      modifyPC = void $ write PC ((+offset) <$> read PC)
                   in whenS zeroSet modifyPC
 \end{minted}
 \vspace{1mm}
 
 \noindent
 Here we use the \hs{whenS} combinator to modify the program counter only if
-the \hs{Zero} flag is set. By implementing this semantics in terms of the
+the \hs{Zero} flag is set. By implementing \hs{jumpZero} in terms of the
 selective interface, we achieve both the ability to implement an adequate
-simulator for the ISA and to retain the possibilities for static analysis of
-programs by means of the \hs{getEffectsISA} function:
+simulator for branching programs and perform their static analysis:
 
 \begin{figure}[!h]
  \begin{minipage}{0.45\textwidth}
 \raggedleft
-\begin{minted}[xleftmargin=10pt]{haskell}
+\begin{minted}{haskell}
 @\ghci@ getEffectsISA (jumpZero 42)
 [Read Zero,Read PC,Write PC]
 \end{minted}
@@ -480,8 +472,8 @@ can possibly happen in the computation.
 
 Once we have implemented the semantics for a desired subset of an ISA, we can
 describe the semantics of sequences, or \emph{blocks}, of instructions by
-simply composing \hs{ISA} computations using the applicative sequencing operator
-\hs{*>}:
+simply composing the semantics of individual instructions using the applicative
+sequencing operator \hs{(*>)}:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -491,14 +483,14 @@ addAndJump = add R0 1 *> jumpZero 42
 \vspace{1mm}
 
 \noindent
-We can analyse the compound computation in the same way we analyse individual
-instructions:
+We can analyse such compound computations in the same way as we analyse
+individual instructions:
 
-\vspace{-3mm}
+\vspace{-8mm}
 \begin{figure}[!h]
  \begin{minipage}{0.45\textwidth}
 \raggedleft
-\begin{minted}[xleftmargin=10pt]{haskell}
+\begin{minted}{haskell}
 @\ghci@ getEffectsISA addAndJump
 [Read R0,Read 1,Write R0,Write Zero
 ,Read Zero,Read PC,Write PC]
@@ -513,6 +505,7 @@ instructions:
  % \captionof{listing}{SomeCaption}
  %  \label{lst:representation_examples}
 \end{figure}
+\vspace{-5mm}
 
 % Getting a flat list of effects that blocks of code perform is not very useful,
 % since they does not carry any explicit data-flow information. To mitigate this
@@ -527,74 +520,67 @@ instructions:
 
 \subsubsection{Simulation}
 
-To implement a sequential simulator for the ISA, we need to follow the same path
-as in the \hs{pingPongS} example and the \hs{IO} monad earlier in this section.
-We need a natural transformation from the functor \hs{RW} to an appropriate
-target functor, for example, an instance of \hs{MonadState}~\hs{ISAState},
-where \hs{ISAState} is a product type representing the state of the
-architecture, e.g. the registers, memory and flags. For brevity, we present a
-partial implementation of such a transformation which only assigns an
-interpretation to reading and writing registers:
+To implement an ISA simulator, we follow the same path as in the \hs{pingPongS}
+example and the \hs{IO} monad earlier in~\S\ref{sec-free-ping-pong}. We need a
+natural transformation from the base functor \hs{RW} to an appropriate target
+functor, e.g. an instance of \hs{MonadState}~\hs{ISAState}, where \hs{ISAState}
+represents the state of all registers, memory cells and flags. For brevity, we
+present only one part of such a transformation, which assigns an interpretation
+to reading and writing of register keys~\hs{Reg}:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 toState :: MonadState ISAState m => RW a -> m a
 toState (Read k t) = t <$> case k of
-    Reg r -> (Map.!) <$> gets registers <*> pure r
-    ...
-toState (Write k p t) = case k of
-    Reg r -> do v <- runSelect toState p
-                let regs' s = Map.insert r v (registers s)
-                state (\s -> (t v, s {registers = regs' s}))
-    ...
+    Reg r -> (Map.! r) <$> gets registers
+toState (Write k fv t) = case k of
+    Reg r -> do v <- runSelect toState fv -- Evaluate the Write's argument first
+                let step s = Map.insert r v (registers s)
+                state $ \s -> (t v, s { registers = step s })
 \end{minted}
 \vspace{1mm}
 
-To read a register, we simply lift the \hs{Data.Map} lookup function (the
-register bank is implemented as a mapping from register names to data words). We need to
-apply the continuation \hs{t}~\hs{::}~\hs{Value}~\hs{->}~\hs{a} to the result
-to make the types match. In order to write an effectful value \hs{p} into a
-register, we need to evaluate it first; hence we call the \hs{runSelect}
-function, which internally makes a recursive call to the \hs{toState} function
-and thus acknowledges the effects of \hs{p}. We then adjust the register bank
-with the new value and construct a \hs{MonadState} computation with the
-\hs{state} function.
+\noindent
+To read a register, we simply lift the lookup function \hs{Map.!} to the
+corresponding element of the state monad. To write an effectful value \hs{fv}
+into a register, we need to evaluate it first; hence we call the \hs{runSelect}
+function, supplying it the natural transformation \hs{toState}, recursively,
+thus performing the effects of \hs{fv}. We then adjust the register bank with
+the new value and return it.
 
 The natural transformation \hs{toState} gives interpretation to individual
 \hs{Read} and \hs{Write} commands, and now this interpretation can be extended
 to any \hs{ISA} computation by plugging it into a \hs{runSelect} call, as has
-already been done once in the implementation of \hs{toState} itself.
+already been done once in the implementation of \hs{toState} itself:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 runProgram :: ISA a -> ISAState -> (a, ISAState)
-runProgram f s = runState (runSelect toState f) s
+runProgram p = runState (runSelect toState p)
 \end{minted}
-\vspace{1mm}
 
 \subsubsection{Restrictions}
 
-The free selective construction in combination with the \hs{RW} functor provides
-an abstraction capable of expressing the semantics of arithmetical, load and
-store instructions, and conditional jumps. However, one should remember that
-selective functors still lack the full expressive power of the monadic interface
-and are unable to accommodate an important class of instructions, specifically
-the instructions that use the memory-indirect addressing mode. If we had a
-\hs{Monad} instance for \hs{ISA}, we could have written the following
-semantics for the memory-indirect load instruction \hs{loadMI}:
+The free selective construction in combination with the functor \hs{RW} provides
+an abstraction capable of expressing the semantics of arithmetic, load/store and
+branching instructions. However, one should remember that selective functors
+still lack the full expressive power of the monadic interface and are unable to
+accommodate an important class of instructions, specifically those that use the
+\emph{memory-indirect addressing mode}. If we had a \hs{Monad}~\hs{ISA}
+instance, we could give the following semantics to the memory-indirect load
+instruction \hs{loadMI}:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 loadMI :: Register -> Address -> ISA Value
-loadMI reg addr =
-    read (Mem addr) >>= \x -> write (Reg reg) (read (Mem (toAddress x)))
+loadMI reg addr = read (Mem addr) >>= \x -> write (Reg reg) (read (Mem x))
 \end{minted}
 \vspace{1mm}
 
 \noindent
 Here, we read from a memory cell, then use the monadic bind operator to extract
-a value from the \hs{ISA} type constructor, and use it in a subsequent memory
-read. Although this semantics is, in principle, implementable using the
+a value~\hs{x} from the \hs{ISA} type constructor, and use it in a subsequent
+memory read. Although this semantics is, in principle, implementable using the
 selective \hs{bindS} combinator (see \S\ref{sec-alt-multi}), it is not very
 useful in practice since static analysis would record possible access to
 \emph{all memory cells}, and there are too many of them (typically, a large

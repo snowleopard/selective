@@ -102,9 +102,9 @@ instance Show a => Show (RW a) where
 -- | Interpret the internal ISA effect in 'MonadState'
 toState :: MonadState ISAState m => RW a -> m a
 toState (R k t) = t <$> case k of
-    Register r  -> (Map.!) <$> (registers <$> S.get) <*> pure r
-    Memory addr -> (Map.!) <$> (memory    <$> S.get) <*> pure addr
-    Flag f      -> (Map.!) <$> (flags     <$> S.get) <*> pure f
+    Register r  -> (Map.! r   ) <$> S.gets registers
+    Memory addr -> (Map.! addr) <$> S.gets memory
+    Flag f      -> (Map.! f   ) <$> S.gets flags
     PC          -> pc <$> S.get
 toState (W k p t) = case k of
     Register r  -> do v <- runSelect toState p
@@ -127,7 +127,7 @@ read :: Key -> ISA Value
 read k = liftSelect (R k id)
 
 write :: Key -> ISA Value -> ISA Value
-write k p = p *> liftSelect (W k p id)
+write k fv = fv *> liftSelect (W k fv id)
 
 -- --------------------------------------------------------------------------------
 -- -------- Instructions ----------------------------------------------------------

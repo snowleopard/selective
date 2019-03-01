@@ -72,7 +72,7 @@ blockSemantics is =
 -------------
 
 halt :: ISA Value
-halt = write (F Halted) (pure 1)
+halt = write (Flag Halted) (pure 1)
 
 ------------
 -- Set -----
@@ -118,7 +118,7 @@ addNaive :: Register -> Address -> ISA Value
 addNaive reg addr =
     let sum    = (+)  <$> read (Reg reg) <*> read (Mem addr)
         isZero = (==) <$> sum            <*> pure 0
-    in write (F Zero) (ifS isZero (pure 1) (pure 0))
+    in write (Flag Zero) (ifS isZero (pure 1) (pure 0))
        *> write (Reg reg) sum
 
 -- | This implementations of 'add' executes the effects associated with the 'sum' value only once and
@@ -133,7 +133,7 @@ add reg addr =
         y = read (Mem addr)
         sum = (+) <$> x <*> y
         isZero = (==) <$> pure 0 <*> write (Reg reg) sum
-    in write (F Zero) (fromBool <$> isZero)
+    in write (Flag Zero) (fromBool <$> isZero)
 
 -- -- | This is a fully inlined version of 'add'
 -- addNormalForm :: ISA Value
@@ -154,10 +154,9 @@ add reg addr =
 -----------------
 jumpZero :: Value -> ISA Value
 jumpZero offset =
-    let pc       = read PC
-        zeroSet  = (/=) <$> pure 0 <*> read (F Zero)
+    let zeroSet  = (/=) <$> pure 0 <*> read (Flag Zero)
         -- modifyPC = void $ write PC (pure offset) -- (fmap (+ offset) pc)
-        modifyPC = void $ write PC (fmap (+ offset) pc)
+        modifyPC = void $ write PC ((+offset) <$> read PC)
     in whenS zeroSet modifyPC *> pure offset
 
 -- | Unconditional jump.
@@ -201,8 +200,8 @@ addOverflow reg addr =
         result   = (+)  <$> arg1   <*> arg2
         isZero   = (==) <$> pure 0 <*> write (Reg reg) result
         overflow = willOverflowPure <$> arg1 <*> arg2
-    in write (F Zero)     (fromBool <$> isZero) *>
-       write (F Overflow) (fromBool <$> overflow)
+    in write (Flag Zero)     (fromBool <$> isZero) *>
+       write (Flag Overflow) (fromBool <$> overflow)
 
 willOverflowPure :: Value -> Value -> Bool
 willOverflowPure arg1 arg2 =
@@ -230,8 +229,8 @@ addOverflowNaive reg addr =
         result = (+) <$> arg1 <*> arg2
         isZero = (==) <$> pure 0 <*> write (Reg reg) result
         overflow = willOverflow arg1 arg2
-    in write (F Zero)     (fromBool <$> isZero) *>
-       write (F Overflow) (fromBool <$> overflow)
+    in write (Flag Zero)     (fromBool <$> isZero) *>
+       write (Flag Overflow) (fromBool <$> overflow)
 
 -- add0 :: ISA (Value, Value, Bool, Bool, Value)
 -- add0 = (\x y -> (x, y, True, True, 0)) <$> read (Reg R0) <*> read (Mem 1)
@@ -263,25 +262,25 @@ sub reg addr =
         arg2     = read (Mem addr)
         result   = (-)  <$> arg1   <*> arg2
         isZero   = (==) <$> pure 0 <*> write (Reg reg) result
-    in write (F Zero)     (fromBool <$> isZero) *>
-       write (F Overflow) (pure 0)
+    in write (Flag Zero)     (fromBool <$> isZero) *>
+       write (Flag Overflow) (pure 0)
 
 -- | Multiply a value from memory location to one in a register.
 --   Applicative.
 mul :: Register -> Address -> ISA Value
 mul reg addr =
     let result = (*) <$> read (Reg reg) <*> read (Mem addr)
-    in  write (F Zero) (fromBool . (== 0) <$> write (Reg reg) result)
+    in  write (Flag Zero) (fromBool . (== 0) <$> write (Reg reg) result)
 
 div :: Register -> Address -> ISA Value
 div reg addr =
     let result = Prelude.div <$> read (Reg reg) <*> read (Mem addr)
-    in  write (F Zero) (fromBool . (== 0) <$> write (Reg reg) result)
+    in  write (Flag Zero) (fromBool . (== 0) <$> write (Reg reg) result)
 
 mod :: Register -> Address -> ISA Value
 mod reg addr =
     let result = Prelude.mod <$> read (Reg reg) <*> read (Mem addr)
-    in  write (F Zero) (fromBool . (== 0) <$> write (Reg reg) result)
+    in  write (Flag Zero) (fromBool . (== 0) <$> write (Reg reg) result)
 
 toAddress :: Value -> Address
 toAddress = fromIntegral
