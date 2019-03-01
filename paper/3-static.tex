@@ -23,11 +23,13 @@ assistant~\citep{bertot2013coq}.
 % TODO: Can we get any performance improvement figures on how much more
 % parallelism can be gained through static analysis?
 
-One unusual feature of \Dune is the ability to statically over-approximate all
-build dependencies of a package instead of requiring the programmer to manually
-list them in a \emph{package manifest file}. Package manifest files are consumed
-by \emph{package managers}, such as OPAM~\citep{opam} for the purpose of
-downloading and installing all required dependencies.
+One unusual feature of \Dune is the ability to statically
+over-approximate all build dependencies of a package. This is used at
+Jane Street to automatically produce \emph{package manifest files} for
+more than 100 packages instead of maintaining them by hand. Package
+manifest files are consumed by \emph{package managers}, such as
+OPAM~\citep{opam} for the purpose of downloading and installing all
+required dependencies.
 
 % The original aim of this feature was to automatically generate package manifest
 % files, so that they do not need to be maintained. An alternative approach would
