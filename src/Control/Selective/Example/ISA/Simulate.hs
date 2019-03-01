@@ -54,22 +54,22 @@ data ISAState = ISAState { registers :: RegisterBank
 -- | Interpret the internal ISA effect in 'MonadState'
 toState :: MonadState ISAState m => RW a -> m a
 toState (Read k t) = t <$> case k of
-    Reg r    -> (Map.! r   ) <$> S.gets registers
-    Mem addr -> (Map.! addr) <$> S.gets memory
-    Flag f   -> (Map.! f   ) <$> S.gets flags
-    PC       -> S.gets pc
+    Reg r     -> (Map.! r   ) <$> S.gets registers
+    Cell addr -> (Map.! addr) <$> S.gets memory
+    Flag f    -> (Map.! f   ) <$> S.gets flags
+    PC        -> S.gets pc
 toState (Write k fv t) = case k of
-    Reg r    -> do v <- runSelect toState fv
-                   let step s = Map.insert r v (registers s)
-                   S.state $ \s -> (t v, s { registers = step s })
-    Mem addr -> do v <- runSelect toState fv
-                   let step s = Map.insert addr v (memory s)
-                   S.state $ \s -> (t v, s { memory = step s })
-    Flag f   -> do v <- runSelect toState fv
-                   let step s = Map.insert f v (flags s)
-                   S.state $ \s -> (t v, s { flags = step s })
-    PC       -> do v <- runSelect toState fv
-                   S.state (\s -> (t v, s { pc = v }))
+    Reg r     -> do v <- runSelect toState fv
+                    let step s = Map.insert r v (registers s)
+                    S.state $ \s -> (t v, s { registers = step s })
+    Cell addr -> do v <- runSelect toState fv
+                    let step s = Map.insert addr v (memory s)
+                    S.state $ \s -> (t v, s { memory = step s })
+    Flag f    -> do v <- runSelect toState fv
+                    let step s = Map.insert f v (flags s)
+                    S.state $ \s -> (t v, s { flags = step s })
+    PC        -> do v <- runSelect toState fv
+                    S.state (\s -> (t v, s { pc = v }))
 
 -- | Interpret a 'Program' in the state monad
 runProgram :: ISA a -> ISAState -> (a, ISAState)

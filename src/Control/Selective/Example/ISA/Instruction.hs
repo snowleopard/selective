@@ -86,14 +86,14 @@ set reg = write (Reg reg) . pure
 -------------
 
 load :: Register -> Address -> ISA Value
-load reg addr = write (Reg reg) (read (Mem addr))
+load reg addr = write (Reg reg) (read (Cell addr))
 
 --------------
 -- Store -----
 --------------
 
 store :: Register -> Address -> ISA Value
-store reg addr = write (Mem addr) (read (Reg reg))
+store reg addr = write (Cell addr) (read (Reg reg))
 
 ------------
 -- Add -----
@@ -116,7 +116,7 @@ store reg addr = write (Mem addr) (read (Reg reg))
 --     Here, the two instances of 'sum' cause the duplication of 'Read R0' and 'Read 0' effects.
 addNaive :: Register -> Address -> ISA Value
 addNaive reg addr =
-    let sum    = (+)  <$> read (Reg reg) <*> read (Mem addr)
+    let sum    = (+)  <$> read (Reg reg) <*> read (Cell addr)
         isZero = (==) <$> sum            <*> pure 0
     in write (Flag Zero) (ifS isZero (pure 1) (pure 0))
        *> write (Reg reg) sum
@@ -130,7 +130,7 @@ addNaive reg addr =
 add :: Register -> Address -> ISA Value
 add reg addr =
     let x = read (Reg reg)
-        y = read (Mem addr)
+        y = read (Cell addr)
         sum = (+) <$> x <*> y
         isZero = (==) <$> pure 0 <*> write (Reg reg) sum
     in write (Flag Zero) (fromBool <$> isZero)
@@ -196,7 +196,7 @@ jump simm =
 addOverflow :: Register -> Address  -> ISA Value
 addOverflow reg addr =
     let arg1     = read (Reg reg)
-        arg2     = read (Mem addr)
+        arg2     = read (Cell addr)
         result   = (+)  <$> arg1   <*> arg2
         isZero   = (==) <$> pure 0 <*> write (Reg reg) result
         overflow = willOverflowPure <$> arg1 <*> arg2
@@ -225,7 +225,7 @@ willOverflowPure arg1 arg2 =
 addOverflowNaive :: Register -> Address -> ISA Value
 addOverflowNaive reg addr =
     let arg1   = read (Reg reg)
-        arg2   = read (Mem addr)
+        arg2   = read (Cell addr)
         result = (+) <$> arg1 <*> arg2
         isZero = (==) <$> pure 0 <*> write (Reg reg) result
         overflow = willOverflow arg1 arg2
@@ -259,7 +259,7 @@ willOverflow arg1 arg2 =
 sub :: Register -> Address -> ISA Value
 sub reg addr =
     let arg1     = read (Reg reg)
-        arg2     = read (Mem addr)
+        arg2     = read (Cell addr)
         result   = (-)  <$> arg1   <*> arg2
         isZero   = (==) <$> pure 0 <*> write (Reg reg) result
     in write (Flag Zero)     (fromBool <$> isZero) *>
@@ -269,17 +269,17 @@ sub reg addr =
 --   Applicative.
 mul :: Register -> Address -> ISA Value
 mul reg addr =
-    let result = (*) <$> read (Reg reg) <*> read (Mem addr)
+    let result = (*) <$> read (Reg reg) <*> read (Cell addr)
     in  write (Flag Zero) (fromBool . (== 0) <$> write (Reg reg) result)
 
 div :: Register -> Address -> ISA Value
 div reg addr =
-    let result = Prelude.div <$> read (Reg reg) <*> read (Mem addr)
+    let result = Prelude.div <$> read (Reg reg) <*> read (Cell addr)
     in  write (Flag Zero) (fromBool . (== 0) <$> write (Reg reg) result)
 
 mod :: Register -> Address -> ISA Value
 mod reg addr =
-    let result = Prelude.mod <$> read (Reg reg) <*> read (Mem addr)
+    let result = Prelude.mod <$> read (Reg reg) <*> read (Cell addr)
     in  write (Flag Zero) (fromBool . (== 0) <$> write (Reg reg) result)
 
 toAddress :: Value -> Address
@@ -287,8 +287,8 @@ toAddress = fromIntegral
 
 loadMI :: Register -> Address -> ISA Value
 loadMI reg addr =
-    read (Mem addr) `bindS` \x ->
-    write (Reg reg) (read (Mem . toAddress $ x))
+    read (Cell addr) `bindS` \x ->
+    write (Reg reg) (read (Cell . toAddress $ x))
 
 -- --------------------------------------------------------------------------------
 

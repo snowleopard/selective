@@ -52,16 +52,16 @@ type InstructionAddress = Value
 
 -- | Index the locations of the ISA
 data Key = Reg  Register
-         | Mem  Address
+         | Cell Address
          | Flag Flag
          | PC
     deriving (Eq)
 
 instance Show Key where
-    show (Reg r )   = show r
-    show (Mem addr) = show addr
-    show (Flag f)   = show f
-    show PC         = "PC"
+    show (Reg r )    = show r
+    show (Cell addr) = show addr
+    show (Flag f)    = show f
+    show PC          = "PC"
 
 data RW a = Read  Key             (Value -> a)
           | Write Key (ISA Value) (Value -> a)

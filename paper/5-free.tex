@@ -362,7 +362,7 @@ result is zero.
 \begin{minted}[xleftmargin=10pt]{haskell}
 add :: Register -> Address -> ISA Value
 add reg addr = let arg1     = read (Reg reg)
-                   arg2     = read (Mem addr)
+                   arg2     = read (Cell addr)
                    result   = (+)  <$> arg1   <*> arg2
                    isZero   = (==) <$> pure 0 <*> write (Reg reg) result
                in write (Flag Zero) (bool 0 1 <$> isZero)
@@ -380,8 +380,8 @@ associated effects again.
 
 By analysing the free semantics of the \hs{add} instruction, we can obtain the
 list of all its effects, in the order they appear in the computation. We also
-visualise the effects as a data flow graph, where instructions are shown as
-rectangles, data locations as rounded rectangles, and reads/writes as arcs.
+visualise the effects as a data flow graph, where data locations are shown as
+rectangles, instructions as rounded rectangles, and reads/writes as arcs.
 
 % ; we denote registers with green \cmd{reg} label, memory addresses
 % with blue \cmd{address} and flags with the red Unicode flag character.
@@ -392,21 +392,17 @@ rectangles, data locations as rounded rectangles, and reads/writes as arcs.
 
 \vspace{-1mm}
 \begin{figure}[!h]
-\begin{minipage}{0.45\textwidth}
+\begin{minipage}{0.53\textwidth}
 \raggedleft
-\begin{minted}{haskell}
+\begin{minted}[xleftmargin=10pt]{haskell}
 @\ghci@ getEffectsISA (add R0 1)
 [Read R0,Read 1,Write R0,Write Zero]
 \end{minted}
-  % \captionof{listing}{Sub caption}
  \end{minipage}
- \begin{minipage}{0.45\textwidth}
+ \begin{minipage}{0.44\textwidth}
   \centering
-  \includegraphics[width=7cm]{./fig/add.pdf}
-  % \captionof{listing}{Another sub caption}
+  \includegraphics[scale=0.3]{fig/add.pdf}
  \end{minipage}
- % \captionof{listing}{SomeCaption}
- %  \label{lst:representation_examples}
 \end{figure}
 \vspace{-1mm}
 
@@ -441,21 +437,17 @@ selective interface, we achieve both the ability to implement an adequate
 simulator for branching programs and perform their static analysis:
 
 \begin{figure}[!h]
- \begin{minipage}{0.45\textwidth}
+ \begin{minipage}{0.43\textwidth}
 \raggedleft
-\begin{minted}{haskell}
+\begin{minted}[xleftmargin=10pt]{haskell}
 @\ghci@ getEffectsISA (jumpZero 42)
 [Read Zero,Read PC,Write PC]
 \end{minted}
-  % \captionof{listing}{Sub caption}
  \end{minipage}
- \begin{minipage}{0.45\textwidth}
+ \begin{minipage}{0.54\textwidth}
   \centering
-  \includegraphics[width=7cm]{./fig/jumpZero.pdf}
-  % \captionof{listing}{Another sub caption}
+  \includegraphics[scale=0.3]{fig/jumpZero.pdf}
  \end{minipage}
- % \captionof{listing}{SomeCaption}
- %  \label{lst:representation_examples}
 \end{figure}
 
 \noindent
@@ -480,32 +472,28 @@ sequencing operator \hs{(*>)}:
 addAndJump :: ISA Value
 addAndJump = add R0 1 *> jumpZero 42
 \end{minted}
-\vspace{1mm}
+\newpage
 
 \noindent
 We can analyse such compound computations in the same way as we analyse
 individual instructions:
 
-\vspace{-8mm}
+\vspace{-1mm}
 \begin{figure}[!h]
- \begin{minipage}{0.45\textwidth}
+ \begin{minipage}{0.46\textwidth}
 \raggedleft
 \begin{minted}{haskell}
 @\ghci@ getEffectsISA addAndJump
 [Read R0,Read 1,Write R0,Write Zero
 ,Read Zero,Read PC,Write PC]
 \end{minted}
-  % \captionof{listing}{Sub caption}
  \end{minipage}
- \begin{minipage}{0.45\textwidth}
+ \begin{minipage}{0.50\textwidth}
   \centering
-\includegraphics[width=7cm]{./fig/addAndJump.pdf}
-  % \captionof{listing}{Another sub caption}
+  \includegraphics[scale=0.3]{fig/addAndJump.pdf}
  \end{minipage}
- % \captionof{listing}{SomeCaption}
- %  \label{lst:representation_examples}
 \end{figure}
-\vspace{-5mm}
+\vspace{-1mm}
 
 % Getting a flat list of effects that blocks of code perform is not very useful,
 % since they does not carry any explicit data-flow information. To mitigate this
@@ -533,10 +521,12 @@ to reading and writing of register keys~\hs{Reg}:
 toState :: MonadState ISAState m => RW a -> m a
 toState (Read k t) = t <$> case k of
     Reg r -> (Map.! r) <$> gets registers
+    ...
 toState (Write k fv t) = case k of
     Reg r -> do v <- runSelect toState fv -- Evaluate the Write's argument first
                 let step s = Map.insert r v (registers s)
                 state $ \s -> (t v, s { registers = step s })
+    ...
 \end{minted}
 \vspace{1mm}
 
@@ -573,19 +563,19 @@ instruction \hs{loadMI}:
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 loadMI :: Register -> Address -> ISA Value
-loadMI reg addr = read (Mem addr) >>= \x -> write (Reg reg) (read (Mem x))
+loadMI reg addr = read (Cell addr) >>= \x -> write (Reg reg) (read (Cell x))
 \end{minted}
 \vspace{1mm}
 
 \noindent
-Here, we read from a memory cell, then use the monadic bind operator to extract
-a value~\hs{x} from the \hs{ISA} type constructor, and use it in a subsequent
-memory read. Although this semantics is, in principle, implementable using the
-selective \hs{bindS} combinator (see \S\ref{sec-alt-multi}), it is not very
-useful in practice since static analysis would record possible access to
-\emph{all memory cells}, and there are too many of them (typically, a large
-power of two). Furthermore, the execution of the resulting semantics would be
-terribly slow, since it would also follow the same linear exploration of the
+Here, we read from a memory cell \hs{addr}, then use the monadic bind operator
+to extract a value~\hs{x} from the result, and use it in a subsequent memory
+read \emph{as address}. Although this semantics is, in principle, implementable
+using the selective \hs{bindS} combinator (see \S\ref{sec-alt-multi}), it is not
+very useful in practice since static analysis would record possible access to
+\emph{all memory cells}~\hs{x}, and there are too many of them (typically, a
+large power of two). Furthermore, the execution of the resulting semantics would
+be terribly slow, since it would also follow the same linear exploration of the
 memory address space. See \S\ref{sec-alt-multi} for a possible solution of this
 issue.
 
