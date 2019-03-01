@@ -526,7 +526,7 @@ toState (Write k p t) = case k of
 \vspace{1mm}
 
 To read a register, we simply lift the \hs{Data.Map} lookup function (the
-register bank is as a mapping from register names to data words). We need to
+register bank is implemented as a mapping from register names to data words). We need to
 apply the continuation \hs{t}~\hs{::}~\hs{Value}~\hs{->}~\hs{a} to the result
 to make the types match. In order to write an effectful value \hs{p} into a
 register, we need to evaluate it first; hence we call the \hs{runSelect}
