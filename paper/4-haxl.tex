@@ -67,23 +67,23 @@ x .&& y = do b <- x; if b then y           else return False
 \end{minted}
 \vspace{1mm}
 
-These are typically used to improve performance by guarding expensive
-checks with cheaper checks.  For example, we might write:
+These are typically used to improve performance by guarding slow
+checks with faster checks.  For example, we might write:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-if cheapCondition .&& expensiveCondition then ... else ...
+if simpleCondition .&& complexCondition then ... else ...
 \end{minted}
 \vspace{1mm}
 
 \noindent
-The idea is that \hs{cheapCondition} is cheap to evaluate and
+The idea is that \hs{simpleCondition} is quick to evaluate and
 returns \hs{False} in a large proportion of cases, so that we can
-often avoid needing to evaluate \hs{expensiveCondition}.
+often avoid needing to evaluate \hs{complexCondition}.
 
 This does not require any additional extensions or special support in
 \Haxl. But we also noticed that sometimes there is a pair of conditions
-where neither is obviously cheaper than the other, yet we would still
+where neither is obviously faster than the other, yet we would still
 like to benefit from bailing out early when the answer is known.
 Therefore, \Haxl contains two more conditional operators \hs{pOr} and
 \hs{pAnd} for ``parallel OR'' and ``parallel AND'':
