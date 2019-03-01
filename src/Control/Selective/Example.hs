@@ -106,11 +106,11 @@ compile xs = concat <$> sequenceA xs
 script :: Script FilePath String
 script "release.tar" = Just $ Task $ \fetch -> tar [fetch "LICENSE", fetch "exe"]
 script "exe" = Just $ Task $ \fetch ->
-    let src  = fetch "src.ml"
-        cfg  = fetch "config"
-        lib1 = fetch "lib.c"
-        lib2 = fetch "lib.ml"
-    in compile [src, ifS (parse cfg) lib1 lib2]
+    let src   = fetch "src.ml"
+        cfg   = fetch "config"
+        libc  = fetch "lib.c"
+        libml = fetch "lib.ml"
+    in compile [src, ifS (parse cfg) libc libml]
 script _ = Nothing
 
 dependenciesOver :: Task k v -> [k]

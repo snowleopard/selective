@@ -6,33 +6,36 @@ import qualified Prelude (getLine, putStrLn)
 import Control.Selective
 import Control.Selective.Free.Rigid
 
-data TeletypeF a = Get (String -> a)
-                 | Put String a
+data TeletypeF a = Read (String -> a)
+                 | Write String a
     deriving Functor
 
 instance Show (TeletypeF a) where
-    show (Get _)   = "Get"
-    show (Put s _) = "Put " ++ show s
+    show (Read _)    = "Read"
+    show (Write s _) = "Write " ++ show s
 
 -- | Interpret the 'TeletypeF' commands as IO actions
 toIO :: TeletypeF a -> IO a
-toIO (Get f)   = f <$> Prelude.getLine
-toIO (Put s a) = a <$  Prelude.putStrLn s
+toIO (Read f)    = f <$> Prelude.getLine
+toIO (Write s a) = a <$  Prelude.putStrLn s
 
 -- | A Teletype program is a free Selective over the 'TeletypeF' functor
 type Teletype a = Select TeletypeF a
 
 getLine :: Teletype String
-getLine = liftSelect (Get id)
+getLine = liftSelect (Read id)
 
 putStrLn :: String -> Teletype ()
-putStrLn s = liftSelect (Put s ())
+putStrLn s = liftSelect (Write s ())
+
+greeting :: IO ()
+greeting = Prelude.getLine >>= \name -> Prelude.putStrLn ("Hello, " ++ name)
 
 -- | The example from the paper's intro. Implemented in terms of the free
 --   selective, can now be statically analysed for effects:
 --
 --   > getEffects pingPongS
---   [Get,Put "pong"]
+--   [Read,Write "pong"]
 --
 --   We can also execute the program in IO:
 --   > runSelect toIO pingPong

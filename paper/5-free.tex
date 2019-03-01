@@ -9,9 +9,10 @@ effect under consideration and receive the desired applicative or monadic
 computation structure \emph{for free}, i.e. without the need to define custom
 instances or prove laws.
 
-In this section we apply this idea to selective functors and present a free
+In this section we apply this idea to selective functors. We present a free
 construction for \emph{rigid} selective functors
-(\S\ref{sec-free-construction}), which we then demonstrate on several examples.
+(\S\ref{sec-free-construction}), and demonstrate it on two examples
+in~\S\ref{sec-free-ping-pong} and~\S\ref{sec-free-isa}.
 
 \subsection{Free construction}\label{sec-free-construction}
 
@@ -91,7 +92,7 @@ liftSelect f = Select (Pure (Left ())) (const <$> f)
 \vspace{1mm}
 \begin{minted}[fontsize=\small]{haskell}
 -- Interpret a free selective structure given a natural transformation from f to g
-runSelect :: Selective g => (forall a. f a -> g a) -> Select f a -> g a
+runSelect :: Selective g => (forall x. f x -> g x) -> Select f a -> g a
 runSelect _ (Pure a)     = pure a
 runSelect t (Select x y) = select (runSelect t x) (t y)
 \end{minted}
@@ -107,9 +108,9 @@ getPure = runSelect (const Nothing)
 getEffects :: Functor f => Select f a -> [f ()]
 getEffects = getOver . runSelect (Over . pure . void)
 \end{minted}
-\vspace{-2mm}
+\vspace{-1mm}
 \caption{Free rigid selective functors.}\label{fig-free}
-\vspace{-3mm}
+\vspace{-4mm}
 \end{figure}
 
 Fig.~\ref{fig-free} gives an encoding of this normal form in Haskell. The free
@@ -120,7 +121,7 @@ The sequence can only be started with the \hs{Pure} constructor, thus enforcing
 the normal form. Implementation of instances relies on the laws presented
 in~\S\ref{sec-laws}: generalised identity, associativity, as well as one of the
 free theorems. We do not need the distributivity law, since it is subsumed by
-the law of rigid selective functors \hs{(<*>)}~\hs{=}~\hs{apS}, which is used
+the law of rigid selective functors \hs{<*>}~\hs{=}~\hs{apS}, which is used
 directly in the \hs{Applicative} instance.
 
 Effects from the base functor can be embedded in the free construction using
@@ -137,21 +138,20 @@ but turns any subsequent effect into \hs{Nothing}. Similarly, \hs{getEffects}
 records all effects by stashing them in the selective functor \hs{Over}, which
 are subsequently extracted from it by \hs{getOver}.
 
-We do not present a free construction for non-rigid selective functors, since it
-is more complex and not particularly enlightening.
-% In the rest of the section
-% we demonstrate applications of free rigid selective functors.
+We do not present a free construction for non-rigid selective functors; while
+useful, it is more complex and not particularly enlightening.
 
 \subsection{Ping-pong, freely}\label{sec-free-ping-pong}
 
 To illustrate the usage of the free selective functors on a simple example,
 we implement the classic \cmd{Teletype} DSL~\cite{swierstra2008data} comprising
-two commands: reading a string form the input stream and writing a string to the
-output stream. The base functor has two corresponding constructors:
+two commands: \emph{reading} a string form the input stream and \emph{writing}
+a string to the output stream. The base functor has two corresponding
+constructors:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-data Teletype a = Get (String -> a) | Put String a deriving Functor
+data Teletype a = Read (String -> a) | Write String a deriving Functor
 \end{minted}
 \vspace{1mm}
 
@@ -162,18 +162,19 @@ the free selective construction, mimicking Haskell's \hs{IO} API:
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 getLine :: Select Teletype String
-getLine = liftSelect (Get id)
+getLine = liftSelect (Read id)
 \end{minted}
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 putStrLn :: String -> Select Teletype ()
-putStrLn s = liftSelect (Put s ())
+putStrLn s = liftSelect (Write s ())
 \end{minted}
 \vspace{1mm}
 
 \noindent
 We can now reimplement the \hs{pingPongS} example from~\S\ref{sec-intro} in
-terms of the free selective construction simply by adjusting the type signature:
+terms of the free selective construction simply by adjusting the type signature.
+Note that the \hs{whenS} combinator comes for free.
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -189,7 +190,7 @@ static analysis machinery:
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 @\ghci@ getEffects pingPongS
-[Get,Put "pong"]
+[Read,Write "pong"]
 \end{minted}
 \vspace{1mm}
 
@@ -204,7 +205,7 @@ get a list of all commands that a computation might execute.
 
 We can interpret \cmd{Teletype} programs in any other selective functor using
 the \hs{runSelect} function by providing a natural transformation
-\hs{forall}~\hs{a.}~\hs{Teletype}~\hs{a}~\hs{->}~\hs{g}~\hs{a}, which assigns an
+\hs{forall}~\hs{x.}~\hs{Teletype}~\hs{x}~\hs{->}~\hs{g}~\hs{x}, which assigns an
 interpretation to \cmd{Teletype} commands in terms of \hs{g}. A good example of
 such transformation would be an interpretation in the \hs{IO} monad, which
 allows us to execute our \hs{pingPongS} program:
@@ -212,8 +213,8 @@ allows us to execute our \hs{pingPongS} program:
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 toIO :: Teletype a -> IO a
-toIO (Get f)   = f <$> Prelude.getLine
-toIO (Put s a) = a <$  Prelude.putStrLn s
+toIO (Read f)    = f <$> Prelude.getLine
+toIO (Write s a) = a <$  Prelude.putStrLn s
 \end{minted}
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -224,6 +225,26 @@ ping
 pong
 \end{minted}
 \vspace{1mm}
+
+\noindent
+Note that while we can write simple programs like \hs{pingPongS} using the
+selective interface, we are fundamentally limited in what we can express
+compared to the much more powerful monadic interface. As an example, consider
+this simple greeting program:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+greeting = getLine >>= \name -> putStrLn ("Hello, " ++ name)
+\end{minted}
+\vspace{1mm}
+
+\noindent
+Programs like this cannot be expressed in our simple \cmd{Teletype} DSL. Even if
+we had \hs{bindS} for strings~(\S\ref{sec-alt-multi}), it would be useless for
+static analysis because it would have to report effects \hs{Write}~\hs{name} for
+\emph{all possible strings} \hs{name}! Nevertheless, limitations of the
+selective interface can sometimes be worked around by using more sophisticated
+base functors, as we show in~\S\ref{sec-free-isa}.
 
 % Software build systems can be modelled with purely functional
 % abstractions~\cite{mokhov2018build} that enable the model to accommodate many

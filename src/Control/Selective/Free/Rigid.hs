@@ -72,7 +72,7 @@ liftSelect f = Select (Pure (Left ())) (const <$> f)
 
 -- | Given a natural transformation from @f@ to @g@, this gives a canonical
 -- natural transformation from @Select f@ to @g@.
-runSelect :: Selective g => (forall a. f a -> g a) -> Select f a -> g a
+runSelect :: Selective g => (forall x. f x -> g x) -> Select f a -> g a
 runSelect _ (Pure a)     = pure a
 runSelect t (Select x y) = select (runSelect t x) (t y)
 
