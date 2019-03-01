@@ -26,6 +26,7 @@ library
                         Control.Selective.Example,
                         Control.Selective.Example.ISA,
                         Control.Selective.Example.ISA.Types,
+                        Control.Selective.Example.ISA.Instruction,
                         Control.Selective.Example.ISA.Programs,
                         Control.Selective.Example.ISA.Simulate,
                         Control.Selective.Example.Teletype,
