@@ -7,7 +7,7 @@ module Control.Selective.Free.Rigid (
 
     -- * Free selective functors
     Select (..), analyse, getPure, liftSelect, runSelect, foldSelect,
-    getEffects, getNecessaryEffect
+    getEffects, getNecessaryEffect, selectOpt
     ) where
 
 import Control.Monad.Trans.Except
@@ -52,6 +52,22 @@ instance Functor f => Selective (Select f) where
         f x = Right <$> x
         g y = \a -> bimap (,a) ($a) y
         h z = uncurry z
+
+    -- select = selectOpt
+
+-- An optimised implementation of select for the free instance. It accumulates
+-- the calls to fmap on the @y@ parameter to avoid traversing the list on every
+-- recursive step.
+selectOpt :: Functor f => Select f (Either a b) -> Select f (a -> b) -> Select f b
+selectOpt x y = go x y id
+
+go :: Functor f => Select f (Either a b) -> Select f c -> (c -> (a -> b)) -> Select f b
+go x (Pure y)     k = either (k y) id <$> x
+go x (Select y z) k = Select (go (f <$> x) y (g . fmap k)) ((h . fmap k) <$> z)
+  where
+    f x = Right <$> x
+    g y = \a -> bimap (,a) ($a) y
+    h z = uncurry z
 
 -- | Statically analyse a given selective computation and return a pair:
 -- * The list of effects @fs@ that are statically known as /unnecessary/.
