@@ -461,8 +461,8 @@ not: indeed, \hs{Under}~\hs{"a"}~\hs{<*>}~\hs{Under}~\hs{"b"} records both
 \hs{"a"} and \hs{"b"}, but \hs{apS}~\hs{(Under}~\hs{"a")}~\hs{(Under}~\hs{"b")}
 records just \hs{"a"} since \hs{apS} is implemented via the under-approximating
 \hs{select}. Intuitively, non-rigid selective functors have a much richer
-structure, because \hs{<*>} is not expressible via \hs{select}, which will
-significantly complicate the corresponding free construction
+structure, because \hs{<*>} is not expressible via \hs{select}, which
+significantly complicates the corresponding free construction
 (\S\ref{sec-free-construction}).
 
 Our last example in this section is the selective functor
@@ -778,9 +778,13 @@ Failure "a"
 \vspace{1mm}
 
 \noindent
-The proofs that all selective instances introduced in this paper satisfy the
-laws and properties in Fig.~\ref{fig-laws} are available in the artefact
-supplied with the paper.
+One example where the interchange law appears naturally is parser combinators,
+where it allows us to refactor parsers with choice,
+see~\S\ref{sec-alternative-functors}.
+
+% The proofs that all selective instances introduced in this paper satisfy the
+% laws and properties in Fig.~\ref{fig-laws} are available in the artefact
+% supplied with the paper.
 
 % It may be illuminating to compare the following type signatures:
 % \begin{minted}[xleftmargin=10pt]{haskell}

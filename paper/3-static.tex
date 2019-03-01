@@ -16,8 +16,8 @@ for developing \Dune (earlier known as \textsf{jbuilder}) was to make it easier
 to open source code developed in an industrial environment, and so \Dune was not
 meant to be used for everyday software development. However, \Dune's ability to
 extract maximum parallelism from build scripts meant it was faster than existing
-build systems, such as OCamlbuild, and it quickly became popular, with major
-projects switching to \Dune, for example, the Coq proof
+build systems, such as \textsc{OCamlbuild}, and it quickly became popular, with
+major projects switching to \Dune, for example, the \textsc{Coq} proof
 assistant~\citep{bertot2013coq}.
 
 % TODO: Can we get any performance improvement figures on how much more
@@ -142,7 +142,7 @@ OCaml implementation if the former is unavailable on the system):
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 script :: Script FilePath String
-script "release.tar" = Just $ Task $ \fetch -> tar [fetch "LICENSE", fetch "exe"]
+script "release.tar" = Just $ Task $ \fetch -> tar [fetch@\,@"LICENSE", fetch@\,@"exe"]
 script "exe" = Just $ Task $ \fetch ->
     let src  = fetch "src.ml"
         cfg  = fetch "config"

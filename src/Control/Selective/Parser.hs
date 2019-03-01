@@ -59,4 +59,4 @@ numberA :: Parser Int
 numberA = (string "0b" *> bin) <|> (string "0x" *> hex)
 
 numberS :: Parser Int
-numberS = ifS ((=='b') <$> (string "0" *> sat (`elem` "bh"))) bin hex
+numberS = string "0" *> ifS (('b'==) <$> sat (`elem` "bx")) bin hex
