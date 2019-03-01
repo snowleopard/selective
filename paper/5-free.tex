@@ -285,16 +285,19 @@ base functors, as we show in~\S\ref{sec-free-isa}.
 To demonstrate the free construction on a more interesting example, we apply it
 to analysis and simulation of a hypothetical instruction set architecture
 (ISA)\footnote{Incidentally, this was the original motivation for selective
-functors: while describing the formal semantics of instructions of a real
-processor, we needed a statically analysable \hs{ifS} combinator, which
-eventually led us to \hs{select}. We use a hypothetical ISA in this section
-instead of the real one, because of the complexity of the latter.}. By
-expressing the ISA semantics in our free construction, we will be able to build
+functors. While describing the formal semantics of instructions of a real
+processor, we needed a statically analysable \hs{ifS} for the purpose of
+symbolic program verification, which eventually led us to \hs{select}. We use a
+hypothetical ISA in this section instead of the real one, because of the
+complexity of the latter.}. By expressing the ISA semantics in our
+free construction with an unusual base functor, we will be able to build
 tools both for static data-flow analysis, and sequential program simulation.
 
 \subsubsection{ISA semantics}
 
-We represent the semantics of instructions using the following data type:
+To work around some of the aforementioned limitations of the selective
+interface (namely, the lack of the bind operator), we represent the semantics of
+instructions thus.
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -303,28 +306,29 @@ type ISA a = Select RW a
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 data RW a = Read  Key             (Value -> a)
-          | Write Key (ISA Value) (Value -> a)
-    deriving Functor
+          | Write Key (ISA Value) (Value -> a) deriving Functor
 \end{minted}
 \vspace{1mm}
 
 \noindent
-
-The \hs{RW} (pronounced ``read-write'') functor encodes the effect of a mutable
-key-value store comprising two commands: (i) we need the ability to \emph{read}
-a value associated with a key from the store, and (ii) given a computation which
-produces a value, \emph{write} its result into the store. In this example, we
-fix the values to be machine words and the keys to be various ISA memory
-locations, such as registers, memory cells and processor status flags.
+The \hs{RW} (pronounced ``read-write'') base functor encodes the effect of a
+mutable key-value store comprising two commands: (i)~we need the ability to
+\emph{read} a value associated with a key from the store, and (ii) given a
+computation which produces a value, \emph{write} its result into the store.
+Think of \hs{Value} as a machine word, and \hs{Key} as an ISA memory location
+(a register, a memory cell, or a processor flag). The base commands are similar
+to \hs{Teletype}, with one key difference: the \hs{Write} constructor takes
+\hs{ISA}~\hs{Value}, i.e. a computation producing a value instead of just plain
+\hs{Value}.
 
 This exact structure of the definition is required for accommodating a pattern
 that occurs frequently in instruction semantics: often we read a value from a
 register or a memory cell, do something with it, and then write it somewhere
-else. If \hs{Write} required the second argument to be a pure value, as
-\cmd{Teletype}'s \hs{Put}, we would not be able to express the desired pattern
-without resorting to the monadic interface. Additionally, we want the \hs{Write}
-command to not just write the value and return \hs{()}, but to give the just
-written value back, so it can be used in the rest of the computation; such
+else. If \hs{Write} required the second argument to be a pure value, as in
+\cmd{Teletype}, we would not be able to express the desired pattern without
+resorting to the monadic interface. Additionally, we want the \hs{Write}
+command to not just write the value and return \hs{()}, but to \emph{give the
+just written value back}, so it can be used in the rest of the computation; such
 generosity of the \hs{Write} command will be useful for avoiding duplicating
 data dependencies.
 
