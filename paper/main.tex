@@ -1,5 +1,6 @@
 %% For double-blind review submission, w/o CCS and ACM Reference (max submission space)
-\documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
+% \documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
+\documentclass[acmsmall,review]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
 %% For double-blind review submission, w/ CCS and ACM Reference
 %\documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true}
 %% For single-blind review submission, w/o CCS and ACM Reference (max submission space)
@@ -15,7 +16,7 @@
 %% use defaults for review submission.
 \acmJournal{PACMPL}
 \acmVolume{1}
-\acmNumber{ICFP} % CONF = POPL or ICFP or OOPSLA
+\acmNumber{NNN} % CONF = POPL or ICFP or OOPSLA
 \acmArticle{1}
 \acmYear{2019}
 \acmMonth{1}
@@ -88,21 +89,43 @@
 % (Under review, feedback is sought)}
 
 %% Author with single affiliation.
-\author{First1 Last1}
-\authornote{with author1 note}          %% \authornote is optional;
-                                        %% can be repeated if necessary
-\orcid{nnnn-nnnn-nnnn-nnnn}             %% \orcid is optional
+\author{Andrey Mokhov}
 \affiliation{
-  \position{Position1}
-  \department{Department1}              %% \department is recommended
-  \institution{Institution1}            %% \institution is required
-  \streetaddress{Street1 Address1}
-  \city{City1}
-  \state{State1}
-  \postcode{Post-Code1}
-  \country{Country1}                    %% \country is recommended
+%   \department{School of Engineering}
+  \institution{Newcastle University}
+%   \city{Newcastle upon Tyne}
+  \country{United Kingdom}
 }
-\email{first1.last1@inst1.edu}          %% \email is recommended
+\email{andrey.mokhov@ncl.ac.uk}
+\author{Georgy Lukyanov}
+\affiliation{
+%   \department{School of Engineering}
+  \institution{Newcastle University}
+%   \city{Newcastle upon Tyne}
+  \country{United Kingdom}
+}
+\email{g.lukyanov2@ncl.ac.uk}
+\author{Simon Marlow}
+\affiliation{
+  \institution{Facebook}
+  \city{London}
+  \country{United Kingdom}
+}
+\email{smarlow@fb.com}
+\author{Jeremie Dimino}
+\affiliation{
+  \institution{Jane Street}
+  \city{London}
+  \country{United Kingdom}
+}
+\email{jdimino@janestreet.com}
+
+\fancypagestyle{firstpagestyle}
+{
+   \fancyhf{}
+   \renewcommand{\headrulewidth}{0.2pt}
+   \fancyhead[C]{Under review, feedback is sought}
+}
 
 \begin{abstract}
 Applicative functors and monads have conquered the world of functional
@@ -136,13 +159,14 @@ two real-life case studies.
 \ccsdesc[500]{Software and its engineering~General programming languages}
 %% End of generated code
 
-\keywords{applicative functors, monads, effects}
+% \keywords{applicative functors, monads, effects}
 
 %% \maketitle
 %% Note: \maketitle command must come after title commands, author
 %% commands, abstract environment, Computing Classification System
 %% environment and commands, and keywords command.
 \maketitle
+\thispagestyle{firstpagestyle}
 
 \input{1-intro}
 \input{2-selective}
@@ -154,21 +178,21 @@ two real-life case studies.
 \input{8-conclusions}
 
 %% Acknowledgments
-\begin{acks}                            %% acks environment is optional
-                                        %% contents suppressed with 'anonymous'
-  %% Commands \grantsponsor{<sponsorID>}{<name>}{<url>} and
-  %% \grantnum[<url>]{<sponsorID>}{<number>} should be used to
-  %% acknowledge financial support and will be used by metadata
-  %% extraction tools.
-  This material is based upon work supported by the
-  \grantsponsor{GS100000001}{National Science
-    Foundation}{http://dx.doi.org/10.13039/100000001} under Grant
-  No.~\grantnum{GS100000001}{nnnnnnn} and Grant
-  No.~\grantnum{GS100000001}{mmmmmmm}.  Any opinions, findings, and
-  conclusions or recommendations expressed in this material are those
-  of the author and do not necessarily reflect the views of the
-  National Science Foundation.
-\end{acks}
+% \begin{acks}                            %% acks environment is optional
+%                                         %% contents suppressed with 'anonymous'
+%   %% Commands \grantsponsor{<sponsorID>}{<name>}{<url>} and
+%   %% \grantnum[<url>]{<sponsorID>}{<number>} should be used to
+%   %% acknowledge financial support and will be used by metadata
+%   %% extraction tools.
+%   This material is based upon work supported by the
+%   \grantsponsor{GS100000001}{National Science
+%     Foundation}{http://dx.doi.org/10.13039/100000001} under Grant
+%   No.~\grantnum{GS100000001}{nnnnnnn} and Grant
+%   No.~\grantnum{GS100000001}{mmmmmmm}.  Any opinions, findings, and
+%   conclusions or recommendations expressed in this material are those
+%   of the author and do not necessarily reflect the views of the
+%   National Science Foundation.
+% \end{acks}
 
 \bibliography{refs}
 

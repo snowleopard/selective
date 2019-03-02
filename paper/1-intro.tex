@@ -56,12 +56,11 @@ long as these computations are \emph{independent} from each other. The key
 ingredient of applicative functors is the \emph{apply} operator, denoted
 by~\hs{<*>}:
 
-\vspace{1mm}
+% \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 (<*>) :: Applicative f => f (a -> b) -> f a -> f b
 \end{minted}
-\vspace{1mm}
-\newpage
+% \vspace{1mm}
 
 \noindent
 The operator takes two effectful computations, which --- independently ---
@@ -77,12 +76,12 @@ Our ping-pong example cannot be expressed using applicative functors. Since the
 two computations must be independent, the best we can do is to print \hs{"pong"}
 unconditionally:
 
-\vspace{0.5mm}
+% \vspace{0.5mm}
+% pingPongA :: IO ()
 \begin{minted}[xleftmargin=10pt]{haskell}
-pingPongA :: IO ()
 pingPongA = fmap (\s -> id) getLine <*> putStrLn "pong"
 \end{minted}
-\vspace{0.5mm}
+% \vspace{0.5mm}
 
 \noindent
 We use \hs{fmap}~\hs{(\s}~\hs{->}~\hs{id)} to replace the input string \hs{s},
@@ -101,23 +100,23 @@ a computation? It will hardly be a surprise that the answer is positive, but it
 is far from obvious what the right abstraction should be. For example, one might
 consider adding a new primitive called \hs{whenS} to \hs{IO}:
 
-\vspace{0.5mm}
+% \vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 whenS :: IO Bool -> IO () -> IO ()
 \end{minted}
-\vspace{0.5mm}
+% \vspace{0.5mm}
 
 \noindent
 This primitive executes the first computation, and then uses the obtained
 \hs{Bool} to decide whether to execute the second computation or not. Let us
 rewrite the ping-pong example using \hs{whenS}:
 
-\vspace{0.5mm}
+% pingPongS :: IO ()
+% \vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-pingPongS :: IO ()
 pingPongS = whenS (fmap (=="ping") getLine) (putStrLn "pong")
 \end{minted}
-\vspace{0.5mm}
+% \vspace{0.5mm}
 
 \noindent
 We replace the input string~\hs{s} with \hs{True} if it is equal to \hs{"ping"},
@@ -163,5 +162,6 @@ The contributions of this paper are as follows:
     conditional effects and static analysis (\S\ref{sec-free}).
 \end{itemize}
 
+\noindent
 We discuss alternatives to selective applicative functors and related work in
 sections~\S\ref{sec-alternatives} and \S\ref{sec-related}.

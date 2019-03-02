@@ -5,7 +5,7 @@
 class Functor f where
     fmap :: (a -> b) -> f a -> f b
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[fontsize=\small]{haskell}
 -- An infix synonym for fmap
 (<$>) :: Functor f => (a -> b) -> f a -> f b       -- (<$>) is pronounced "fmap"
@@ -18,7 +18,7 @@ class Functor f => Applicative f where
     pure  :: a -> f a
     (<*>) :: f (a -> b) -> f a -> f b              -- (<*>) is pronounced "apply"
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[fontsize=\small]{haskell}
 -- A variant of (<*>) that discards the value of the first argument
 (*>) :: Applicative f => f a -> f b -> f b
@@ -30,7 +30,7 @@ class Functor f => Applicative f where
 class Applicative f => Selective f where
     select :: f (Either a b) -> f (a -> b) -> f b
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[fontsize=\small]{haskell}
 -- An infix synonym for select
 (<*?) :: f (Either a b) -> f (a -> b) -> f b       -- (<*?) is pronounced "select"
@@ -43,16 +43,17 @@ class Selective f => Monad f where
     return :: a -> f a                             -- Note the law: return = pure
     (>>=)  :: f a -> (a -> f b) -> f b             -- (>>=) is pronounced "bind"
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[fontsize=\small]{haskell}
 -- A monadic equivalent of the apply operator, satisfying the law (<*>) = ap
 @\blk{ap}@ :: Monad f => f (a -> b) -> f a -> f b
 \end{minted}
+% \vspace{-2mm}
 \caption{The proposed type class hierarchy, where \hs{Functor}, \hs{Applicative}
 and \hs{Monad} are standard Haskell type classes, and \hs{Selective} is
 a new intermediate abstraction introduced between \hs{Applicative} and
 \hs{Monad}.}\label{fig-types}
-\vspace{-2mm}
+% \vspace{-2mm}
 \end{figure}
 
 % \begin{minted}[fontsize=\small]{haskell}
@@ -80,12 +81,12 @@ function, which gives meaning to the composition of two effectful computations,
 where, in contrast to \hs{<*>}, the second computation \emph{depends} on the
 first one:
 
-\vspace{1mm}
+% \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 class Applicative f => Selective f where
     select :: f (Either a b) -> f (a -> b) -> f b
 \end{minted}
-\vspace{1mm}
+% \vspace{1mm}
 
 \noindent
 One can think of \hs{select} as a selective function application:
