@@ -132,8 +132,8 @@ infix synonym of \hs{fmap}, throughout the paper (see Fig.~\ref{fig-types} for
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 selectM :: Monad f => f (Either a b) -> f (a -> b) -> f b
-selectM x y = x >>= \e -> case e of Left  a -> ($a) <$> y -- execute y
-                                    Right b -> pure b     -- skip y
+selectM x y = x >>= \e -> case e of Left  a -> ($a) <$> y -- Execute y
+                                    Right b -> pure b     -- Skip y
 \end{minted}
 \vspace{1mm}
 
@@ -153,7 +153,7 @@ in the \hs{pingPongA} example in~\S\ref{sec-intro}:
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
-selectA x y = (\e f -> either f id e) <$> x <*> y
+selectA x y = (\e f -> either f id e) <$> x <*> y -- Execute x and y
 \end{minted}
 \vspace{1mm}
 
@@ -400,8 +400,8 @@ instance Functor (Const m) where
 \begin{minted}[xleftmargin=10pt]{haskell}
 -- 'mempty' and '<>' are the identity and the binary operation of the Monoid m
 instance Monoid m => Applicative (Const m) where
-    pure _              = Const mempty   -- pure values have no effects
-    Const x <*> Const y = Const (x <> y) -- collect effects in x and y
+    pure _              = Const mempty   -- Pure values have no effects
+    Const x <*> Const y = Const (x <> y) -- Collect effects in x and y
 \end{minted}
 \vspace{1mm}
 
@@ -421,12 +421,12 @@ newtype Over  m a = Over  { getOver  :: m }
 newtype Under m a = Under { getUnder :: m }
 
 instance Monoid m => Selective (Over m) where
-    select (Over x) (Over y) = Over (x <> y) -- collect effects in x and y
+    select (Over x) (Over y) = Over (x <> y) -- Collect effects in x and y
 \end{minted}
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 instance Monoid m => Selective (Under m) where
-    select (Under x) _ = Under x             -- discard conditional effects
+    select (Under x) _ = Under x             -- Discard conditional effects
 \end{minted}
 \vspace{1mm}
 

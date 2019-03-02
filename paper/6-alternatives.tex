@@ -86,11 +86,9 @@ in~\S\ref{sec-haxl}. The asymmetry can be seen in the fact that the first
 argument of \hs{select} must always be executed, while the second argument may
 sometimes be skipped. Consider the following more symmetric alternative:
 
-\vspace{1mm}
 \begin{minted}[xleftmargin=5pt]{haskell}
 biselect :: Selective f => f@\,@(Either a b) -> f@\,@(Either a c) -> f@\,@(Either a (b,c))
 \end{minted}
-\vspace{1mm}
 
 \noindent
 This definition is pleasantly symmetric: if either of the arguments yields a
@@ -102,13 +100,13 @@ the resulting pair. As an added bonus, the rather obscure associativity law
 from~\S\ref{sec-laws} looks much more natural for
 \hs{(?*?)}~\hs{=}~\hs{biselect}:
 
-\vspace{1mm}
+\vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 @\blk{x}@ ?*? (y ?*? z) = second assoc <$> ((x ?*? y) ?*? z)
   where
     assoc ((a, b), c) = (a, (b, c))
 \end{minted}
-\vspace{1mm}
+\vspace{0.5mm}
 
 \noindent
 While beautiful, we found \hs{biselect} to be a bit more awkward to work with
@@ -119,15 +117,14 @@ and AND combinators --- see the \Haxl case study~\S\ref{sec-haxl}. To support
 such use-cases it is possible to add \hs{biselect} to the \hs{Selective} type
 class with the following default implementation:
 
-\vspace{1mm}
+\vspace{0.5mm}
 \begin{minted}[xleftmargin=5pt]{haskell}
 biselect :: Selective f => f@\,@(Either a b) -> f@\,@(Either a c) -> f@\,@(Either a (b,c))
 biselect x y = select ((fmap Left . swap) <$> x) ((\e a -> fmap (a,) e) <$> y)
   where
-    swap (Left  a) = Right a
-    swap (Right b) = Left  b
+    swap = either Right Left -- Swap Left and Right
 \end{minted}
-\vspace{1mm}
+\vspace{0.5mm}
 
 \noindent
 This implementation breaks the symmetry, which may be acceptable for most

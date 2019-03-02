@@ -222,8 +222,7 @@ andAlso x y = swap <$> orElse (swap <$> x) (swap <$> y)
 
 -- | Swap left and right.
 swap :: Either a b -> Either b a
-swap (Left  a) = Right a
-swap (Right b) = Left  b
+swap = either Right Left
 
 -- | Append two semigroup values or return the @Right@ one.
 appendLeft :: Semigroup a => a -> Either a b -> Either a b

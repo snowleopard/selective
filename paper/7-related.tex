@@ -19,10 +19,14 @@ see~\citep{devriese2012finally,devriese2013fixing}. Combining the latter with
 selective functors would give us the ability to statically analyse effectful
 computations with cycles.
 
-Our free construction for rigid selective functors is inspired by the works
-on free applicative functors~\citep{free-applicatives} and free
-monads~\citep{swierstra2008data}, as well as by insightful blog posts
-by~\citet{fancher2016free,fancher2017static}.
+Our free construction for rigid selective functors~(\S\ref{sec-free}) is
+inspired by the works on free applicative functors~\citep{free-applicatives},
+free monads~\citep{swierstra2008data}, and insightful blog posts
+by~\citet{fancher2016free,fancher2017static}. \emph{Batching and remote
+execution} of effectful computations~\citep{gill2015remote} can be greatly
+simplified by using free applicative functors, as
+demonstrated by~\citet{gibbons2016free}, and we believe that free selective
+functors uncover new opportunities in this area.
 
 \subsection{Arrows and profunctors}\label{sec-arrows}
 
@@ -37,11 +41,11 @@ relevant for us:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt,fontsize=\small]{haskell}
-class Category a                  -- identity arrow, sequential arrow composition
-class Category a => Arrow       a -- pure arrows, parallel arrow composition
-class Arrow    a => ArrowChoice a -- arrows with choice
-class Arrow    a => ArrowApply  a -- arrows that take arrows as input
-class Arrow    a => ArrowLoop   a -- arrows with loops
+class Category a                  -- Identity arrow, sequential arrow composition
+class Category a => Arrow       a -- Pure arrows, parallel arrow composition
+class Arrow    a => ArrowChoice a -- Arrows with choice
+class Arrow    a => ArrowApply  a -- Arrows that take arrows as input
+class Arrow    a => ArrowLoop   a -- Arrows with loops
 \end{minted}
 \vspace{1mm}
 
@@ -135,10 +139,10 @@ existence of the following parsers:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-sat    :: (Char -> Bool) -> Parser Char   -- parse a specified character
-string :: String         -> Parser String -- parse a string literal
-bin    ::                   Parser Int    -- parse a binary-encoded number
-hex    ::                   Parser Int    -- parse a hexadecimal-encoded number
+sat    :: (Char -> Bool) -> Parser Char   -- Parse a specified character
+string :: String         -> Parser String -- Parse a string literal
+bin    ::                   Parser Int    -- Parse a binary-encoded number
+hex    ::                   Parser Int    -- Parse a hexadecimal-encoded number
 \end{minted}
 \vspace{1mm}
 
