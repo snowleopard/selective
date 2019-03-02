@@ -18,6 +18,7 @@
 # *.ps
 # *.eps
 main.pdf
+comment.cut
 
 ## Bibliography auxiliary files (bibtex/biblatex/biber):
 *.bbl
