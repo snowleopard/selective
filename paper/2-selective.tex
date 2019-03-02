@@ -20,11 +20,6 @@ class Functor f => Applicative f where
 \end{minted}
 \vspace{0.5mm}
 \begin{minted}[fontsize=\small]{haskell}
--- A variant of (<*>) with the arguments reversed
-(<**>) :: Applicative f => f a -> f (a -> b) -> f b
-\end{minted}
-\vspace{0.5mm}
-\begin{minted}[fontsize=\small]{haskell}
 -- A variant of (<*>) that discards the value of the first argument
 (*>) :: Applicative f => f a -> f b -> f b
 \end{minted}
@@ -59,6 +54,12 @@ a new intermediate abstraction introduced between \hs{Applicative} and
 \hs{Monad}.}\label{fig-types}
 \vspace{-2mm}
 \end{figure}
+
+% \begin{minted}[fontsize=\small]{haskell}
+% -- A variant of (<*>) with the arguments reversed
+% (<**>) :: Applicative f => f a -> f (a -> b) -> f b
+% \end{minted}
+% \vspace{0.5mm}
 
 In this section we introduce selective applicative functors, which we will
 subsequently refer to as simply \emph{selective functors}, for brevity. We start
