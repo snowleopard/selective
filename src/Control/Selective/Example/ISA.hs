@@ -121,7 +121,7 @@ toState (W k p t) = case k of
 
 -- | Interpret a 'Program' in the state monad
 runProgramState :: ISA a -> ISAState -> (a, ISAState)
-runProgramState f s = S.runState (runSelect toState f) s
+runProgramState f = S.runState (runSelect toState f)
 
 read :: Key -> ISA Value
 read k = liftSelect (R k id)
@@ -173,7 +173,7 @@ add reg1 reg2 reg3 =
     let x = read reg1
         y = read reg2
         sum = (+) <$> x <*> y
-        isZero = (==) <$> pure 0 <*> write reg3 sum
+        isZero = (==1) <$> write reg3 sum
     in write (Flag Zero) (fromBool <$> isZero)
 
 -- -- | This is a fully inlined version of 'add'
@@ -196,7 +196,7 @@ add reg1 reg2 reg3 =
 jumpZero :: Value -> ISA ()
 jumpZero offset =
     let pc       = read PC
-        zeroSet  = (/=) <$> pure 0 <*> read (Flag Zero)
+        zeroSet  = (==1) <$> read (Flag Zero)
         -- modifyPC = void $ write PC (pure offset) -- (fmap (+ offset) pc)
         modifyPC = void $ write PC ((+offset) <$> pc)
     in whenS zeroSet modifyPC

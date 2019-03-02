@@ -12,7 +12,7 @@ static analysis of build system dependencies using selective functors
 \Dune was originally developed at Jane Street and has by now become a standard
 build system for OCaml packages~\citep{dune}. At the time of writing, more than
 1000 OCaml packages are using \Dune as the build system. The original motivation
-for developing \Dune (earlier known as \textsf{jbuilder}) was to make it easier
+for developing \Dune (earlier known as \cmd{jbuilder}) was to make it easier
 to open source code developed in an industrial environment, and so \Dune was not
 meant to be used for everyday software development. However, \Dune's ability to
 extract maximum parallelism from build scripts meant it was faster than existing
@@ -142,7 +142,7 @@ OCaml implementation if the former is unavailable on the system):
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 script :: Script FilePath String
-script "release.tar" = Just $ Task $ \fetch -> tar [fetch@\,@"LICENSE",@\,@fetch@\,@"exe"]
+script "release.tar" = Just $ Task $ \fetch -> tar [fetch@\,@"LICENSE",@\,\blk{fetch}\,@"exe"]
 script "exe" = Just $ Task $ \fetch ->
     let src   = fetch "src.ml"
         cfg   = fetch "config"
@@ -155,7 +155,7 @@ script _ = Nothing
 
 \noindent
 We assume the existence of functions \hs{tar} (creating an archive),
-\hs{compile} (compiling an OCaml executable from source and libraries), and
+\hs{compile} (compiling an OCaml executable from sources and libraries), and
 \hs{parse} (parsing a configuration file); their implementation is irrelevant
 for our purposes.
 

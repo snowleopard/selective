@@ -120,7 +120,7 @@ The sequence can only be started with the \hs{Pure} constructor, thus enforcing
 the normal form. Implementation of instances relies on the laws presented
 in~\S\ref{sec-laws}: generalised identity, associativity, as well as one of the
 free theorems. We do not need the distributivity law, since it is subsumed by
-the law of rigid selective functors \hs{<*>}~\hs{=}~\hs{apS}, which is used
+the law of rigid selective functors \hs{(<*>)}~\hs{=}~\hs{apS}, which is used
 directly in the \hs{Applicative} instance.
 
 Effects from the base functor can be embedded in the free construction using
@@ -153,8 +153,8 @@ data Teletype a = Read (String -> a) | Write String a deriving Functor
 \end{minted}
 
 \noindent
-For convenience, we provide the following functions that embed the commands into
-the free selective construction, mimicking Haskell's \hs{IO} API:
+For convenience, we can provide the following functions that embed the commands
+into the free selective construction, mimicking Haskell's \hs{IO} API:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -176,7 +176,7 @@ Note that the \hs{whenS} combinator comes for free.
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 pingPongS :: Select Teletype ()
-pingPongS = whenS (fmap ("ping"==) getLine) (putStrLn "pong")
+pingPongS = whenS (fmap (=="ping") getLine) (putStrLn "pong")
 \end{minted}
 \vspace{1mm}
 
@@ -288,7 +288,8 @@ symbolic program verification, which eventually led us to \hs{select}. We use a
 hypothetical ISA in this section instead of the real one, because of the
 complexity of the latter.}. By expressing the ISA semantics in our
 free construction with an unusual base functor, we will be able to build
-tools both for static data flow analysis, and sequential program simulation.
+tools both for static data flow analysis and simulation of programs with
+branching.
 
 \subsubsection{ISA semantics}
 
@@ -363,8 +364,8 @@ result is zero.
 add :: Register -> Address -> ISA Value
 add reg addr = let arg1     = read (Reg reg)
                    arg2     = read (Cell addr)
-                   result   = (+)  <$> arg1   <*> arg2
-                   isZero   = (==) <$> pure 0 <*> write (Reg reg) result
+                   result   = (+)   <$> arg1 <*> arg2
+                   isZero   = (==0) <$> write (Reg reg) result
                in write (Flag Zero) (bool 0 1 <$> isZero)
 \end{minted}
 \vspace{1mm}
@@ -424,7 +425,7 @@ result of the previous operation was zero.
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 jumpZero :: Value -> ISA ()
-jumpZero offset = let zeroSet  = (/=) <$> pure 0 <*> read (Flag Zero)
+jumpZero offset = let zeroSet  = (==1) <$> read (Flag Zero)
                       modifyPC = void $ write PC ((+offset) <$> read PC)
                   in whenS zeroSet modifyPC
 \end{minted}
@@ -465,7 +466,7 @@ can possibly happen in the computation.
 Once we have implemented the semantics for a desired subset of an ISA, we can
 describe the semantics of sequences, or \emph{blocks}, of instructions by
 simply composing the semantics of individual instructions using the applicative
-sequencing operator \hs{(*>)}:
+sequencing operator (\hs{*>}):
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -520,7 +521,7 @@ to reading and writing of register keys~\hs{Reg}:
 \begin{minted}[xleftmargin=10pt]{haskell}
 toState :: MonadState ISAState m => RW a -> m a
 toState (Read k t) = t <$> case k of
-    Reg r -> (Map.! r) <$> gets registers
+    Reg r -> (Map.! r) <$> gets registers -- Look up r in the registers field
     ...
 toState (Write k fv t) = case k of
     Reg r -> do v <- runSelect toState fv -- Evaluate the Write's argument first
@@ -532,7 +533,7 @@ toState (Write k fv t) = case k of
 
 \noindent
 To read a register, we simply lift the lookup function \hs{Map.!} to the
-corresponding element of the state monad. To write an effectful value \hs{fv}
+corresponding field of the \hs{ISAState}. To write an effectful value \hs{fv}
 into a register, we need to evaluate it first; hence we call the \hs{runSelect}
 function, supplying it the natural transformation \hs{toState}, recursively,
 thus performing the effects of \hs{fv}. We then adjust the register bank with
@@ -551,14 +552,14 @@ runProgram p = runState (runSelect toState p)
 
 \subsubsection{Restrictions}
 
-The free selective construction in combination with the functor \hs{RW} provides
-an abstraction capable of expressing the semantics of arithmetic, load/store and
-branching instructions. However, one should remember that selective functors
-still lack the full expressive power of the monadic interface and are unable to
-accommodate an important class of instructions, specifically those that use the
-\emph{memory-indirect addressing mode}. If we had a \hs{Monad}~\hs{ISA}
-instance, we could give the following semantics to the memory-indirect load
-instruction \hs{loadMI}:
+The free selective construction in combination with the base functor \hs{RW}
+provides an abstraction capable of expressing the semantics of arithmetic,
+load/store and branching instructions. However, one should remember that
+selective functors still lack the full expressive power of the monadic interface
+and are unable to accommodate an important class of instructions, specifically
+those that use the \emph{memory-indirect addressing mode}. If we had a
+\hs{Monad}~\hs{ISA} instance, we could give the following semantics to the
+memory-indirect load instruction \hs{loadMI}:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -576,8 +577,8 @@ very useful in practice since static analysis would record possible access to
 \emph{all memory cells}~\hs{x}, and there are too many of them (typically, a
 large power of two). Furthermore, the execution of the resulting semantics would
 be terribly slow, since it would also follow the same linear exploration of the
-memory address space. See \S\ref{sec-alt-multi} for a possible solution of this
-issue.
+memory address space (although see \S\ref{sec-alt-multi} for a possible solution
+of the performance issue).
 
 % not get any strong benefits. Specifically, since the \hs{getEffectsISA} function, which
 % performs static analysis of effects, constructs a conservative over-approximation, it

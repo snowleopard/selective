@@ -51,16 +51,19 @@ studied in depth. It is known, e.g. see~\citet{lindley2011idioms}
 and~\citet{rivas2017notions}, that applicative functors correspond to so called
 \emph{static arrows}, for which there is an isomorphism between
 \hs{a}~\hs{()}~\hs{(}\hs{i}~\hs{->}~\hs{o)} and~\hs{a}~\hs{i}~\hs{o}. The
-standard module \textsf{Control.Arrow} therefore provides the following
+standard module \cmd{Control.Arrow} therefore provides the following
 definitions:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 newtype ArrowMonad a b = ArrowMonad (a () b) -- See Control.Arrow
-
-instance Arrow      a => Functor     (ArrowMonad a)
-instance Arrow      a => Applicative (ArrowMonad a)
-instance ArrowApply a => Monad       (ArrowMonad a)
+\end{minted}
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+instance Arrow       a => Functor     (ArrowMonad a)
+instance Arrow       a => Applicative (ArrowMonad a)
+instance ArrowChoice a => ...                           -- Missing?!
+instance ArrowApply  a => Monad       (ArrowMonad a)
 \end{minted}
 \vspace{1mm}
 
@@ -72,7 +75,9 @@ Selective functors provide the missing counterpart for \hs{ArrowChoice} in the
 \begin{minted}[xleftmargin=10pt]{haskell}
 instance ArrowChoice a => Selective (ArrowMonad a) where
     select (ArrowMonad x) y = ArrowMonad $ x >>> (toArrow y ||| returnA)
-
+\end{minted}
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
 toArrow :: Arrow a => ArrowMonad a (b -> c) -> a b c
 toArrow (ArrowMonad f) = arr (\x -> ((), x)) >>> first f >>> arr (uncurry ($))
 \end{minted}

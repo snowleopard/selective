@@ -111,7 +111,7 @@ uncurry :: (a -> b -> c) -> (a, b) -> c                     -- Uncurry a functio
 foldr   :: (a -> b -> b) -> b -> [a] -> b                   -- Reduce a list to a value
 bool    :: a -> a -> Bool -> a                              -- Deconstruct a Bool
 maybe   :: b -> (a -> b) -> Maybe a -> b                    -- Deconstruct a Maybe
-either  :: (a -> c) -> (b -> c) -> Either a b -> c          -- Deconstruct a Either
+either  :: (a -> c) -> (b -> c) -> Either a b -> c          -- Deconstruct an Either
 first   :: (a -> c) -> Either a b -> Either c b             -- Map over Left
 second  :: (b -> c) -> Either a b -> Either a c             -- Map over Right
 bimap   :: (a -> c) -> (b -> d) -> Either a b -> Either c d -- Map over Left and Right
@@ -367,7 +367,7 @@ session:
 instance Selective IO where
     select = selectM
 
-@\ghci@ pingPongS = whenS (("ping"==) <$> getLine) (putStrLn "pong")
+@\ghci@ pingPongS = whenS ((=="ping") <$> getLine) (putStrLn "pong")
 @\ghci@ pingPongS
 hello
 @\ghci@ pingPongS
@@ -409,7 +409,7 @@ instance Monoid m => Applicative (Const m) where
 It turns out there are two useful selective instances for \hs{Const}. To
 disambiguate between them, we will call them \hs{Over} and \hs{Under},
 reusing\footnote{Fortunately, thanks to the new GHC extension
-\textsf{DerivingVia}~\citep{blondal2018deriving}, we can reuse \hs{Const}
+\cmd{DerivingVia}~\citep{blondal2018deriving}, we can reuse \hs{Const}
 instances without duplicating any code, simply by adding
 \hs{deriving}~\hs{(Functor,}~\hs{Applicative)}~\hs{via}~\hs{(Const}~\hs{m)} to
 the \hs{newtype} definitions.}
@@ -456,14 +456,13 @@ Under "ade"
 \noindent
 As expected, \hs{Over} collects all effects, whereas \hs{Under} does not look
 beyond ``opaque'' conditions. A deeper difference between them is that \hs{Over}
-is a rigid selective functor (i.e. \hs{<*>}~\hs{=}~\hs{apS}), but \hs{Under} is
+is a rigid selective functor, i.e. \hs{(<*>)}~\hs{=}~\hs{apS}, but \hs{Under} is
 not: indeed, \hs{Under}~\hs{"a"}~\hs{<*>}~\hs{Under}~\hs{"b"} records both
 \hs{"a"} and \hs{"b"}, but \hs{apS}~\hs{(Under}~\hs{"a")}~\hs{(Under}~\hs{"b")}
-records just \hs{"a"} since \hs{apS} is implemented via the under-approximating
-\hs{select}. Intuitively, non-rigid selective functors have a much richer
-structure, because \hs{<*>} is not expressible via \hs{select}, which
-significantly complicates the corresponding free construction
-(\S\ref{sec-free-construction}).
+records just \hs{"a"} since \hs{apS} is implemented via \hs{select}.
+Intuitively, non-rigid selective functors have a much richer structure, because
+\hs{<*>} is not expressible via \hs{select}, which significantly complicates the
+corresponding free construction (\S\ref{sec-free-construction}).
 
 Our last example in this section is the selective functor
 \hs{Validation}\footnote{Applicative functors \hs{Const} and \hs{Validation}
@@ -498,7 +497,7 @@ to validate data in the presence of conditions.
 instance Semigroup e => Selective (Validation e) where
     select (Success (Right b)) _ = Success b
     select (Success (Left  a)) f = ($a) <$> f
-    select (Failure e) _ = Failure e -- NB: Failed conditions are opaque
+    select (Failure e) _ = Failure e -- Discard@\,\,@errors@\,\,@behind@\,\,@failed@\,\,@conditions
 \end{minted}
 \vspace{1mm}
 
@@ -552,7 +551,7 @@ Failure ["choice?"]
 In the last example, since the shape's choice could not be read, we do not
 report any subsequent errors. But it does not mean we are short-circuiting the
 validation: we will continue accumulating errors as soon as we get out of the
-opaque conditional, as demonstrated below.
+failed conditional, as demonstrated below.
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt,fontsize=\small]{haskell}
@@ -575,11 +574,12 @@ since \hs{select} occasionally discards effects in the second argument.
 \subsection{Laws}\label{sec-laws}
 
 Now that we have seen several instances of selective functors, it is time to
-discuss the laws that we expect them to satisfy. In particular, it is very
-useful to know how the selective interface interacts with existing applicative
-and monadic interfaces. Real code might mix all of these abstractions, because
-each of them is useful in its own right, and the laws presented in this section
-allow us to safely refactor such code while keeping its original meaning.
+discuss the laws that we expect these instances to satisfy. In particular, it is
+very useful to know how the selective interface interacts with existing
+applicative and monadic interfaces. Real code might mix all of these
+abstractions, because each of them is useful in its own right, and the laws
+presented in this section allow us to safely refactor such code while keeping
+its original meaning.
 
 Fig.~\ref{fig-laws} lists all laws for selective functors, as well as some
 useful theorems that can be derived from the laws and
@@ -650,8 +650,12 @@ parametricity.
 (<*>) = apS                     -- Selective apply
 @\blk{x}@ *> (y <*? z) = (x *> y) <*? z -- Interchange
 \end{minted}
-\caption{Laws (top) and theorems (bottom) of selective functors.}
+\vspace{-1mm}
+\caption{Laws (top) and theorems (bottom) of selective functors. Coq proofs that
+the selective instances from~\S\ref{sec-instances} are lawful are available in
+supplementary material.}
 \label{fig-laws}
+\vspace{-2mm}
 \end{figure}
 % -- General interchange
 % x <*> (y <*? z) = (f <$> x <*> y) <*? (g <$> z)
@@ -739,7 +743,7 @@ p :: f (Either a (Either (c,a) b))   @\blu{q}@ :: f (a -> Either (c,a) b)   @\bl
 To adjust \hs{x}, we inject it in a larger sum type, \hs{y} is turned into a
 function accepting a value of type \hs{a} from \hs{p}, and \hs{z} is simply
 \hs{uncurry}ed. As we will see in~\S\ref{sec-alt-symmetric}, the associativity
-law can be expressed much more naturally if we switch to a different select
+law can be expressed much more naturally if we switch to a more symmetric select
 operator (a similar phenomenon occurs with the \emph{composition} law of
 the \hs{Applicative} type class when the latter is expressed using an equivalent
 but more symmetric \hs{Monoidal} interface~\citep{mcbride2008applicative}).
@@ -781,10 +785,6 @@ Failure "a"
 One example where the interchange law appears naturally is parser combinators,
 where it allows us to refactor parsers with choice,
 see~\S\ref{sec-alternative-functors}.
-
-% The proofs that all selective instances introduced in this paper satisfy the
-% laws and properties in Fig.~\ref{fig-laws} are available in the artefact
-% supplied with the paper.
 
 % It may be illuminating to compare the following type signatures:
 % \begin{minted}[xleftmargin=10pt]{haskell}
