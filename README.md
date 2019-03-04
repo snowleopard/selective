@@ -1,6 +1,29 @@
 # Selective applicative functors
 
-This is a study of *selective applicative functors*, an abstraction between
+This is a library for *selective applicative functors*, or just *selective functors*
+for short, an abstraction between applicative functors and monads, introduced in
+[this paper](https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf).
+
+Abstract of the paper:
+
+Applicative functors and monads have conquered the world of functional programming by
+providing general and powerful ways of describing effectful computations using pure
+functions. Applicative functors provide a way to compose *independent effects* that
+cannot depend on values produced by earlier computations, and all of which are declared
+statically. Monads extend the applicative interface by making it possible to compose
+*dependent effects*, where the value computed by one effect determines all subsequent
+effects, dynamically.
+
+This paper introduces an intermediate abstraction called *selective applicative functors*
+that requires all effects to be declared statically, but provides a way to select which
+of the effects to execute dynamically. We demonstrate applications of the new
+abstraction on several examples, including two real-life case studies.
+
+
+## What are selective functors?
+
+While you're encouraged to read the paper, here is a brief description of
+the main idea. Consider the following new type class introduced between
 `Applicative` and `Monad`:
 
 ```haskell
@@ -27,9 +50,11 @@ selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
 selectA x f = (\e f -> either f id e) <$> x <*> f
 ```
 
-`Selective` is more powerful than `Applicative`: you can recover the
-application operator `<*>` as follows (I'll use the suffix `S` to
-denote `Selective` equivalents of commonly known functions).
+Any `Applicative` instance can thus be given a corresponding `Selective`
+instance simply by defining `select = selectA`. The opposite is also true
+in the sense that one can recover the operator `<*>` from `select` as
+follows (I'll use the suffix `S` to denote `Selective` equivalents of
+commonly known functions).
 
 ```haskell
 apS :: Selective f => f (a -> b) -> f a -> f b
@@ -96,53 +121,73 @@ orElse x = select (Right <$> x) . fmap (\y e -> first (e <>) y)
 
 See more examples in [src/Control/Selective.hs](src/Control/Selective.hs).
 
+Code written using selective combinators can be both statically analysed
+(by reporting all possible effects of a computation) and efficiently
+executed (by skipping unnecessary effects).
+
 ## Laws
 
 Instances of the `Selective` type class must satisfy a few laws to make
 it possible to refactor selective computations. These laws also allow us
 to establish a formal relation with the `Applicative` and `Monad` type
-classes. The laws are complex, but I couldn't figure out how to simplify
-them. Please let me know if you find an improvement.
+classes. 
 
-* (F1) Apply a pure function to the result:
+* Identity:
     ```haskell
-    f <$> select x y = select (second f <$> x) ((f .) <$> y)
+    x <*? pure id = either id id <$> x
     ```
 
-* (F2) Apply a pure function to the `Left` case of the first argument:
+* Distributivity (note that `y` and `z` have the same type `f (a -> b)`):
     ```haskell
-    select (first f <$> x) y = select x ((. f) <$> y)
+    pure x <*? (y *> z) = (pure x <*? y) *> (pure x <*? z)
     ```
-
-* (F3) Apply a pure function to the second argument:
+* Associativity:
     ```haskell
-    select x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
-    ```
-
-* (P1) Selective application of a pure function:
-    ```haskell
-    select x (pure y) = either y id <$> x
-    ```
-
-* (A1) Associativity:
-    ```haskell
-    select x (select y z) = select (select (f <$> x) (g <$> y)) (h <$> z)
+    x <*? (y <*? z) = (f <$> x) <*? (g <$> y) <*? (h <$> z)
       where
         f x = Right <$> x
         g y = \a -> bimap (,a) ($a) y
         h z = uncurry z
+    ```
+* Monadic select (for selective functors that are also monads):
+    ```haskell
+    select = selectM
+    ```
 
-    -- or in operator form:
+There are also a few useful theorems:
 
-    x <*? (y <*? z) = (f <$> x) <*? (g <$> y) <*? (h <$> z)
+* Apply a pure function to the result:
+    ```haskell
+    f <$> select x y = select (fmap f <$> x) (fmap f <$> y)
+    ```
+
+* Apply a pure function to the `Left` case of the first argument:
+    ```haskell
+    select (first f <$> x) y = select x ((. f) <$> y)
+    ```
+
+* Apply a pure function to the second argument:
+    ```haskell
+    select x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
+    ```
+
+* Generalised identity:
+    ```haskell
+    x <*? pure y = either y id <$> x
+    ```
+
+* A selective functor is *rigid* if it satisfies `<*> = apS`. The following
+*interchange* law holds for rigid selective functors:
+    ```haskell
+    x *> (y <*? z) = (x *> y) <*? z
     ```
 
 Note that there are no laws for selective application of a function to a pure
 `Left` or `Right` value, i.e. we do not require that the following laws hold:
 
 ```haskell
-select (pure (Left  x)) y = y <*> pure x -- P2
-select (pure (Right x)) y =       pure x -- P3
+select (pure (Left  x)) y = ($x) <$> y -- Pure-Left
+select (pure (Right x)) y = pure x     -- Pure-Right
 ```
 
 In particular, the following is allowed too:
@@ -157,7 +202,8 @@ in practice allows to under- or over-approximate possible effects in static
 analysis using instances like `Under` and `Over`.
 
 If `f` is also a `Monad`, we require that `select = selectM`, from which one
-can prove `apS = <*>`, and furthermore the above two laws P2-P3 now hold.
+can prove `apS = <*>`, and furthermore the above `Pure-Left` and `Pure-Right` 
+properties now hold.
 
 ## Static analysis of selective functors
 
@@ -239,7 +285,6 @@ we do not report any subsequent errors. But it doesn't mean we are short-circuit
 the validation. We will continue accumulating errors as soon as we get out of the
 opaque conditional, as demonstrated below.
 
-
 ```haskell
 twoShapes :: Selective f => f Shape -> f Shape -> f (Shape, Shape)
 twoShapes s1 s2 = (,) <$> s1 <*> s2
@@ -250,41 +295,11 @@ twoShapes s1 s2 = (,) <$> s1 <*> s2
 Failure ["no choice 1","no height 2"]
 ```
 
-## Alternative formulations
-
-There are other ways of expressing selective functors in Haskell and most of them are
-compositions of applicative functors and the `Either` monad. Below I list a few
-examples:
-
-```haskell
--- Alternative type classes for selective functors. They all come with an
--- additional requirement that we run effects from left to right.
-
--- Composition of Applicative and Either monad
-class Applicative f => SelectiveA f where
-    (|*|) :: f (Either e (a -> b)) -> f (Either e a) -> f (Either e b)
-
--- Composition of Starry and Either monad
--- See: https://duplode.github.io/posts/applicative-archery.html
-class Applicative f => SelectiveS f where
-    (|.|) :: f (Either e (b -> c)) -> f (Either e (a -> b)) -> f (Either e (a -> c))
-
--- Composition of Monoidal and Either monad
--- See: http://blog.ezyang.com/2012/08/applicative-functors/
-class Applicative f => SelectiveM f where
-    (|**|) :: f (Either e a) -> f (Either e b) -> f (Either e (a, b))
-```
-
-I believe these formulations are equivalent to `Selective` defined above,
-but I have not proved the equivalence formally. I chose the most
-minimalistic definition of the type class, but the above alternatives
-are worth consideration too. In particular, `SelectiveS` has a much nicer
-associativity law, which is just `(x |.| y) |.| z = x |.| (y |.| z)`.
-
 ## Do we still need monads?
 
 Yes! Here is what selective functors cannot do: `join :: Selective f => f (f a) -> f a`.
 
 ## Further reading
 
-* A blog post introducing selective applicative functors: https://blogs.ncl.ac.uk/andreymokhov/selective.
+* A paper introducing selective functors: https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf.
+* An older blog post introducing selective functors: https://blogs.ncl.ac.uk/andreymokhov/selective.
