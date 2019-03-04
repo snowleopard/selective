@@ -4,10 +4,9 @@ module Control.Selective.Example where
 import Algebra.Graph
 import Algebra.Graph.Export.Dot
 import Control.Monad
-import Control.Selective.Free.Rigid hiding (dependencies)
+import Control.Selective.Free.Rigid
 
 import qualified Build.Task as B
-import qualified Control.Selective.Free.Rigid as S
 import qualified Data.Set as Set
 
 ------------------------------- Ping-pong example ------------------------------
@@ -152,10 +151,14 @@ graph deps key = transpose $ overlays [ star k (deps k) | k <- keys Set.empty [k
         | x `Set.member` seen = keys seen xs
         | otherwise           = keys (Set.insert x seen) (deps x ++ xs)
 
+-- | Extract dependencies from a selective task.
+dependencies :: B.Task Selective k v -> [k]
+dependencies task = getOver $ B.run task (Over . pure)
+
 draw :: B.Tasks Selective String v -> String -> String
 draw tasks = exportAsIs . graph deps
   where
-    deps k = maybe [] S.dependencies $ tasks k
+    deps k = maybe [] dependencies $ tasks k
 
 fetchIO :: Read a => String -> IO a
 fetchIO prompt = do putStr (prompt ++ ": "); read <$> getLine

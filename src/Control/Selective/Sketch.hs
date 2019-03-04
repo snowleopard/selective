@@ -272,7 +272,7 @@ class Applicative f => SelectiveM f where
     (|**|) :: f (Either e a) -> f (Either e b) -> f (Either e (a, b))
 
 biselect :: Selective f => f (Either a b) -> f (Either a c) -> f (Either a (b, c))
-biselect x y = select ((fmap Left . swap) <$> x) ((\e a -> fmap (a,) e) <$> y)
+biselect x y = select ((fmap Left . swapEither) <$> x) ((\e a -> fmap (a,) e) <$> y)
 
 (?*?) :: Selective f => f (Either a b) -> f (Either a c) -> f (Either a (b, c))
 (?*?) = biselect
@@ -290,10 +290,14 @@ apM :: SelectiveM f => f (a -> b) -> f a -> f b
 apM f x = fmap (either absurd (uncurry ($))) (fmap Right f |**| fmap Right x)
 
 fromM :: SelectiveM f => f (Either a b) -> f (a -> b) -> f b
-fromM x f = either id (\(a, f) -> f a) <$> (fmap swap x |**| fmap Right f)
+fromM x f = either id (\(a, f) -> f a) <$> (fmap swapEither x |**| fmap Right f)
 
 toM :: Selective f => f (Either e a) -> f (Either e b) -> f (Either e (a, b))
-toM a b = select ((fmap Left . swap) <$> a) ((\e a -> fmap (a,) e) <$> b)
+toM a b = select ((fmap Left . swapEither) <$> a) ((\e a -> fmap (a,) e) <$> b)
+
+-- | Swap @Left@ and @Right@.
+swapEither :: Either a b -> Either b a
+swapEither = either Right Left
 
 -- Proof that if select = selectM, and <*> = ap, then <*> = apS.
 apSEqualsApply :: (Selective f, Monad f) => f (a -> b) -> f a -> f b

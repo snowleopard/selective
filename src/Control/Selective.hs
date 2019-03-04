@@ -1,23 +1,31 @@
 {-# LANGUAGE DeriveFunctor, RankNTypes, ScopedTypeVariables, TupleSections #-}
 {-# LANGUAGE DerivingVia, FlexibleInstances, GeneralizedNewtypeDeriving #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module     : Control.Selective
+-- Copyright  : (c) Andrey Mokhov 2018-2019
+-- License    : MIT (see the file LICENSE)
+-- Maintainer : andrey.mokhov@gmail.com
+-- Stability  : experimental
+--
+-- This is a library for /selective applicative functors/, or just
+-- /selective functors/ for short, an abstraction between applicative functors
+-- and monads, introduced in this paper:
+-- https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf.
+--
+-----------------------------------------------------------------------------
 module Control.Selective (
     -- * Type class
     Selective (..), (<*?), branch, selectA, apS, selectM,
-    Cases (..), casesEnum, cases,
 
     -- * Conditional combinators
     ifS, whenS, fromMaybeS, orElse, andAlso, untilRight, whileS, (<||>), (<&&>),
-    foldS, anyS, allS, matchS, bindS, matchM,
+    foldS, anyS, allS, bindS, Cases, casesEnum, cases, matchS, matchM,
 
-    -- * Static analysis
+    -- * Seelective functors
     ViaSelectA (..), Over (..), getOver, Under (..), getUnder, Validation (..),
-    dependencies,
-
-    -- * Miscellaneous
-    swap
     ) where
 
-import Build.Task
 import Control.Applicative
 import Control.Arrow
 import Control.Monad.Trans.Except
@@ -45,72 +53,83 @@ import Data.Proxy
 -- indeed a selective functor is in some sense a composition of an applicative
 -- functor and the 'Either' monad.
 --
--- Laws: (F1) Apply a pure function to the result:
+-- Laws:
 --
---            f <$> select x y = select (second f <$> x) ((f .) <$> y)
+-- * Identity:
 --
---       (F2) Apply a pure function to the 'Left' case of the first argument:
+-- @
+-- x \<*? pure id = either id id \<$\> x
+-- @
 --
---            select (first f <$> x) y = select x ((. f) <$> y)
+-- * Distributivity; note that @y@ and @z@ have the same type @f (a -> b)@:
 --
---       (F3) Apply a pure function to the second argument:
+-- @
+-- pure x \<*? (y *\> z) = (pure x \<*? y) *\> (pure x \<*? z)
+-- @
 --
---            select x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
+-- * Associativity:
 --
---       (P1) Selective application of a pure function:
+-- @
+-- x \<*? (y \<*? z) = (f \<$\> x) \<*? (g \<$\> y) \<*? (h \<$\> z)
+--   where
+--     f x = Right \<$\> x
+--     g y = \a -\> bimap (,a) ($a) y
+--     h z = uncurry z
+-- @
 --
---            select x (pure y) = either y id <$> x
+-- * Monadic @select@ (for selective functors that are also monads):
 --
---       (A1) Associativity:
+-- @
+-- select = selectM
+-- @
 --
---            select x (select y z) = select (select (f <$> x) (g <$> y)) (h <$> z)
+-- There are also a few useful theorems:
 --
---            or in operator form:
+-- * Apply a pure function to the result:
 --
---            x <*? (y <*? z) = (f <$> x) <*? (g <$> y) <*? (h <$> z)
+-- @
+-- f \<$\> select x y = select (fmap f \<$\> x) (fmap f \<$\> y)
+-- @
 --
---            where f x = Right <$> x
---                  g y = \a -> bimap (,a) ($a) y
---                  h z = uncurry z
+-- * Apply a pure function to the @Left@ case of the first argument:
 --
+-- @
+-- select (first f \<$\> x) y = select x ((. f) \<$\> y)
+-- @
 --
---       Note that there are no laws for selective application of a function to
---       a pure 'Left' or 'Right' value, i.e. we do not require that the
---       following laws hold:
+-- * Apply a pure function to the second argument:
 --
---            (P2) select (pure (Left  x)) y = y <*> pure x
---            (P3) select (pure (Right x)) y =       pure x
+-- @
+-- select x (f \<$\> y) = select (first (flip f) \<$\> x) (flip ($) \<$\> y)
+-- @
 --
---       In particular, the following is allowed too:
+-- * Generalised identity:
 --
---            select (pure (Left  x)) y = pure ()       -- when y :: f (a -> ())
---            select (pure (Right x)) y = const x <$> y
+-- @
+-- x \<*? pure y = either y id \<$\> x
+-- @
 --
---       We therefore allow 'select' to be selective about effects in these
---       cases, which in practice allows to under- or over-approximate possible
---       effects in static analysis using instances like 'Under' and 'Over'.
+-- * A selective functor is /rigid/ if it satisfies @\<*\> = apS@. The following
+-- /interchange/ law holds for rigid selective functors:
+--
+-- @
+-- x *\> (y \<*? z) = (x *\> y) \<*? z
+-- @
 --
 -- If f is also a 'Monad', we require that 'select' = 'selectM', from which one
--- can prove 'apS' = '<*>', and furthermore the above two laws P2-P3 now hold.
---
--- We can rewrite any selective expression in the following canonical form:
---
---          f (a + ... + z)    -- A value to be processed (+ denotes a sum type)
---       -> f (a -> (b + ...)) -- How to process a's
---       -> f (b -> (c + ...)) -- How to process b's
---       ...
---       -> f (y -> z)         -- How to process y's
---       -> f z                -- The resulting z
---
--- See "Control.Selective.Sketch" for proof sketches.
+-- can prove @\<*\> = apS@.
 class Applicative f => Selective f where
     select :: f (Either a b) -> f (a -> b) -> f b
 
+-- | A list of values, equipped with a fast membership test.
 data Cases a = Cases [a] (a -> Bool)
 
+-- | The list of all possible values of an enumerable data type.
 casesEnum :: (Bounded a, Enum a) => Cases a
 casesEnum = Cases [minBound..maxBound] (const True)
 
+-- | Embed a list of values into 'Cases' using the trivial but slow membership
+-- test based on 'elem'.
 cases :: Eq a => [a] -> Cases a
 cases as = Cases as (`elem` as)
 
@@ -141,14 +160,34 @@ branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
 selectA x y = (\e f -> either f id e) <$> x <*> y
 
--- | 'Selective' is more powerful than 'Applicative': we can recover the
--- application operator '<*>'. In particular, the following 'Applicative' laws
--- hold when expressed using 'apS':
+-- | Recover the application operator '\<*\>' from 'select'. /Rigid/ selective
+-- functors satisfy the law @(\<*\>) = apS@ and furthermore, the resulting
+-- applicative functor satisfies all laws of 'Applicative':
 --
--- * Identity     : pure id <*> v = v
--- * Homomorphism : pure f <*> pure x = pure (f x)
--- * Interchange  : u <*> pure y = pure ($y) <*> u
--- * Composition  : (.) <$> u <*> v <*> w = u <*> (v <*> w)
+-- * Identity:
+--
+-- @
+-- pure id \<*\> v = v
+-- @
+--
+-- * Homomorphism:
+--
+-- @
+-- pure f \<*\> pure x = pure (f x)
+-- @
+--
+-- * Interchange:
+--
+-- @
+-- u \<*\> pure y = pure ($y) \<*\> u
+-- @
+--
+-- * Composition:
+--
+-- @
+-- (.) \<$\> u \<*\> v \<*\> w = u \<*\> (v \<*\> w)
+-- @
+--
 apS :: Selective f => f (a -> b) -> f a -> f b
 apS f x = select (Left <$> f) (flip ($) <$> x)
 
@@ -218,11 +257,11 @@ orElse x y = branch x (flip appendLeft <$> y) (pure Right)
 
 -- | Accumulate the @Right@ values, or return the first @Left@.
 andAlso :: (Selective f, Semigroup a) => f (Either e a) -> f (Either e a) -> f (Either e a)
-andAlso x y = swap <$> orElse (swap <$> x) (swap <$> y)
+andAlso x y = swapEither <$> orElse (swapEither <$> x) (swapEither <$> y)
 
--- | Swap left and right.
-swap :: Either a b -> Either b a
-swap = either Right Left
+-- | Swap @Left@ and @Right@.
+swapEither :: Either a b -> Either b a
+swapEither = either Right Left
 
 -- | Append two semigroup values or return the @Right@ one.
 appendLeft :: Semigroup a => a -> Either a b -> Either a b
@@ -287,8 +326,8 @@ newtype ViaSelectA f a = ViaSelectA { fromViaSelectA :: f a }
 instance Applicative f => Selective (ViaSelectA f) where
     select = selectA
 
--- Selective instance for the standard Applicative Validation
--- This is a good example of a Selective functor which is not a Monad
+-- | Selective instance for the standard applicative functor Validation.
+-- This is a good example of a selective functor which is not a monad.
 data Validation e a = Failure e | Success a deriving (Functor, Show)
 
 instance Semigroup e => Applicative (Validation e) where
@@ -303,31 +342,29 @@ instance Semigroup e => Selective (Validation e) where
     select (Success (Left  a)) f = ($a) <$> f
     select (Failure e        ) _ = Failure e
 
--- Static analysis of selective functors with over-approximation
+-- | Static analysis of selective functors with over-approximation.
 newtype Over m a = Over m
     deriving
         (Functor, Applicative, Selective)
     via
-        (ViaSelectA (Const m))
+        ViaSelectA (Const m)
     deriving Show
 
+-- | Extract the contents of 'Over'.
 getOver :: Over m a -> m
 getOver (Over x) = x
 
--- Static analysis of selective functors with under-approximation
+-- | Static analysis of selective functors with under-approximation.
 newtype Under m a = Under m
-    deriving (Functor, Applicative) via (Const m)
+    deriving (Functor, Applicative) via Const m
     deriving Show
 
 instance Monoid m => Selective (Under m) where
     select (Under m) _ = Under m
 
+-- | Extract the contents of 'Under'.
 getUnder :: Under m a -> m
 getUnder (Under x) = x
-
--- | Extract dependencies from a selective task.
-dependencies :: Task Selective k v -> [k]
-dependencies task = getOver $ run task (Over . pure)
 
 ------------------------------------ Arrows ------------------------------------
 
