@@ -648,7 +648,7 @@ parametricity.
 \end{minted}
 \vspace{1mm}
 \begin{minted}{haskell}
--- Theorems for rigid selective functors (in particular, for monads)
+-- Laws for rigid selective functors (in particular, for monads)
 (<*>) = apS                     -- Selective apply
 @\blk{x}@ *> (y <*? z) = (x *> y) <*? z -- Interchange
 \end{minted}
@@ -787,13 +787,3 @@ Failure "a"
 One example where the interchange law appears naturally is parser combinators,
 where it allows us to refactor parsers with choice,
 see~\S\ref{sec-alternative-functors}.
-
-% It may be illuminating to compare the following type signatures:
-% \begin{minted}[xleftmargin=10pt]{haskell}
-% (<**>) :: Applicative f => f a            -> f (a -> b) -> f b
-% select :: Selective   f => f (Either a b) -> f (a -> b) -> f b
-% (>>=)  :: Monad       f => f a            -> (a -> f b) -> f b
-% \end{minted}
-% The type signature of \hs{select} is reminiscent of both \hs{<*>} and \hs{>>=},
-% and indeed a selective functor is in some sense a composition of an applicative
-% functor and the \hs{Either} monad.
