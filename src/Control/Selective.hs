@@ -22,7 +22,7 @@ module Control.Selective (
     ifS, whenS, fromMaybeS, orElse, andAlso, untilRight, whileS, (<||>), (<&&>),
     foldS, anyS, allS, bindS, Cases, casesEnum, cases, matchS, matchM,
 
-    -- * Seelective functors
+    -- * Selective functors
     ViaSelectA (..), Over (..), getOver, Under (..), getUnder, Validation (..),
     ) where
 
