@@ -8,6 +8,13 @@
 
 * Connections to probabilistic programming: http://mlg.eng.cam.ac.uk/pub/pdf/SciGhaGor15.pdf
 
+* `Selective ZipList` and SIMT execution model: https://en.wikipedia.org/wiki/Single_instruction,_multiple_threads
+
+> to handle an IF-ELSE block where various threads of a processor execute
+> different paths, all threads must actually process both paths (as all threads
+> of a processor always execute in lock-step), but masking is used to disable
+> and enable the various threads as appropriate
+
 ## Existing similar abstractions
 
 * Evgenyi Permyakov's `Branching` type class: https://mail.haskell.org/pipermail/haskell-cafe/2012-July/102518.html
