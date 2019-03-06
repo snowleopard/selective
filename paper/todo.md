@@ -25,4 +25,19 @@
 
 ## Alternative formulations
 
-* @LSLeary: https://www.reddit.com/r/haskell/comments/axje88/selective_applicative_functors/ehwo9qn/
+* @LSLeary: https://www.reddit.com/r/haskell/comments/axje88/selective_applicative_functors/ehwo9qn/.
+
+  > An equivalent formulation `select :: f (Either (a -> b) b) -> f a -> f b` leads to a pretty encoding.
+
+## Towards monadic bind
+
+* @sclv: https://www.reddit.com/r/haskell/comments/axje88/selective_applicative_functors/ehw5x6l/
+
+  > one could actually use `unsafePerformIO` to very unsafely actually get the binary representation
+  > of the thunk, and "read it out" byte by byte, then based on branching on that, only enter actual
+  > "proper" value. (i.e. since we're inside a machine, we actually only have finitary representations,
+  > even if our data structures "look" infinite -- this is actually a form of "Skolem's Paradox"!).
+  > (The idea of this bitwise testing thing is inspired by some of the tricks used in the classic
+  > "Implicit Configurations" paper: http://okmij.org/ftp/Haskell/tr-15-04.pdf)
+  > So in "real" terms, bind is by a series of dirty hacks, fully recoverable from select.
+  
