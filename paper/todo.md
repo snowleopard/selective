@@ -10,10 +10,12 @@
 
 * `Selective ZipList` and SIMT execution model: https://en.wikipedia.org/wiki/Single_instruction,_multiple_threads
 
-> to handle an IF-ELSE block where various threads of a processor execute
-> different paths, all threads must actually process both paths (as all threads
-> of a processor always execute in lock-step), but masking is used to disable
-> and enable the various threads as appropriate
+  > to handle an IF-ELSE block where various threads of a processor execute
+  > different paths, all threads must actually process both paths (as all threads
+  > of a processor always execute in lock-step), but masking is used to disable
+  > and enable the various threads as appropriate
+
+* Connections to FRP: https://discuss.ocaml.org/t/an-intermediate-abstraction-between-applicatives-and-monads/3441/3
 
 ## Existing similar abstractions
 
