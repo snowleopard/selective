@@ -22,3 +22,7 @@
 * Evgenyi Permyakov's `Branching` type class: https://mail.haskell.org/pipermail/haskell-cafe/2012-July/102518.html
 
 * Jeremy Yallop's `DynamicIdiom` type class: https://www.cl.cam.ac.uk/~jdy22/papers/dissertation.pdf
+
+## Alternative formulations
+
+* @LSLeary: https://www.reddit.com/r/haskell/comments/axje88/selective_applicative_functors/ehwo9qn/
