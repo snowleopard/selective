@@ -160,34 +160,26 @@ branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
 selectA x y = (\e f -> either f id e) <$> x <*> y
 
--- | Recover the application operator '\<*\>' from 'select'. /Rigid/ selective
--- functors satisfy the law @(\<*\>) = apS@ and furthermore, the resulting
--- applicative functor satisfies all laws of 'Applicative':
---
--- * Identity:
---
--- @
--- pure id \<*\> v = v
--- @
---
--- * Homomorphism:
---
--- @
--- pure f \<*\> pure x = pure (f x)
--- @
---
--- * Interchange:
---
--- @
--- u \<*\> pure y = pure ($y) \<*\> u
--- @
---
--- * Composition:
---
--- @
--- (.) \<$\> u \<*\> v \<*\> w = u \<*\> (v \<*\> w)
--- @
---
+{-| Recover the application operator @\<*\>@ from 'select'. /Rigid/ selective
+functors satisfy the law @(\<*\>) = apS@ and furthermore, the resulting
+applicative functor satisfies all laws of 'Applicative':
+
+* Identity:
+
+    > pure id <*> v = v
+
+* Homomorphism:
+
+    > pure f <*> pure x = pure (f x)
+
+* Interchange:
+
+    > u <*> pure y = pure ($y) <*> u
+
+* Composition:
+
+    > (.) <$> u <*> v <*> w = u <*> (v <*> w)
+-}
 apS :: Selective f => f (a -> b) -> f a -> f b
 apS f x = select (Left <$> f) (flip ($) <$> x)
 
@@ -247,7 +239,7 @@ whenS x y = select (bool (Right ()) (Left ()) <$> x) (const <$> y)
 --     selector = bool (Right ()) (Left ()) <$> x -- NB: maps True to Left ()
 --     effect   = const                     <$> y
 
--- | A lifted version of 'fromMaybe'.
+-- | A lifted version of 'Data.Maybe.fromMaybe'.
 fromMaybeS :: Selective f => f a -> f (Maybe a) -> f a
 fromMaybeS x mx = select (maybe (Left ()) Right <$> mx) (const <$> x)
 
@@ -274,12 +266,12 @@ whileS act = whenS act (whileS act)
 
 -- | Keep running an effectful computation until it returns a @Right@ value,
 -- collecting the @Left@'s using a supplied @Monoid@ instance.
-untilRight :: forall a b f. (Monoid a, Selective f) => f (Either a b) -> f (a, b)
+untilRight :: (Monoid a, Selective f) => f (Either a b) -> f (a, b)
 untilRight x = select y h
   where
-    y :: f (Either a (a, b))
+    -- y :: f (Either a (a, b))
     y = fmap (mempty,) <$> x
-    h :: f (a -> (a, b))
+    -- h :: f (a -> (a, b))
     h = (\(as, b) a -> (mappend a as, b)) <$> untilRight x
 
 -- | A lifted version of lazy Boolean OR.
@@ -320,6 +312,8 @@ instance Monad m => Selective (ReaderT s m) where select = selectM
 instance Monad m => Selective (StateT s m) where select = selectM
 instance (Monoid s, Monad m) => Selective (WriterT s m) where select = selectM
 
+-- | Any applicative functor can be given an instnce of 'Selective' by
+-- defining @select = selectA@.
 newtype ViaSelectA f a = ViaSelectA { fromViaSelectA :: f a }
     deriving (Functor, Applicative)
 

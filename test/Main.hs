@@ -1,21 +1,63 @@
 {-# LANGUAGE TypeApplications #-}
 
-import Prelude hiding (maybe)
+import Data.Maybe hiding (maybe)
 import Data.Functor.Identity
+import Prelude hiding (maybe)
 import Test.Tasty
-import Test.Tasty.QuickCheck as QC
+import Test.Tasty.QuickCheck hiding (Success, Failure)
 import Test.Tasty.ExpectedFailure
 import Control.Selective
+import Control.Selective.Free.Rigid
 import Control.Arrow (ArrowMonad)
+
+import Build
 import Laws
+import Teletype
+import Validation
 
 main :: IO ()
-main = defaultMain $ testGroup "Selective instances"
-    [over, under, validation, arrowMonad, maybe, identity]
+main = defaultMain $ testGroup "Tests"
+    [pingPong, build, over, under, validation, arrowMonad, maybe, identity]
 
--- main :: IO ()
--- main = do
---     putStrLn $ "\n\nCyclic dependency graph:\n\n" ++ draw task "B1"
+--------------------------------------------------------------------------------
+------------------------ Ping-pong----------------------------------------------
+--------------------------------------------------------------------------------
+pingPong :: TestTree
+pingPong = testGroup "pingPong"
+    [ testProperty "getEffects pingPongS == [Read,Write \"pong\"]" $
+       getEffects pingPongS == [Read (const ()),Write "pong" ()]
+    ]
+--------------------------------------------------------------------------------
+------------------------ Build -------------------------------------------------
+--------------------------------------------------------------------------------
+build :: TestTree
+build = testGroup "Build" [cyclicDeps, taskBindDeps, runBuildDeps]
+
+cyclicDeps :: TestTree
+cyclicDeps = testGroup "cyclicDeps"
+    [ testProperty "dependenciesOver (fromJust $ cyclic \"B1\") == [\"C1\",\"B2\",\"A2\"]" $
+       dependenciesOver (fromJust $ cyclic "B1") == ["C1","B2","A2"]
+    , testProperty "dependenciesOver cyclic \"B2\") == [\"C1\",\"A1\",\"B1\"]" $
+        dependenciesOver (fromJust $ cyclic "B2") == ["C1","A1","B1"]
+    , testProperty "dependenciesUnder (fromJust $ cyclic \"B1\") == [\"C1\"]" $
+       dependenciesUnder (fromJust $ cyclic "B1") == ["C1"]
+    , testProperty "dependenciesUnder cyclic \"B2\") == [\"C1\"]" $
+        dependenciesUnder (fromJust $ cyclic "B2") == ["C1"]
+    ]
+
+taskBindDeps :: TestTree
+taskBindDeps = testGroup "taskBindDeps"
+    [ testProperty "dependenciesOver taskBind == [\"A1\",\"A2\",\"C5\",\"C6\",\"A2\",\"D5\",\"D6\"]" $
+       dependenciesOver taskBind == ["A1","A2","C5","C6","A2","D5","D6"]
+    , testProperty "dependenciesUnder taskBind == [\"A1\"]" $
+       dependenciesUnder taskBind == ["A1"]
+    ]
+
+runBuildDeps :: TestTree
+runBuildDeps = testGroup "runBuildDeps"
+    [ testProperty "runBuild (fromJust $ cyclic \"B1\") == [Fetch \"C1\",Fetch \"B2\",Fetch \"A2\"]" $
+       runBuild (fromJust $ cyclic "B1") == [Fetch "C1" (const ()),Fetch "B2" (const ()),Fetch "A2" (const ())]
+    ]
 
 --------------------------------------------------------------------------------
 ------------------------ Over --------------------------------------------------
@@ -23,35 +65,36 @@ main = defaultMain $ testGroup "Selective instances"
 over :: TestTree
 over = testGroup "Over" [overLaws, overTheorems, overProperties]
 
+overLaws :: TestTree
 overLaws = testGroup "Laws"
-    [ QC.testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
+    [ testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
         \x -> lawIdentity @(Over String) x
-    , QC.testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
+    , testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
         \x -> lawDistributivity @(Over String) @Int @Int x
-    , QC.testProperty "Associativity: take a look at tests/Laws.hs" $
+    , testProperty "Associativity: take a look at tests/Laws.hs" $
         \x -> lawAssociativity @(Over String) @Int @Int x
     ]
 
 overTheorems = testGroup "Theorems"
-    [ QC.testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
+    [ testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
         \x -> theorem1 @(Over String) @Int @Int x
-    , QC.testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
+    , testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
         \x -> theorem2 @(Over String) @Int @Int @Int x
-    , QC.testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
+    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
         \x -> theorem3 @(Over String) @Int @Int @Int x
-    , QC.testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
+    , testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
         \x -> theorem4 @(Over String) @Int @Int x
-    , QC.testProperty "(f <*> g) == (f `apS` g)" $
+    , testProperty "(f <*> g) == (f `apS` g)" $
         \x -> theorem5 @(Over String) @Int @Int x
-    , QC.testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
+    , testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
         \x -> theorem6 @(Over String) @Int @Int x
     ]
 
 overProperties = testGroup "Properties"
     [ expectFail $
-      QC.testProperty "pure-right: pure (Right x) <*? y = pure x" $
+      testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @(Over String) @Int @Int x
-    , QC.testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
+    , testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
         \x -> propertyPureLeft @(Over String) @Int @Int x
     ]
 
@@ -61,36 +104,39 @@ overProperties = testGroup "Properties"
 under :: TestTree
 under = testGroup "Under" [underLaws, underTheorems, underProperties]
 
+underLaws :: TestTree
 underLaws = testGroup "Laws"
-    [ QC.testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
+    [ testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
         \x -> lawIdentity @(Under String) x
-    , QC.testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
+    , testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
         \x -> lawDistributivity @(Under String) @Int @Int x
-    , QC.testProperty "Associativity: take a look at tests/Laws.hs" $
+    , testProperty "Associativity: take a look at tests/Laws.hs" $
         \x -> lawAssociativity @(Under String) @Int @Int x
     ]
 
+underTheorems :: TestTree
 underTheorems = testGroup "Theorems"
-    [ QC.testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
+    [ testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
         \x -> theorem1 @(Under String) @Int @Int x
-    , QC.testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
+    , testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
         \x -> theorem2 @(Under String) @Int @Int @Int x
-    , QC.testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
+    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
         \x -> theorem3 @(Under String) @Int @Int @Int x
-    , QC.testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
+    , testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
         \x -> theorem4 @(Under String) @Int @Int x
     , expectFailBecause "'Under' is a non-rigid selective functor" $
-      QC.testProperty "(f <*> g) == (f `apS` g)" $
+      testProperty "(f <*> g) == (f `apS` g)" $
         \x -> theorem5 @(Under String) @Int @Int x
-    , QC.testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
+    , testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
         \x -> theorem6 @(Under String) @Int @Int x
     ]
 
+underProperties :: TestTree
 underProperties = testGroup "Properties"
-    [ QC.testProperty "pure-right: pure (Right x) <*? y = pure x" $
+    [ testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @(Under String) @Int @Int x
     , expectFail $
-      QC.testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
+      testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
         \x -> propertyPureLeft @(Under String) @Int @Int x
     ]
 --------------------------------------------------------------------------------
@@ -99,40 +145,60 @@ underProperties = testGroup "Properties"
 --------------------------------------------------------------------------------
 validation :: TestTree
 validation = testGroup "Validation"
-    [validationLaws, validationTheorems, validationProperties]
+    [validationLaws, validationTheorems, validationProperties, validationExample]
 
+validationLaws :: TestTree
 validationLaws = testGroup "Laws"
-    [ QC.testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
+    [ testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
         \x -> lawIdentity @(Validation String) @Int x
-    , QC.testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
+    , testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
         \x -> lawDistributivity @(Validation String) @Int @Int x
-    , QC.testProperty "Associativity: take a look at tests/Laws.hs" $
+    , testProperty "Associativity: take a look at tests/Laws.hs" $
         \x -> lawAssociativity @(Validation String) @Int @Int @Int x
     ]
 
+validationTheorems :: TestTree
 validationTheorems = testGroup "Theorems"
-    [ QC.testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
+    [ testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
         \x -> theorem1 @(Validation String) @Int @Int @Int x
-    , QC.testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
+    , testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
         \x -> theorem2 @(Validation String) @Int @Int @Int x
-    , QC.testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
+    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
         \x -> theorem3 @(Validation String) @Int @Int @Int x
-    , QC.testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
+    , testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
         \x -> theorem4 @(Validation String) @Int @Int x
     , expectFailBecause "'Validation' is a non-rigid selective functor" $
-      QC.testProperty "(f <*> g) == (f `apS` g)" $
+      testProperty "(f <*> g) == (f `apS` g)" $
         \x -> theorem5 @(Validation String) @Int @Int x
     , expectFailBecause "'Validation' is a non-rigid selective functor" $
-      QC.testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
+      testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
         \x -> theorem6 @(Validation String) @Int @Int @Int x
     ]
 
+validationProperties :: TestTree
 validationProperties = testGroup "Properties"
-    [ QC.testProperty "pure-right: pure (Right x) <*? y = pure x" $
+    [ testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @(Validation String) @Int @Int x
-    , QC.testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
+    , testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
         \x -> propertyPureLeft @(Validation String) @Int @Int x
     ]
+
+validationExample :: TestTree
+validationExample = testGroup "validationExample"
+    [ testProperty "shape (Success True) (Success 1) (Failure [\"width?\"]) (Failure [\"height?\"])" $
+        shape (Success True) (Success 1) (Failure ["width?"]) (Failure ["height?"]) == Success (Circle 1)
+    , testProperty "shape (Success False) (Failure [\"radius?\"]) (Success 2) (Success 3)" $
+        shape (Success False) (Failure ["radius?"]) (Success 2) (Success 3) == Success (Rectangle 2 3)
+    , testProperty "shape (Success False) (Failure [\"radius?\"]) (Success 2) (Failure [\"height?\"])" $
+        shape (Success False) (Failure ["radius?"]) (Success 2) (Failure ["height?"]) == Failure ["height?"]
+    , testProperty "shape (Success False) (Success 1) (Failure [\"width?\"]) (Failure [\"height?\"])" $
+        shape (Success False) (Success 1) (Failure ["width?"]) (Failure ["height?"]) == Failure ["width?", "height?"]
+    , testProperty "shape (Failure [\"choice?\"]) (Failure [\"radius?\"]) (Success 2) (Failure [\"height?\"])" $
+        shape (Failure ["choice?"]) (Failure ["radius?"]) (Success 2) (Failure ["height?"]) == Failure ["choice?"]
+    , testProperty "twoShapes s1 s2" $
+        twoShapes (shape (Failure ["choice 1?"]) (Success 1) (Failure ["width 1?"]) (Success 3)) (shape (Success False) (Success 1) (Success 2) (Failure ["height 2?"])) == Failure ["choice 1?","height 2?"]
+    ]
+
 --------------------------------------------------------------------------------
 ------------------------ ArrowMonad --------------------------------------------
 --------------------------------------------------------------------------------
@@ -142,37 +208,37 @@ arrowMonad = testGroup "ArrowMonad (->)"
     [arrowMonadLaws, arrowMonadTheorems, arrowMonadProperties]
 
 arrowMonadLaws = testGroup "Laws"
-    [ QC.testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
+    [ testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
         \x -> lawIdentity @(ArrowMonad (->)) @Int x
-    , QC.testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
+    , testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
         \x -> lawDistributivity @(ArrowMonad (->)) @Int @Int x
-    , QC.testProperty "Associativity: take a look at tests/Laws.hs" $
+    , testProperty "Associativity: take a look at tests/Laws.hs" $
         \x -> lawAssociativity @(ArrowMonad (->)) @Int @Int @Int x
-    , QC.testProperty "select == selectM" $
+    , testProperty "select == selectM" $
         \x -> lawMonad @(ArrowMonad (->)) @Int @Int x
-    , QC.testProperty "select == selectA" $
+    , testProperty "select == selectA" $
         \x -> selectALaw @(ArrowMonad (->)) @Int @Int x
     ]
 
 arrowMonadTheorems = testGroup "Theorems"
-    [ QC.testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
+    [ testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
         \x -> theorem1 @(ArrowMonad (->)) @Int @Int @Int x
-    , QC.testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
+    , testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
         \x -> theorem2 @(ArrowMonad (->)) @Int @Int @Int x
-    , QC.testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
+    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
         \x -> theorem3 @(ArrowMonad (->)) @Int @Int @Int x
-    , QC.testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
+    , testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
         \x -> theorem4 @(ArrowMonad (->)) @Int @Int x
-    , QC.testProperty "(f <*> g) == (f `apS` g)" $
+    , testProperty "(f <*> g) == (f `apS` g)" $
         \x -> theorem5 @(ArrowMonad (->)) @Int @Int x
-    , QC.testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
+    , testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
         \x -> theorem6 @(ArrowMonad (->)) @Int @Int @Int x
     ]
 
 arrowMonadProperties = testGroup "Properties"
-    [ QC.testProperty "pure-right: pure (Right x) <*? y = pure x" $
+    [ testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @(ArrowMonad (->)) @Int @Int x
-    , QC.testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
+    , testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
         \x -> propertyPureLeft @(ArrowMonad (->)) @Int @Int x
     ]
 --------------------------------------------------------------------------------
@@ -182,35 +248,35 @@ maybe :: TestTree
 maybe = testGroup "Maybe" [maybeLaws, maybeTheorems, maybeProperties]
 
 maybeLaws = testGroup "Laws"
-    [ QC.testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
+    [ testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
         \x -> lawIdentity @Maybe @Int x
-    , QC.testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
+    , testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
         \x -> lawDistributivity @Maybe @Int @Int x
-    , QC.testProperty "Associativity: take a look at tests/Laws.hs" $
+    , testProperty "Associativity: take a look at tests/Laws.hs" $
         \x -> lawAssociativity @Maybe @Int @Int @Int x
-    , QC.testProperty "select == selectM" $
+    , testProperty "select == selectM" $
         \x -> lawMonad @Maybe @Int @Int x
     ]
 
 maybeTheorems = testGroup "Theorems"
-    [ QC.testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
+    [ testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
         \x -> theorem1 @Maybe @Int @Int @Int x
-    , QC.testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
+    , testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
         \x -> theorem2 @Maybe @Int @Int @Int x
-    , QC.testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
+    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
         \x -> theorem3 @Maybe @Int @Int @Int x
-    , QC.testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
+    , testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
         \x -> theorem4 @Maybe @Int @Int x
-    , QC.testProperty "(f <*> g) == (f `apS` g)" $
+    , testProperty "(f <*> g) == (f `apS` g)" $
         \x -> theorem5 @Maybe @Int @Int x
-    , QC.testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
+    , testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
         \x -> theorem6 @Maybe @Int @Int @Int x
     ]
 
 maybeProperties = testGroup "Properties"
-    [ QC.testProperty "pure-right: pure (Right x) <*? y = pure x" $
+    [ testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @Maybe @Int @Int x
-    , QC.testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
+    , testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
         \x -> propertyPureLeft @Maybe @Int @Int x
     ]
 --------------------------------------------------------------------------------
@@ -221,34 +287,34 @@ identity = testGroup "Identity"
     [identityLaws, identityTheorems, identityProperties]
 
 identityLaws = testGroup "Laws"
-    [ QC.testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
+    [ testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
         \x -> lawIdentity @Identity @Int x
-    , QC.testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
+    , testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
         \x -> lawDistributivity @Identity @Int @Int x
-    , QC.testProperty "Associativity: take a look at tests/Laws.hs" $
+    , testProperty "Associativity: take a look at tests/Laws.hs" $
         \x -> lawAssociativity @Identity @Int @Int @Int x
-    , QC.testProperty "select == selectM" $
+    , testProperty "select == selectM" $
         \x -> lawMonad @Identity @Int @Int x
     ]
 
 identityTheorems = testGroup "Theorems"
-    [ QC.testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
+    [ testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
         \x -> theorem1 @Identity @Int @Int @Int x
-    , QC.testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
+    , testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
         \x -> theorem2 @Identity @Int @Int @Int x
-    , QC.testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
+    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
         \x -> theorem3 @Identity @Int @Int @Int x
-    , QC.testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
+    , testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
         \x -> theorem4 @Identity @Int @Int x
-    , QC.testProperty "(f <*> g) == (f `apS` g)" $
+    , testProperty "(f <*> g) == (f `apS` g)" $
         \x -> theorem5 @Identity @Int @Int x
-    , QC.testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
+    , testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
         \x -> theorem6 @Identity @Int @Int @Int x
     ]
 
 identityProperties = testGroup "Properties"
-    [ QC.testProperty "pure-right: pure (Right x) <*? y = pure x" $
+    [ testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @Identity @Int @Int x
-    , QC.testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
+    , testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
         \x -> propertyPureLeft @Identity @Int @Int x
     ]

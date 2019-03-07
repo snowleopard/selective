@@ -1,10 +1,13 @@
 {-# LANGUAGE FlexibleInstances, ScopedTypeVariables, TupleSections #-}
-module Control.Selective.Sketch where
+module Sketch where
 
 import Control.Monad
-import Control.Selective.Free.Rigid
+import Control.Selective
 import Data.Bifunctor
 import Data.Void
+
+-- This file contains various examples and proof sketches and we keep it here to
+-- make sure it still compiles.
 
 ------------------------------- Various examples -------------------------------
 

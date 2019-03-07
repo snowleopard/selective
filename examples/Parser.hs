@@ -1,9 +1,12 @@
 {-# LANGUAGE ConstraintKinds, DeriveFunctor, GADTs, RankNTypes #-}
-module Control.Selective.Parser where
+module Parser where
 
 import Control.Applicative
 import Control.Monad
 import Control.Selective
+
+-- See Section 7.2 of the paper:
+-- https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf
 
 newtype Parser a = Parser { parse :: String -> [(a, String)] }
 
