@@ -23,9 +23,13 @@
 
 * Jeremy Yallop's `DynamicIdiom` type class: https://www.cl.cam.ac.uk/~jdy22/papers/dissertation.pdf
 
+* Mirage's configuration DSL: https://docs.mirage.io/mirage/Mirage/index.html#val-if_impl
+
+* The Typed Tagless Final paper has type class `BoolSYM` with method `if_`: http://okmij.org/ftp/tagless-final/course/lecture.pdf
+
 ## Alternative formulations
 
-* @LSLeary: https://www.reddit.com/r/haskell/comments/axje88/selective_applicative_functors/ehwo9qn/.
+* Lennox S. Leary: https://www.reddit.com/r/haskell/comments/axje88/selective_applicative_functors/ehwo9qn/.
 
   > An equivalent formulation `select :: f (Either (a -> b) b) -> f a -> f b` leads to a pretty encoding.
 
