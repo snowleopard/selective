@@ -17,6 +17,8 @@
 
 * Connections to FRP: https://discuss.ocaml.org/t/an-intermediate-abstraction-between-applicatives-and-monads/3441/3
 
+* ISA modelling: https://discuss.ocaml.org/t/an-intermediate-abstraction-between-applicatives-and-monads/3441/13
+
 ## Existing similar abstractions
 
 * Evgenyi Permyakov's `Branching` type class: https://mail.haskell.org/pipermail/haskell-cafe/2012-July/102518.html
@@ -26,6 +28,15 @@
 * Mirage's configuration DSL: https://docs.mirage.io/mirage/Mirage/index.html#val-if_impl
 
 * The Typed Tagless Final paper has type class `BoolSYM` with method `if_`: http://okmij.org/ftp/tagless-final/course/lecture.pdf
+
+  > > Good point! Typed Tagless Final deserves a discussion. Actually, I think our approach is an example of Typed
+  > > Tagless Final: it’s a type class that gives you a (generalised version of) if statement, which you can
+  > > mix&match with other capabilities! In fact, one of the examples in Typed Tagless Final is the type class
+  > > BoolSYM with if_ method.
+  
+  > That’s exactly how I’m seeing it. Not to diminish the value of the work, but just to fit into the
+  > mathematical framework, I would say that Selective is a signature of a particular language (structure)
+  > and you’re applying the tagless-final approach to investigate its behavior and capabilities.
 
 ## Alternative formulations
 
