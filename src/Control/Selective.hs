@@ -23,7 +23,7 @@ module Control.Selective (
     foldS, anyS, allS, bindS, Cases, casesEnum, cases, matchS, matchM,
 
     -- * Selective functors
-    ViaSelectA (..), Over (..), getOver, Under (..), getUnder, Validation (..),
+    ViaSelectA (..), Over (..), getOver, Under (..), getUnder, Validation (..)
     ) where
 
 import Control.Applicative
@@ -35,6 +35,8 @@ import Control.Monad.Trans.Writer
 import Data.Bool
 import Data.Functor.Identity
 import Data.Proxy
+import Data.Functor.Compose
+import Data.Functor.Product
 
 -- | Selective applicative functors. You can think of 'select' as a selective
 -- function application: when given a value of type @Left a@, you __must apply__
@@ -320,22 +322,6 @@ newtype ViaSelectA f a = ViaSelectA { fromViaSelectA :: f a }
 instance Applicative f => Selective (ViaSelectA f) where
     select = selectA
 
--- | Selective instance for the standard applicative functor Validation.
--- This is a good example of a selective functor which is not a monad.
-data Validation e a = Failure e | Success a deriving (Functor, Show)
-
-instance Semigroup e => Applicative (Validation e) where
-    pure = Success
-    Failure e1 <*> Failure e2 = Failure (e1 <> e2)
-    Failure e1 <*> Success _  = Failure e1
-    Success _  <*> Failure e2 = Failure e2
-    Success f  <*> Success a  = Success (f a)
-
-instance Semigroup e => Selective (Validation e) where
-    select (Success (Right b)) _ = Success b
-    select (Success (Left  a)) f = ($a) <$> f
-    select (Failure e        ) _ = Failure e
-
 -- | Static analysis of selective functors with over-approximation.
 newtype Over m a = Over m
     deriving
@@ -359,6 +345,34 @@ instance Monoid m => Selective (Under m) where
 -- | Extract the contents of 'Under'.
 getUnder :: Under m a -> m
 getUnder (Under x) = x
+
+-- | Selective instance for the standard applicative functor Validation.
+-- This is a good example of a selective functor which is not a monad.
+data Validation e a = Failure e | Success a deriving (Functor, Show)
+
+instance Semigroup e => Applicative (Validation e) where
+    pure = Success
+    Failure e1 <*> Failure e2 = Failure (e1 <> e2)
+    Failure e1 <*> Success _  = Failure e1
+    Success _  <*> Failure e2 = Failure e2
+    Success f  <*> Success a  = Success (f a)
+
+instance Semigroup e => Selective (Validation e) where
+    select (Success (Right b)) _ = Success b
+    select (Success (Left  a)) f = ($a) <$> f
+    select (Failure e        ) _ = Failure e
+
+instance (Selective f, Selective g) => Selective (Product f g) where
+    select (Pair fx gx) (Pair fy gy) = Pair (select fx fy) (select gx gy)
+
+-- TODO: Is this a useful instance? Note that composition of 'Alternative'
+-- requires @f@ to be 'Alternative', and @g@ to be 'Applicative', which is
+-- opposite to what we have here:
+--
+-- instance (Alternative f, Applicative g) => Alternative (Compose f g) ...
+--
+instance (Applicative f, Selective g) => Selective (Compose f g) where
+    select (Compose x) (Compose y) = Compose $ select <$> x <*> y
 
 ------------------------------------ Arrows ------------------------------------
 
