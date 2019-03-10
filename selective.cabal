@@ -33,7 +33,6 @@ library
                         Control.Selective.Free.Rigid
     build-depends:      base         >= 4.7     && < 5,
                         containers   >= 0.5.7.1 && < 7,
-                        mtl          >= 2.2.1   && < 2.3,
                         transformers >= 0.5.2.0 && < 0.6
     default-language:   Haskell2010
     other-extensions:   DeriveFunctor,
@@ -53,8 +52,7 @@ library
 
 test-suite test
     hs-source-dirs:     test, examples
-    other-modules:      ArrowLaws,
-                        Build,
+    other-modules:      Build,
                         Laws,
                         Parser,
                         Processor,
@@ -64,7 +62,6 @@ test-suite test
     type:               exitcode-stdio-1.0
     main-is:            Main.hs
     build-depends:      base                   >= 4.7     && < 5,
-                        checkers,
                         containers             >= 0.5.7.1 && < 7,
                         mtl                    >= 2.2.1   && < 2.3,
                         QuickCheck             >= 2.9     && < 2.13,

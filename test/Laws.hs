@@ -1,6 +1,5 @@
 {-# LANGUAGE StandaloneDeriving, DerivingVia #-}
-{-# LANGUAGE FlexibleInstances, TupleSections, ExplicitForAll, TypeApplications #-}
-
+{-# LANGUAGE FlexibleInstances, TupleSections, TypeApplications #-}
 module Laws where
 
 import Test.QuickCheck hiding (Failure, Success)
