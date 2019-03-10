@@ -1,7 +1,5 @@
-{-# LANGUAGE RankNTypes, ScopedTypeVariables, TupleSections #-}
-{-# LANGUAGE DeriveFunctor, DerivingVia, StandaloneDeriving #-}
-{-# LANGUAGE FlexibleInstances, GeneralizedNewtypeDeriving #-}
-
+{-# LANGUAGE TupleSections, DeriveFunctor #-}
+{-# LANGUAGE DerivingVia, StandaloneDeriving, GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Control.Selective
