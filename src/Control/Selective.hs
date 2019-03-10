@@ -1,5 +1,7 @@
-{-# LANGUAGE DeriveFunctor, RankNTypes, ScopedTypeVariables, TupleSections #-}
-{-# LANGUAGE DerivingVia, FlexibleInstances, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RankNTypes, ScopedTypeVariables, TupleSections #-}
+{-# LANGUAGE DeriveFunctor, DerivingVia, StandaloneDeriving #-}
+{-# LANGUAGE FlexibleInstances, GeneralizedNewtypeDeriving #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Control.Selective
@@ -23,20 +25,32 @@ module Control.Selective (
     foldS, anyS, allS, bindS, Cases, casesEnum, cases, matchS, matchM,
 
     -- * Selective functors
-    ViaSelectA (..), Over (..), getOver, Under (..), getUnder, Validation (..)
+    SelectA (..), SelectM (..), Over (..), getOver, Under (..), getUnder,
+    Validation (..)
     ) where
 
 import Control.Applicative
 import Control.Arrow
+import Control.Monad.ST
+import Control.Monad.Trans.Cont
 import Control.Monad.Trans.Except
+import Control.Monad.Trans.Identity
+import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Reader
+import Control.Monad.Trans.RWS
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
 import Data.Bool
 import Data.Functor.Identity
-import Data.Proxy
 import Data.Functor.Compose
 import Data.Functor.Product
+import Data.List.NonEmpty
+import Data.Proxy
+import GHC.Conc (STM)
+
+import qualified Control.Monad.Trans.RWS.Strict    as S
+import qualified Control.Monad.Trans.State.Strict  as S
+import qualified Control.Monad.Trans.Writer.Strict as S
 
 -- | Selective applicative functors. You can think of 'select' as a selective
 -- function application: when given a value of type @Left a@, you __must apply__
@@ -298,36 +312,25 @@ foldS = foldr andAlso (pure (Right mempty))
 
 -- Instances
 
--- As a quick experiment, try: ifS (pure True) (print 1) (print 2)
-instance Selective IO where select = selectM
-
--- And... we need to write a lot more instances
-instance Selective [] where select = selectM
-instance Selective ((->) a) where select = selectM
-instance Monoid a => Selective ((,) a) where select = selectM
-instance Selective Identity where select = selectM
-instance Selective Maybe where select = selectM
-instance Selective Proxy where select = selectM
-
-instance Monad m => Selective (ExceptT s m) where select = selectM
-instance Monad m => Selective (ReaderT s m) where select = selectM
-instance Monad m => Selective (StateT s m) where select = selectM
-instance (Monoid s, Monad m) => Selective (WriterT s m) where select = selectM
-
--- | Any applicative functor can be given an instnce of 'Selective' by
--- defining @select = selectA@.
-newtype ViaSelectA f a = ViaSelectA { fromViaSelectA :: f a }
+-- | Any applicative functor can be given a 'Selective' instance by defining
+-- @select = selectA@.
+newtype SelectA f a = SelectA { fromSelectA :: f a }
     deriving (Functor, Applicative)
 
-instance Applicative f => Selective (ViaSelectA f) where
+instance Applicative f => Selective (SelectA f) where
     select = selectA
+
+-- | Any monad can be given a 'Selective' instance by defining
+-- @select = selectM@.
+newtype SelectM f a = SelectM { fromSelectM :: f a }
+    deriving (Functor, Applicative, Monad)
+
+instance Monad f => Selective (SelectM f) where
+    select = selectM
 
 -- | Static analysis of selective functors with over-approximation.
 newtype Over m a = Over m
-    deriving
-        (Functor, Applicative, Selective)
-    via
-        ViaSelectA (Const m)
+    deriving (Functor, Applicative, Selective) via SelectA (Const m)
     deriving Show
 
 -- | Extract the contents of 'Over'.
@@ -345,6 +348,15 @@ instance Monoid m => Selective (Under m) where
 -- | Extract the contents of 'Under'.
 getUnder :: Under m a -> m
 getUnder (Under x) = x
+
+-- The 'Selective' 'ZipList' instance corresponds to the SIMT execution model.
+-- Quoting https://en.wikipedia.org/wiki/Single_instruction,_multiple_threads:
+--
+-- "...to handle an IF-ELSE block where various threads of a processor execute
+-- different paths, all threads must actually process both paths (as all threads
+-- of a processor always execute in lock-step), but masking is used to disable
+-- and enable the various threads as appropriate..."
+deriving via SelectA ZipList instance Selective ZipList
 
 -- | Selective instance for the standard applicative functor Validation.
 -- This is a good example of a selective functor which is not a monad.
@@ -374,6 +386,34 @@ instance (Selective f, Selective g) => Selective (Product f g) where
 instance (Applicative f, Selective g) => Selective (Compose f g) where
     select (Compose x) (Compose y) = Compose $ select <$> x <*> y
 
+-- Monad instances
+
+-- As a quick experiment, try: ifS (pure True) (print 1) (print 2)
+deriving via SelectM IO instance Selective IO
+
+-- And... we need to write a lot more instances
+deriving via SelectM []         instance             Selective []
+deriving via SelectM ((,) a)    instance Monoid a => Selective ((,) a)
+deriving via SelectM ((->) a)   instance             Selective ((->) a)
+deriving via SelectM (Either e) instance             Selective (Either e)
+deriving via SelectM Identity   instance             Selective Identity
+deriving via SelectM Maybe      instance             Selective Maybe
+deriving via SelectM NonEmpty   instance             Selective NonEmpty
+deriving via SelectM Proxy      instance             Selective Proxy
+deriving via SelectM (ST s)     instance             Selective (ST s)
+deriving via SelectM STM        instance             Selective STM
+
+deriving via SelectM (ContT      r m) instance                        Selective (ContT      r m)
+deriving via SelectM (ExceptT    e m) instance            Monad m  => Selective (ExceptT    e m)
+deriving via SelectM (IdentityT    m) instance            Monad m  => Selective (IdentityT    m)
+deriving via SelectM (MaybeT       m) instance            Monad m  => Selective (MaybeT       m)
+deriving via SelectM (ReaderT    r m) instance            Monad m  => Selective (ReaderT    r m)
+deriving via SelectM (RWST   r w s m) instance (Monoid w, Monad m) => Selective (RWST   r w s m)
+deriving via SelectM (S.RWST r w s m) instance (Monoid w, Monad m) => Selective (S.RWST r w s m)
+deriving via SelectM (StateT     s m) instance            Monad m  => Selective (StateT     s m)
+deriving via SelectM (S.StateT   s m) instance            Monad m  => Selective (S.StateT   s m)
+deriving via SelectM (WriterT    w m) instance (Monoid w, Monad m) => Selective (WriterT    w m)
+deriving via SelectM (S.WriterT  w m) instance (Monoid w, Monad m) => Selective (S.WriterT  w m)
 ------------------------------------ Arrows ------------------------------------
 
 -- See the following standard definitions in "Control.Arrow".
