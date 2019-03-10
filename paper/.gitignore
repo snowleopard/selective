@@ -18,6 +18,7 @@
 # *.ps
 # *.eps
 main.pdf
+selective-functors.pdf
 comment.cut
 
 ## Bibliography auxiliary files (bibtex/biblatex/biber):
