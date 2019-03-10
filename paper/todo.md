@@ -19,6 +19,9 @@
 
 * ISA modelling: https://discuss.ocaml.org/t/an-intermediate-abstraction-between-applicatives-and-monads/3441/13
 
+* Go's `select` statement: https://golangbot.com/select/, as suggested
+  [in this Tweet](https://twitter.com/igstan/status/1102560124726583297).
+
 ## Existing similar abstractions
 
 * Evgenyi Permyakov's `Branching` type class: https://mail.haskell.org/pipermail/haskell-cafe/2012-July/102518.html
