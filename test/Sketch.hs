@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, ScopedTypeVariables, TupleSections #-}
+{-# LANGUAGE FlexibleInstances, GADTs, RankNTypes, ScopedTypeVariables, TupleSections #-}
 module Sketch where
 
 import Control.Monad
@@ -413,3 +413,25 @@ t7 x y z =
     select (select (maybe (Right (Right Nothing)) Left <$> x)
         ((\mbc cd -> maybe (Right Nothing) (\bc -> Left $ fmap ((cd . bc) .)) mbc) <$> y))
         (flip ($) <$> z)
+
+
+------------------------ Carter Schonwald's copatterns -------------------------
+-- See: https://github.com/cartazio/symmetric-monoidal/blob/15b209953b7d4a47651f615b02dbb0171de8af40/src/Control/Monoidal.hs#L93
+-- And also: https://twitter.com/andreymokhov/status/1102648479841701888
+
+data Choose a b c where
+    CLeft  :: Choose a b a
+    CRight :: Choose a b b
+
+newtype Choice a b = Choice (forall r . Choose a b r -> r)
+
+class SelectiveC f where
+    choose :: f (Either a b) -> Choice (f (a -> c)) (f (b -> c)) -> f c
+
+-- Recover selective 'branch' from 'choose'.
+branchC :: SelectiveC f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
+branchC x l r = choose x $ Choice $ \c -> case c of { CLeft -> l; CRight -> r }
+
+-- Recover 'choose' from selective 'branch'.
+chooseS :: Selective f => f (Either a b) -> Choice (f (a -> c)) (f (b -> c)) -> f c
+chooseS x (Choice c) = branch x (c CLeft) (c CRight)
