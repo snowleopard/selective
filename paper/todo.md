@@ -2,11 +2,16 @@
 
 ## Connections/applications
 
+* Build systems: Bazel is also a selective build system built on top of monadic build engine. Also, selective
+  functors are relevant for shallow builds, when one can materialise the end target by providing a hash
+  of an over-approximation of all possible dependencies.
+
 * Connections to linear logic: https://twitter.com/phadej/status/1102660761938284544
 
 * Connections to lenses/traversable functors: https://twitter.com/andreymokhov/status/1102733512812232704
 
-* Connections to probabilistic programming: http://mlg.eng.cam.ac.uk/pub/pdf/SciGhaGor15.pdf
+* Connections to probabilistic programming: http://mlg.eng.cam.ac.uk/pub/pdf/SciGhaGor15.pdf.
+  Also: https://www.quora.com/Can-you-give-some-exampes-of-Applicative-Functors-which-are-not-Monads.
 
 * `Selective ZipList` and SIMT execution model: https://en.wikipedia.org/wiki/Single_instruction,_multiple_threads
 
