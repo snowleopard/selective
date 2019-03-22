@@ -26,6 +26,25 @@
 
 * Go's `select` statement: https://golangbot.com/select/, as suggested
   [in this Tweet](https://twitter.com/igstan/status/1102560124726583297).
+  
+* SmallCheck defines so called "parallel conjunction", which turns out to be very
+  similar to `pAnd` in Haxl:
+  
+  > Another addition w.r.t. a standard functional language is a possibility to
+  > perform parallel evaluation \[1\]. This is useful in the presence of meta 
+  > variables. In particular, consider a predicate which is a conjunction of 
+  > two other predicates, `p x = p1 x && p2 x`. Both `p1` and `p2` put
+  > restrictions on `x`. If `(&&)` is defined in the normal way, i.e. by looking
+  > at the arguments one at a time from left to right, we may have a situation
+  > where `x` is partially instantiated in such a way that, at this point, the
+  > value of `p2 x` is known to be `False`, whereas the value of `p1 x` is still
+  > unknown.
+  
+  See [SmallCheck and Lazy SmallCheck](https://www.cs.york.ac.uk/fp/smallcheck/smallcheck.pdf)
+  and [Property Directed Generation of First-Order Test Data](https://pdfs.semanticscholar.org/855f/6135cae8daa88a7296f525deaeb87c4a4ee9.pdf?_ga=2.215432343.1498597309.1553279121-20980404.1478796250).
+
+  
+  
 
 ## Existing similar abstractions
 
