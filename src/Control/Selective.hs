@@ -28,6 +28,7 @@ module Control.Selective (
     ) where
 
 import Control.Applicative
+import Control.Applicative.Lift
 import Control.Arrow
 import Control.Monad.ST
 import Control.Monad.Trans.Cont
@@ -39,8 +40,8 @@ import Control.Monad.Trans.RWS
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
 import Data.Bool
-import Data.Functor.Identity
 import Data.Functor.Compose
+import Data.Functor.Identity
 import Data.Functor.Product
 import Data.List.NonEmpty
 import Data.Proxy
@@ -318,6 +319,13 @@ newtype SelectA f a = SelectA { fromSelectA :: f a }
 instance Applicative f => Selective (SelectA f) where
     select = selectA
 
+-- Note: Validation e a ~ Lift (Under e) a
+instance Selective f => Selective (Lift f) where
+    select              x   (Pure  y) = either y id <$> x
+    select (Pure (Right x)) _         = Pure x
+    select (Pure (Left  x)) (Other y) = Other $ ($x) <$> y
+    select (Other       x ) (Other y) = Other $   x  <*? y
+
 -- | Any monad can be given a 'Selective' instance by defining
 -- @select = selectM@.
 newtype SelectM f a = SelectM { fromSelectM :: f a }
@@ -412,8 +420,8 @@ deriving via SelectM (StateT     s m) instance            Monad m  => Selective 
 deriving via SelectM (S.StateT   s m) instance            Monad m  => Selective (S.StateT   s m)
 deriving via SelectM (WriterT    w m) instance (Monoid w, Monad m) => Selective (WriterT    w m)
 deriving via SelectM (S.WriterT  w m) instance (Monoid w, Monad m) => Selective (S.WriterT  w m)
------------------------------------- Arrows ------------------------------------
 
+------------------------------------ Arrows ------------------------------------
 -- See the following standard definitions in "Control.Arrow".
 -- newtype ArrowMonad a b = ArrowMonad (a () b)
 -- instance Arrow a => Functor (ArrowMonad a)
