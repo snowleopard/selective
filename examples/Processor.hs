@@ -164,6 +164,10 @@ jumpZero offset =
         modifyPC = void $ write PC ((+offset) <$> pc)
     in whenS zeroSet modifyPC
 
+-- A block of instructions.
+addAndJump :: Program ()
+addAndJump = add (Reg R1) (Reg R2) (Reg R3) *> jumpZero 42
+
 -----------------------------------
 -- Add with overflow tracking -----
 -----------------------------------

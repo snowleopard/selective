@@ -466,7 +466,7 @@ sequencing operator (\hs{*>}):
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-addAndJump :: ISA Value
+addAndJump :: ISA ()
 addAndJump = add R0 1 *> jumpZero 42
 \end{minted}
 \newpage
