@@ -101,7 +101,7 @@ instance Show (RW a) where
 
 logEntry :: MonadState State m => LogEntry Key Value -> m ()
 logEntry item = S.modify $ \s ->
-    s {log = item : log s }
+    s {log = log s ++ [item] }
 
 -- | Interpret the base functor in a 'MonadState'.
 toState :: MonadState State m => RW a -> m a
@@ -116,9 +116,6 @@ toState = \case
         pure (t v)
     (W k p t) -> do
         v <- runSelect toState p
-        -- To log the value, we need to evaluate it first, thus the
-        -- writes gets logged in front of the reads. Note that this order is
-        -- different from what static analysis via 'getProgramEffects' shows
         logEntry (WriteEntry k v)
         case k of
             Reg r     -> let regs' s = Map.insert r v (registers s)
@@ -148,7 +145,7 @@ read k = liftSelect (R k id)
 
 -- | A convenient alias for writing into an element of the processor state.
 write :: Key -> Program Value -> Program Value
-write k fv = liftSelect (W k fv id) -- fv *> liftSelect (W k fv id)
+write k fv = liftSelect (W k fv id)
 
 -- --------------------------------------------------------------------------------
 -- -------- Instructions ----------------------------------------------------------
