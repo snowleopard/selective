@@ -16,6 +16,7 @@ No. We say this in line 192: "Any Applicative instance can thus be given a Selec
 
 > **B:** [l:921] In the implementation of write you evaluate the value to get the associated effects. It's clear that this is needed for the static analysis, but I worry that it will lead to quadratic or exponential blowup in the simulation. Is there an argument to be made that this is not the case? (**Please address this in rebuttal**)
 
+The implementation of `write` presented in the paper indeed causes exponential blowup in the simulation. This implementation is erroneous. The right way to go is to implement `write` simply as `write k fv = liftSelect (Write k fv id)` thus completely shifting the writing semantics into the natural transformations (e.g. `toState`). This will allow to subsume both correct simulation and static analysis, both implemented by their own natural transformations.
 **TODO: Andrey & Georgy**
 
 > **C:** At least, I would like to see a concrete instance that is Selective but (at least believed) not (to be) ArrowChoice.
