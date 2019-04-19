@@ -131,9 +131,9 @@ runProgramState :: Program a -> State -> (a, State)
 runProgramState f = S.runState (runSelect toState f)
 
 -- | Interpret the base functor in the selective functor 'Over'.
-toOver :: RW a -> Over [RW ()] b
-toOver (R k _   ) = Over [void $ R k (const ())]
-toOver (W k fv _) = void (runSelect toOver fv) *> Over [W k fv (const ())]
+toOver :: RW a -> Over [RW ()] a
+toOver (R k _   ) = Over [R k (const ())]
+toOver (W k fv _) = runSelect toOver fv *> Over [W k fv (const ())]
 
 -- | Get all possible program effects.
 getProgramEffects :: Program a -> [RW ()]
