@@ -1,4 +1,5 @@
-{-# LANGUAGE ConstraintKinds, DeriveFunctor, FlexibleContexts, GADTs #-}
+{-# LANGUAGE ConstraintKinds, DeriveFunctor
+             , LambdaCase, FlexibleContexts, FlexibleInstances, GADTs #-}
 module Processor where
 
 import Control.Selective
@@ -60,14 +61,21 @@ type Flags = Map.Map Flag Value
 -- | Address in the program memory.
 type InstructionAddress = Value
 
+-- | A program execution log entry, recording either a read from a key and the
+-- obtained value, or a write to a key, along with the written value.
+data LogEntry k v where
+    ReadEntry  :: k -> v -> LogEntry k v
+    WriteEntry :: k -> v -> LogEntry k v
+
+-- | A log is a sequence of log entries, in the execution order.
+type Log k v = [LogEntry k v]
+
 -- | The complete processor state.
 data State = State { registers :: RegisterBank
                    , memory    :: Memory
                    , pc        :: InstructionAddress
                    , flags     :: Flags
-                   , logs      :: [String] }
-
-
+                   , log       :: Log Key Value}
 
 -- | Various elements of the processor state.
 data Key = Reg Reg | Cell Address | Flag Flag | PC deriving Eq
@@ -91,31 +99,35 @@ instance Show (RW a) where
     show (W k (Pure v) _) = "Write " ++ show k ++ " " ++ show v
     show (W k _        _) = "Write " ++ show k
 
-log :: MonadState State m => String -> m ()
-log item = S.modify $ \s ->
-    s {logs = item : logs s }
+logEntry :: MonadState State m => LogEntry Key Value -> m ()
+logEntry item = S.modify $ \s ->
+    s {log = item : log s }
 
 -- | Interpret the base functor in a 'MonadState'.
 toState :: MonadState State m => RW a -> m a
-toState op = log (show op) *> case op of
-    (R k t) ->
-        t <$> case k of
-            Reg  r    -> (Map.! r   ) <$> S.gets registers
-            Cell addr -> (Map.! addr) <$> S.gets memory
-            Flag f    -> (Map.! f   ) <$> S.gets flags
-            PC        -> pc <$> S.get
-    (W k p t) ->
+toState = \case
+    (R k t) -> do
+        v <- case k of
+                   Reg  r    -> (Map.! r   ) <$> S.gets registers
+                   Cell addr -> (Map.! addr) <$> S.gets memory
+                   Flag f    -> (Map.! f   ) <$> S.gets flags
+                   PC        -> pc <$> S.get
+        logEntry (ReadEntry k v)
+        pure (t v)
+    (W k p t) -> do
+        v <- runSelect toState p
+        -- To log the value, we need to evaluate it first, thus the
+        -- writes gets logged in front of the reads. Note that this order is
+        -- different from what static analysis via 'getProgramEffects' shows
+        logEntry (WriteEntry k v)
         case k of
-            Reg r     -> do v <- runSelect toState p
-                            let regs' s = Map.insert r v (registers s)
-                            S.state (\s -> (t v, s {registers = regs' s}))
-            Cell addr -> do v <- runSelect toState p
-                            let mem' s = Map.insert addr v (memory s)
-                            S.state (\s -> (t v, s {memory = mem' s}))
-            Flag f    -> do v <- runSelect toState p
-                            let flags' s = Map.insert f v (flags s)
-                            S.state (\s -> (t v, s {flags = flags' s}))
-            PC          -> error "toState: Can't write the Program Counter (PC)"
+            Reg r     -> let regs' s = Map.insert r v (registers s)
+                         in  S.state (\s -> (t v, s {registers = regs' s}))
+            Cell addr -> let mem' s = Map.insert addr v (memory s)
+                         in S.state (\s -> (t v, s {memory = mem' s}))
+            Flag f    -> let flags' s = Map.insert f v (flags s)
+                         in S.state (\s -> (t v, s {flags = flags' s}))
+            PC        -> S.state (\s -> (t v, s {pc = v}))
 
 -- | Interpret a program as a state trasformer.
 runProgramState :: Program a -> State -> (a, State)
@@ -264,7 +276,7 @@ renderState :: State -> String
 renderState state =
   "Registers: " <> show (registers state) <> "\n" <>
   "Flags: " <> show (Map.toList $ flags state) <> "\n" <>
-  "Log: " <>  show (logs state)
+  "Log: " <>  show (log state)
 
 instance Show State where
     show = renderState
@@ -285,7 +297,7 @@ boot mem = State { registers = emptyRegisters
                  , pc = 0
                  , flags = emptyFlags
                  , memory = mem
-                 , logs   = []
+                 , log   = []
                  }
 
 twoAdds :: Program Value
@@ -296,5 +308,10 @@ twoAdds = add r0 (Cell 0) r0
 addExample :: IO ()
 addExample = do
     let initState = boot (initialiseMemory [(0, 2)])
-    -- print . snd $ runProgramState (add r0 (Cell 0) r0) initState
-    print . snd $ runProgramState (twoAdds) initState
+    print . snd $ runProgramState twoAdds initState
+
+---------------------------- Some boilerplate code -----------------------------
+
+instance (Show k, Show v) => Show (LogEntry  k v) where
+    show (ReadEntry k v)  = "Read (" ++ show k ++ ", " ++ show v ++ ")"
+    show (WriteEntry k v) = "Write (" ++ show k ++ ", " ++ show v ++ ")"

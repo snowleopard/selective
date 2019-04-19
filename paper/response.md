@@ -12,8 +12,6 @@ No. We say this in line 192: "Any Applicative instance can thus be given a Selec
 
 > **A:** this is odd because the authors argue that Applicative < Selective < Monad. Thus I would have expected some things to be Applicative, but not Selective.
 
-asdasdasdasd
-
 `Selective` requires one extra method `select` to be implemented compared to the `Applicative` type class, hence the subclass relation. Note also that while `select = selectA` is a perfectly valid implementation of `select`, **it is not the only one**, as demonstrated by `Selective` instances `Over` and `Under`: indeed, `Over` uses `select = selectA`, but `Under` does not.
 
 > **B:** [l:921] In the implementation of write you evaluate the value to get the associated effects. It's clear that this is needed for the static analysis, but I worry that it will lead to quadratic or exponential blowup in the simulation. Is there an argument to be made that this is not the case? (**Please address this in rebuttal**)
