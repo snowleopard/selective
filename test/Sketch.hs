@@ -1,10 +1,15 @@
 {-# LANGUAGE FlexibleInstances, GADTs, RankNTypes, ScopedTypeVariables, TupleSections #-}
 module Sketch where
 
+import Control.Arrow hiding (first, second)
+import Control.Category (Category)
 import Control.Monad
 import Control.Selective
 import Data.Bifunctor
 import Data.Void
+
+import qualified Control.Arrow    as A
+import qualified Control.Category as C
 
 -- This file contains various examples and proof sketches and we keep it here to
 -- make sure it still compiles.
@@ -435,3 +440,32 @@ branchC x l r = choose x $ Choice $ \c -> case c of { CLeft -> l; CRight -> r }
 -- Recover 'choose' from selective 'branch'.
 chooseS :: Selective f => f (Either a b) -> Choice (f (a -> c)) (f (b -> c)) -> f c
 chooseS x (Choice c) = branch x (c CLeft) (c CRight)
+
+------------------------------- Free ArrowChoice -------------------------------
+
+-- A free 'ArrowChoice' built on top of base components @f@.
+newtype FreeArrowChoice f a b = FreeArrowChoice {
+    runFreeArrowChoice :: forall arr. ArrowChoice arr
+                       => (forall i j. f i j -> arr i j) -> arr a b }
+
+-- A constant arrow, similar to the 'Const' applicative functor.
+newtype ConstArrow m a b = ConstArrow { getConstArrow :: m }
+
+instance Monoid m => Category (ConstArrow m) where
+    id = ConstArrow mempty
+    ConstArrow x . ConstArrow y = ConstArrow (x <> y)
+
+instance Monoid m => Arrow (ConstArrow m) where
+    arr _ = ConstArrow mempty
+    first (ConstArrow x) = ConstArrow x
+
+instance Monoid m => ArrowChoice (ConstArrow m) where
+    left (ConstArrow x) = ConstArrow x
+
+-- Collect all base arrows in a 'FreeArrowChoice'.
+foldArrowChoice :: Monoid m => (forall i o. f i o -> m) -> FreeArrowChoice f a b -> m
+foldArrowChoice f arr = getConstArrow $ runFreeArrowChoice arr (ConstArrow . f)
+
+-- Execute a 'FreeArrowChoice' in an arbitrary monad.
+runArrowChoice :: Monad m => (forall i o. f i o -> (i -> m o)) -> FreeArrowChoice f a b -> (a -> m b)
+runArrowChoice f arr = runKleisli $ runFreeArrowChoice arr (Kleisli . f)
