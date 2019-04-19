@@ -87,17 +87,17 @@ instance Show Key where
     show PC       = "PC"
 
 -- | The base functor for mutable processor state.
-data RW a = R Key                 (Value -> a)
-          | W Key (Program Value) (Value -> a)
+data RW a = Read  Key                 (Value -> a)
+          | Write Key (Program Value) (Value -> a)
     deriving Functor
 
 -- | A program is a free selective on top of the 'RW' base functor.
 type Program a = Select RW a
 
 instance Show (RW a) where
-    show (R k          _) = "Read "  ++ show k
-    show (W k (Pure v) _) = "Write " ++ show k ++ " " ++ show v
-    show (W k _        _) = "Write " ++ show k
+    show (Read  k          _) = "Read "  ++ show k
+    show (Write k (Pure v) _) = "Write " ++ show k ++ " " ++ show v
+    show (Write k _        _) = "Write " ++ show k
 
 logEntry :: MonadState State m => LogEntry Key Value -> m ()
 logEntry item = S.modify $ \s ->
@@ -106,7 +106,7 @@ logEntry item = S.modify $ \s ->
 -- | Interpret the base functor in a 'MonadState'.
 toState :: MonadState State m => RW a -> m a
 toState = \case
-    (R k t) -> do
+    (Read k t) -> do
         v <- case k of
                    Reg  r    -> (Map.! r   ) <$> S.gets registers
                    Cell addr -> (Map.! addr) <$> S.gets memory
@@ -114,7 +114,7 @@ toState = \case
                    PC        -> pc <$> S.get
         logEntry (ReadEntry k v)
         pure (t v)
-    (W k p t) -> do
+    (Write k p t) -> do
         v <- runSelect toState p
         logEntry (WriteEntry k v)
         case k of
@@ -132,8 +132,8 @@ runProgramState f = S.runState (runSelect toState f)
 
 -- | Interpret the base functor in the selective functor 'Over'.
 toOver :: RW a -> Over [RW ()] a
-toOver (R k _   ) = Over [R k (const ())]
-toOver (W k fv _) = runSelect toOver fv *> Over [W k fv (const ())]
+toOver (Read  k _   ) = Over [Read k (const ())]
+toOver (Write k fv _) = runSelect toOver fv *> Over [Write k fv (const ())]
 
 -- | Get all possible program effects.
 getProgramEffects :: Program a -> [RW ()]
@@ -141,11 +141,11 @@ getProgramEffects = getOver . runSelect toOver
 
 -- | A convenient alias for reading an element of the processor state.
 read :: Key -> Program Value
-read k = liftSelect (R k id)
+read k = liftSelect (Read k id)
 
 -- | A convenient alias for writing into an element of the processor state.
 write :: Key -> Program Value -> Program Value
-write k fv = liftSelect (W k fv id)
+write k fv = liftSelect (Write k fv id)
 
 -- --------------------------------------------------------------------------------
 -- -------- Instructions ----------------------------------------------------------
