@@ -16,8 +16,26 @@ No. We say this in line 192: "Any Applicative instance can thus be given a Selec
 
 > **B:** [l:921] In the implementation of write you evaluate the value to get the associated effects. It's clear that this is needed for the static analysis, but I worry that it will lead to quadratic or exponential blowup in the simulation. Is there an argument to be made that this is not the case? (**Please address this in rebuttal**)
 
-The implementation of `write` presented in the paper indeed causes exponential blowup in the simulation. This implementation is erroneous. The right way to go is to implement `write` simply as `write k fv = liftSelect (Write k fv id)` thus completely shifting the writing semantics into the natural transformations (e.g. `toState`). This will allow to subsume both correct simulation and static analysis, both implemented by their own natural transformations.
-**TODO: Andrey & Georgy**
+Thank you for pointing out a performance problem in our example! Indeed, the implementation of `write` presented in S5.3 causes an exponential blowup when simulating `write` chains, such as `write k0 (write k1 (write k2 (read k3)))`, where `read k3` is performed 2^3=8 times.
+
+Fortunately, the problem can be fixed as follows. We simplify the implementation of `write` in line 919 to:
+
+```
+write k fv = liftSelect (Write k fv id)
+```
+
+Static analysis (`getProgramEffects`) is then performed by using the natural transformation `toOver` to record effects in `fv` plus the write effect `Write k` itself:
+
+```
+toOver :: RW a -> Over [RW ()] a
+toOver (R k _   ) = Over [R k (const ())]
+toOver (W k fv _) = runSelect toOver fv *> Over [W k fv (const ())]
+
+getProgramEffects :: Program a -> [RW ()]
+getProgramEffects = getOver . runSelect toOver
+```
+
+The natural transformation `toState` needs no changes. The above change not only improves performance, but also makes the implementation more consistent. We will happily make this change in the revision.
 
 > **C:** At least, I would like to see a concrete instance that is Selective but (at least believed) not (to be) ArrowChoice.
 
