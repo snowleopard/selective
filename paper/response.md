@@ -12,7 +12,7 @@ The answer is "No", as we say in line 192.
 
 > **A:** this is odd because the authors argue that Applicative < Selective < Monad. Thus I would have expected some things to be Applicative, but not Selective.
 
-The relationship between `Applicative` and `Selective` is different from the relationship between `Applicative` and `Monad`. Not every `Applicative` is a `Monad`, but every `Applicative` is a `Selective`. The subclass relationship `Applicative < Selective` is justified by the extra method `select` in `Selective`. While `select = selectA` is a valid implementation of `select`, **it is not the only possible implementation**, as demonstrated by `Selective` instances `Over` and `Under`: indeed, `Over` uses `select = selectA`, but `Under` doesn't.
+The relationship between `Applicative` and `Selective` is different from the relationship between `Applicative` and `Monad`. Not every `Applicative` is a `Monad`, but every `Applicative` is a `Selective`. The subclass relationship `Applicative < Selective` is justified by the extra method `select` in `Selective`. While `select = selectA` is a valid implementation of `select`, **it is not the only useful implementation**, as demonstrated by `Selective` instances `Over` and `Under`: indeed, `Over` uses `select = selectA`, but `Under` doesn't.
 
 One should interpret the hierarchy as method set inclusion `{<*>}` < `{<*>, select}` < `{<*>, select, >>=}`. Different applications require different sets of methods. For example, **Haxl requires all three**: `<*>` gives parallelism, `select` gives speculative execution, and `>>=` gives arbitrary dynamic effects.
 
@@ -39,7 +39,7 @@ getProgramEffects :: Program a -> [RW ()]
 getProgramEffects = getOver . runSelect toOver
 ```
 
-The natural transformation `toState` needs no changes. This fix not only improves performance, but also makes the implementation more consistent. We'll happily make the fix in the revision.
+The natural transformation `toState` needs no changes. This fix not only improves performance, but also makes the implementation more consistent. We'll happily include the fix into the revision.
 
 > **C:** At least, I would like to see a concrete instance that is Selective but (at least believed) not (to be) ArrowChoice. [...] I do not believe that we "could use arrows to solve our static analysis and speculative execution examples"
 
