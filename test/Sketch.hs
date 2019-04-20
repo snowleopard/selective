@@ -443,10 +443,21 @@ chooseS x (Choice c) = branch x (c CLeft) (c CRight)
 
 ------------------------------- Free ArrowChoice -------------------------------
 
--- A free 'ArrowChoice' built on top of base components @f@.
+-- A free 'ArrowChoice' built on top of base components @f i o@.
 newtype FreeArrowChoice f a b = FreeArrowChoice {
-    runFreeArrowChoice :: forall arr. ArrowChoice arr
-                       => (forall i j. f i j -> arr i j) -> arr a b }
+    runFreeArrowChoice :: forall arr. ArrowChoice arr =>
+        (forall i o. f i o -> arr i o) -> arr a b }
+
+instance Category (FreeArrowChoice f) where
+    id = FreeArrowChoice (\_ -> C.id)
+    FreeArrowChoice x . FreeArrowChoice y = FreeArrowChoice (\t -> x t C.. y t)
+
+instance Arrow (FreeArrowChoice f) where
+    arr x = FreeArrowChoice (\_ -> A.arr x)
+    first (FreeArrowChoice x) = FreeArrowChoice (\t -> A.first (x t))
+
+instance ArrowChoice (FreeArrowChoice f) where
+    left (FreeArrowChoice x) = FreeArrowChoice (\t -> A.left (x t))
 
 -- A constant arrow, similar to the 'Const' applicative functor.
 newtype ConstArrow m a b = ConstArrow { getConstArrow :: m }
