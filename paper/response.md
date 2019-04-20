@@ -53,10 +53,10 @@ newtype FreeArrowChoice f a b = FreeArrowChoice {
 newtype ConstArrow m a b = ConstArrow { getConstArrow :: m }
 
 foldArrowChoice :: Monoid m => (forall i o. f i o -> m) -> FreeArrowChoice f a b -> m
-foldArrowChoice f arr = getConstArrow $ runFreeArrowChoice arr (ConstArrow . f)
+foldArrowChoice t arr = getConstArrow $ runFreeArrowChoice arr (ConstArrow . t)
 ```
 
-The `ConstArrow` plays the same role as the `Const` functor in static analysis: by using a natural transformation from the "base arrow" `f` to the `ConstArrow`, we can statically accumulate all monoidal labels of the effects. To execute a `FreeArrowChoice` we can use a natural transformation to the `Kleisli` arrow.
+`ConstArrow` plays the same role as the `Const` functor: we convert the "base arrow" `f` to `ConstArrow` using the function `t`, and statically accumulate the resulting monoidal labels. To execute a `FreeArrowChoice` we can similarly use the `Kleisli` arrow. We'll provide the full implementation as supplementary material and link to it.
 
 # Details
 
@@ -88,4 +88,4 @@ Daniel Peebles pointed out the following variation of `branch`, which is `>>=` i
 branch :: f (Sigma h) -> (forall a. h a -> f (a -> b)) -> f b
 ```
 
-`Sigma h` is a "tagged union" with generalised "tags" `h`, which can in particular be functions. We can provide the actual implementation as supplementary material.
+`Sigma h` is a "tagged union" with generalised "tags" `h`, which can in particular be functions. We'll provide the full implementation as supplementary material.
