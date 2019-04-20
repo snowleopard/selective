@@ -12,7 +12,7 @@ The answer is "No", as we say in line 192.
 
 > **A:** this is odd because the authors argue that Applicative < Selective < Monad. Thus I would have expected some things to be Applicative, but not Selective.
 
-The relationship between `Applicative` and `Selective` is different from the relationship between `Applicative` and `Monad`. Not every `Applicative` is a `Monad`, but every `Applicative` is a `Selective`. The subclass relationship `Applicative < Selective` is justified by the extra method `select` from `Selective`. While `select = selectA` is a valid implementation of `select`, **it is not the only possible implementation**, as demonstrated by `Selective` instances `Over` and `Under`: indeed, `Over` uses `select = selectA`, but `Under` doesn't.
+The relationship between `Applicative` and `Selective` is different from the relationship between `Applicative` and `Monad`. Not every `Applicative` is a `Monad`, but every `Applicative` is a `Selective`. The subclass relationship `Applicative < Selective` is justified by the extra method `select` in `Selective`. While `select = selectA` is a valid implementation of `select`, **it is not the only possible implementation**, as demonstrated by `Selective` instances `Over` and `Under`: indeed, `Over` uses `select = selectA`, but `Under` doesn't.
 
 One should interpret the hierarchy as method set inclusion `{<*>}` < `{<*>, select}` < `{<*>, select, >>=}`. Different applications require different sets of methods. For example, **Haxl requires all three**: `<*>` gives parallelism, `select` gives speculative execution, and `>>=` gives arbitrary dynamic effects.
 
@@ -20,7 +20,7 @@ We'll clarify this subtle point in the revision.
 
 > **B:** In the implementation of `write` you evaluate the value to get the associated effects. It's clear that this is needed for the static analysis, but I worry that it will lead to quadratic or exponential blowup in the simulation.
 
-Thank you for pointing out this performance problem! Indeed, the implementation of `write` presented in S5.3 causes an exponential blowup when simulating `write` chains, such as `write k0 (write k1 (write k2 (read k3)))`, where `read k3` is performed 2^3=8 times.
+Thank you for pointing out this performance problem! Indeed, the implementation of `write` presented in S5.3 causes an exponential blowup when simulating `write` chains, such as `write k0 (write k1 (write k2 (read k3)))`, performing `read k3` 2^3=8 times.
 
 Fortunately, we can fix the problem as follows. We simplify the implementation of `write` in line 919 to:
 
@@ -28,7 +28,7 @@ Fortunately, we can fix the problem as follows. We simplify the implementation o
 write k fv = liftSelect (Write k fv id)
 ```
 
-Static analysis (`getProgramEffects`) is then performed via the natural transformation `toOver` that records effects in `fv` plus the write effect `Write k` itself:
+Static analysis (`getProgramEffects` below) is then performed via the natural transformation `toOver` that records effects in `fv` plus the write effect `Write k` itself:
 
 ```
 toOver :: RW a -> Over [RW ()] a
@@ -39,7 +39,7 @@ getProgramEffects :: Program a -> [RW ()]
 getProgramEffects = getOver . runSelect toOver
 ```
 
-The natural transformation `toState` needs no changes. This fix not only improves performance, but also makes the implementation more consistent. We'll happily implement it in the revision.
+The natural transformation `toState` needs no changes. This fix not only improves performance, but also makes the implementation more consistent. We'll happily make the fix in the revision.
 
 > **C:** At least, I would like to see a concrete instance that is Selective but (at least believed) not (to be) ArrowChoice. [...] I do not believe that we "could use arrows to solve our static analysis and speculative execution examples"
 
@@ -56,7 +56,9 @@ foldArrowChoice :: Monoid m => (forall i o. f i o -> m) -> FreeArrowChoice f a b
 foldArrowChoice t arr = getConstArrow $ runFreeArrowChoice arr (ConstArrow . t)
 ```
 
-`ConstArrow` plays the same role as the `Const` functor: we convert the "base arrow" `f` to `ConstArrow` using the function `t`, and statically accumulate the resulting monoidal labels. To execute a `FreeArrowChoice` we can similarly use the `Kleisli` arrow. We'll provide the full implementation as supplementary material and link to it.
+`ConstArrow` plays the same role as the `Const` functor: we convert the "base arrow" `f` to `ConstArrow` using the function `t`, and statically accumulate the resulting monoidal effect labels.
+
+To execute a `FreeArrowChoice` we can use the `Kleisli` arrow. We'll provide the full implementation as supplementary material and link to it.
 
 # Details
 
