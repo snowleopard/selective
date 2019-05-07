@@ -111,9 +111,9 @@ dependenciesUnder task = getUnder $ run task (\k -> Under [k])
 \vspace{1mm}
 
 \noindent
-Thanks to the polymorphism of the task description over \hs{f}, we can
-``execute'' a given task with a mock callback like
-\hs{(\}\hs{k}~\hs{->}~\hs{Over}~\hs{[}\hs{k])}~\hs{::}~\hs{k}~\hs{->}~\hs{Over}~\hs{v},
+Thanks to the polymorphism of \hs{Task} over \hs{f}, we can ``execute'' a given
+task with a mock callback like
+\hs{(\}\hs{k}~\hs{->}~\hs{Over}~\hs{[}\hs{k])}~\hs{::}~\hs{k}~\hs{->}~\hs{Over}~\hs{[}\hs{k]}~\hs{v},
 whose only effect is recording the given key.
 
 To demonstrate this on an example, we need a way to model a \emph{build script},
