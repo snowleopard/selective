@@ -30,6 +30,7 @@ source-repository head
 library
     hs-source-dirs:     src
     exposed-modules:    Control.Selective,
+                        Control.Selective.Free,
                         Control.Selective.Free.Rigid
     build-depends:      base         >= 4.7     && < 5,
                         containers   >= 0.5.7.1 && < 7,
