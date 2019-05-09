@@ -18,7 +18,7 @@
 --
 -----------------------------------------------------------------------------
 module Control.Selective.Free (
-    -- * Free rigid selective functors
+    -- * Free selective functors
     Select (..), liftSelect,
 
     -- * Static analysis
