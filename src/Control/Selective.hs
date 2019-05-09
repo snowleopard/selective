@@ -452,11 +452,14 @@ selectAlt x y = failIfLeft x <|> selectA x y
 
 This has two issues:
 
-1) It's unclear if a generic 'failIfLeft' if possible, although most actual
-   instances should be able to implement it.
+1) A generic 'failIfLeft' if not possible, although many actual instances should
+   be able to implement it.
 
-2) More importantly, this requires duplication of work: if we fail becauase we
-   happened to parse a 'Right' value in the first parser, then we need to rerun
-   it again, obtain a 'Left', and then execute the second parser.
+2) More importantly, this requires duplication of work: if we failed becauase we
+   happened to parse a 'Left' value in the first parser, then we need to rerun
+   it, obtain a 'Left' once again, and then execute the second parser. Again, a
+   specific instance may be able to cache the result and reuse it without
+   duplicating any work, but this does not seem to be possible to achieve
+   generically for any Alternative.
 
 -}
