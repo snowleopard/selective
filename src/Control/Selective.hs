@@ -432,3 +432,31 @@ instance ArrowChoice a => Selective (ArrowMonad a) where
 
 toArrow :: Arrow a => ArrowMonad a (b -> c) -> a b c
 toArrow (ArrowMonad f) = arr (\x -> ((), x)) >>> first f >>> arr (uncurry ($))
+
+---------------------------------- Alternative ---------------------------------
+newtype ComposeEither f e a = ComposeEither (f (Either e a))
+    deriving Functor
+    deriving Applicative via Compose f (Either e)
+
+instance (Selective f, Monoid e) => Alternative (ComposeEither f e) where
+    empty = ComposeEither $ pure $ Left mempty
+    ComposeEither x <|> ComposeEither y = ComposeEither (x `orElse` y)
+
+{- One could also try implementing 'select' via 'Alternative' as follows:
+
+selectAlt :: Alternative f => f (Either a b) -> f (a -> b) -> f b
+selectAlt x y = failIfLeft x <|> selectA x y
+  where
+    failIfLeft :: Alternative f => f (Either a b) -> f b
+    failIfLeft = undefined
+
+This has two issues:
+
+1) It's unclear if a generic 'failIfLeft' if possible, although most actual
+   instances should be able to implement it.
+
+2) More importantly, this requires duplication of work: if we fail becauase we
+   happened to parse a 'Right' value in the first parser, then we need to rerun
+   it again, obtain a 'Left', and then execute the second parser.
+
+-}
