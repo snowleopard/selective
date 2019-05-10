@@ -1,5 +1,11 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TupleSections, DeriveFunctor #-}
-{-# LANGUAGE DerivingVia, StandaloneDeriving, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving, GeneralizedNewtypeDeriving #-}
+#if __GLASGOW_HASKELL__ >= 806
+{-# LANGUAGE DerivingVia #-}
+#else
+{-# LANGUAGE TemplateHaskell, TypeOperators, KindSignatures, ScopedTypeVariables, InstanceSigs, FlexibleContexts, UndecidableInstances, RankNTypes #-}
+#endif
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Control.Selective
@@ -50,6 +56,10 @@ import GHC.Conc (STM)
 import qualified Control.Monad.Trans.RWS.Strict    as S
 import qualified Control.Monad.Trans.State.Strict  as S
 import qualified Control.Monad.Trans.Writer.Strict as S
+
+#if __GLASGOW_HASKELL__ < 806
+import Data.Deriving.Via
+#endif
 
 -- | Selective applicative functors. You can think of 'select' as a selective
 -- function application: when given a value of type @Left a@, you __must apply__
@@ -201,7 +211,7 @@ apS f x = select (Left <$> f) (flip ($) <$> x)
 -- | One can easily implement a monadic 'selectM' that satisfies the laws,
 -- hence any 'Monad' is 'Selective'.
 selectM :: Monad f => f (Either a b) -> f (a -> b) -> f b
-selectM x y = x >>= \e -> case e of Left  a -> ($a) <$> y -- execute y
+selectM x y = x >>= \e -> case e of Left  a -> ($ a) <$> y -- execute y
                                     Right b -> pure b     -- skip y
 
 -- Many useful 'Monad' combinators can be implemented with 'Selective'
@@ -323,7 +333,7 @@ instance Applicative f => Selective (SelectA f) where
 instance Selective f => Selective (Lift f) where
     select              x   (Pure  y) = either y id <$> x
     select (Pure (Right x)) _         = Pure x
-    select (Pure (Left  x)) (Other y) = Other $ ($x) <$> y
+    select (Pure (Left  x)) (Other y) = Other $ ($ x) <$> y
     select (Other       x ) (Other y) = Other $   x  <*? y
 
 -- | Any monad can be given a 'Selective' instance by defining
@@ -336,8 +346,14 @@ instance Monad f => Selective (SelectM f) where
 
 -- | Static analysis of selective functors with over-approximation.
 newtype Over m a = Over m
-    deriving (Functor, Applicative, Selective) via SelectA (Const m)
     deriving Show
+#if __GLASGOW_HASKELL__ >= 806
+    deriving (Functor, Applicative, Selective) via SelectA (Const m)
+#else
+$(deriveVia [t| forall m. Functor (Over m) `Via` SelectA (Const m) |])
+$(deriveVia [t| forall m. (Monoid m) => Applicative (Over m) `Via` SelectA (Const m) |])
+$(deriveVia [t| forall m. (Monoid m) => Selective (Over m) `Via` SelectA (Const m) |])
+#endif
 
 -- | Extract the contents of 'Over'.
 getOver :: Over m a -> m
@@ -345,8 +361,13 @@ getOver (Over x) = x
 
 -- | Static analysis of selective functors with under-approximation.
 newtype Under m a = Under m
-    deriving (Functor, Applicative) via Const m
     deriving Show
+#if __GLASGOW_HASKELL__ >= 806
+    deriving (Functor, Applicative) via Const m
+#else
+$(deriveVia [t| forall m. Functor (Under m) `Via` Const m |])
+$(deriveVia [t| forall m. (Monoid m) => Applicative (Under m) `Via` Const m |])
+#endif
 
 instance Monoid m => Selective (Under m) where
     select (Under m) _ = Under m
@@ -362,7 +383,11 @@ getUnder (Under x) = x
 -- different paths, all threads must actually process both paths (as all threads
 -- of a processor always execute in lock-step), but masking is used to disable
 -- and enable the various threads as appropriate..."
+#if __GLASGOW_HASKELL__ >= 806
 deriving via SelectA ZipList instance Selective ZipList
+#else
+$(deriveVia [t| Selective ZipList `Via` SelectA ZipList |])
+#endif
 
 -- | Selective instance for the standard applicative functor Validation.
 -- This is a good example of a selective functor which is not a monad.
@@ -377,7 +402,7 @@ instance Semigroup e => Applicative (Validation e) where
 
 instance Semigroup e => Selective (Validation e) where
     select (Success (Right b)) _ = Success b
-    select (Success (Left  a)) f = ($a) <$> f
+    select (Success (Left  a)) f = ($ a) <$> f
     select (Failure e        ) _ = Failure e
 
 instance (Selective f, Selective g) => Selective (Product f g) where
@@ -395,6 +420,7 @@ instance (Applicative f, Selective g) => Selective (Compose f g) where
 -- Monad instances
 
 -- As a quick experiment, try: ifS (pure True) (print 1) (print 2)
+#if __GLASGOW_HASKELL__ >= 806
 deriving via SelectM IO instance Selective IO
 
 -- And... we need to write a lot more instances
@@ -420,6 +446,36 @@ deriving via SelectM (StateT     s m) instance            Monad m  => Selective 
 deriving via SelectM (S.StateT   s m) instance            Monad m  => Selective (S.StateT   s m)
 deriving via SelectM (WriterT    w m) instance (Monoid w, Monad m) => Selective (WriterT    w m)
 deriving via SelectM (S.WriterT  w m) instance (Monoid w, Monad m) => Selective (S.WriterT  w m)
+#else
+$(deriveVia [t| Selective IO `Via` SelectM IO |])
+
+-- And... we need to write a lot more instances
+$(deriveVia [t| Selective [] `Via` SelectM [] |])
+$(deriveVia [t| forall a. Monoid a => Selective ((,) a) `Via` SelectM ((,) a) |])
+$(deriveVia [t| forall e. Selective (Either e) `Via` SelectM (Either e) |])
+$(deriveVia [t| Selective Identity `Via` SelectM Identity |])
+$(deriveVia [t| Selective Maybe `Via` SelectM Maybe |])
+$(deriveVia [t| Selective NonEmpty `Via` SelectM NonEmpty |])
+$(deriveVia [t| Selective Proxy `Via` SelectM Proxy |])
+$(deriveVia [t| forall s. Selective (ST s) `Via` SelectM (ST s) |])
+$(deriveVia [t| Selective STM `Via` SelectM STM |])
+
+$(deriveVia [t| forall r m. Selective (ContT r m) `Via` SelectM (ContT r m) |])
+$(deriveVia [t| forall m e. Monad m => Selective (ExceptT e m) `Via` SelectM (ExceptT e m) |])
+$(deriveVia [t| forall m. Monad m => Selective (IdentityT m) `Via` SelectM (IdentityT m) |])
+$(deriveVia [t| forall m. Monad m => Selective (MaybeT m) `Via` SelectM (MaybeT m) |])
+$(deriveVia [t| forall r m. Monad m => Selective (ReaderT r m) `Via` SelectM (ReaderT r m) |])
+$(deriveVia [t| forall w s r m.(Monoid w, Monad m) => Selective (RWST r w s m) `Via` SelectM (RWST r w s m) |])
+$(deriveVia [t| forall w s r m.(Monoid w, Monad m) => Selective (S.RWST r w s m) `Via` SelectM (S.RWST r w s m) |])
+$(deriveVia [t| forall m s. Monad m => Selective (StateT s m) `Via` SelectM (StateT s m) |])
+$(deriveVia [t| forall m s. Monad m => Selective (S.StateT s m) `Via` SelectM (S.StateT s m) |])
+$(deriveVia [t| forall m w.(Monoid w, Monad m) => Selective (WriterT w m) `Via` SelectM (WriterT w m) |])
+$(deriveVia [t| forall m w.(Monoid w, Monad m) => Selective (S.WriterT w m) `Via` SelectM (S.WriterT w m) |])
+
+-- deriving-compat does not appreciate this instance due to https://gitlab.haskell.org/ghc/ghc/issues/7667
+
+-- $(deriveVia [t| forall a.            Selective ((->) a) `Via` SelectM ((->) a)   |])
+#endif
 
 ------------------------------------ Arrows ------------------------------------
 -- See the following standard definitions in "Control.Arrow".
@@ -436,7 +492,11 @@ toArrow (ArrowMonad f) = arr (\x -> ((), x)) >>> first f >>> arr (uncurry ($))
 ---------------------------------- Alternative ---------------------------------
 newtype ComposeEither f e a = ComposeEither (f (Either e a))
     deriving Functor
+#if __GLASGOW_HASKELL__ >= 806
     deriving Applicative via Compose f (Either e)
+#else
+$(deriveVia [t| forall e f. (Applicative f) => Applicative (ComposeEither f e) `Via` Compose f (Either e) |])
+#endif
 
 instance (Selective f, Monoid e) => Alternative (ComposeEither f e) where
     empty = ComposeEither $ pure $ Left mempty

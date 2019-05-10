@@ -1,4 +1,10 @@
-{-# LANGUAGE StandaloneDeriving, DerivingVia #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE StandaloneDeriving #-}
+#if __GLASGOW_HASKELL__ >= 806
+{-# LANGUAGE DerivingVia #-}
+#else
+{-# LANGUAGE TemplateHaskell, TypeOperators, KindSignatures, ScopedTypeVariables, InstanceSigs, FlexibleContexts, UndecidableInstances, RankNTypes #-}
+#endif
 {-# LANGUAGE FlexibleInstances, TupleSections, TypeApplications #-}
 module Laws where
 
@@ -10,6 +16,11 @@ import Control.Selective
 import Data.Functor.Identity
 import Control.Monad.State
 import Text.Show.Functions()
+
+#if __GLASGOW_HASKELL__ < 806
+import Data.Deriving.Via
+#endif
+
 
 -- | TODO:
 -- ifS (pure x) a1 b1 *> ifS (pure x) a2 b2 = ifS (pure x) (a1 *> a2) (b1 *> b2)
@@ -31,7 +42,7 @@ lawAssociativity :: (Selective f, Eq (f c)) =>
 lawAssociativity x y z = (x <*? (y <*? z)) == ((f <$> x) <*? (g <$> y) <*? (h <$> z))
         where
             f x = Right <$> x
-            g y = \a -> bimap (,a) ($a) y
+            g y = \a -> bimap (,a) ($ a) y
             h z = uncurry z
 
 {- | If 'f' is a 'Monad' |-}
@@ -94,13 +105,17 @@ propertyPureRight x y = (pure (Right x) <*? y) == pure x
 -- | pure-left
 --   pure (Left x) <*? y = ($x) <$> y
 propertyPureLeft :: (Selective f, Eq (f b)) => a -> f (a -> b) -> Bool
-propertyPureLeft x y = (pure (Left x) <*? y) == (($x) <$> y)
+propertyPureLeft x y = (pure (Left x) <*? y) == (($ x) <$> y)
 
 --------------------------------------------------------------------------------
 ------------------------ Over --------------------------------------------------
 --------------------------------------------------------------------------------
 deriving instance Eq m => Eq (Over m a)
+#if __GLASGOW_HASKELL__ >= 806
 deriving via (Const m a) instance Arbitrary m => Arbitrary (Over m a)
+#else
+$(deriveVia [t| forall m a. Arbitrary m => Arbitrary (Over m a) `Via` Const m a |])
+#endif
 
 propertyPureRightOver :: IO ()
 propertyPureRightOver = quickCheck (propertyPureRight @(Over String) @Int)
@@ -109,7 +124,11 @@ propertyPureRightOver = quickCheck (propertyPureRight @(Over String) @Int)
 ------------------------ Under -------------------------------------------------
 --------------------------------------------------------------------------------
 deriving instance Eq m => Eq (Under m a)
+#if __GLASGOW_HASKELL__ >= 806
 deriving via (Const m a) instance Arbitrary m => Arbitrary (Under m a)
+#else
+$(deriveVia [t| forall m a. Arbitrary m => Arbitrary (Under m a) `Via` Const m a |])
+#endif
 
 propertyPureRightUnder :: IO ()
 propertyPureRightUnder = quickCheck (propertyPureRight @(Under String) @Int)
