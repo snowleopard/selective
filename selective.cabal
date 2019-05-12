@@ -10,10 +10,11 @@ homepage:      https://github.com/snowleopard/selective
 category:      Control
 build-type:    Simple
 cabal-version: 1.18
-tested-with:   GHC==8.0.2,
-               GHC==8.2.2,
-               GHC==8.4.3,
-               GHC==8.6.4
+tested-with:   GHC == 8.0.2,
+               GHC == 8.2.2,
+               GHC == 8.4.3,
+               GHC == 8.6.5,
+               GHC == 8.8.1
 stability:     experimental
 description:   Selective applicative functors: declare your effects statically,
                select which to execute dynamically.
