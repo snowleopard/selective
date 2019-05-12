@@ -1,11 +1,10 @@
-{-# LANGUAGE StandaloneDeriving, DerivingVia #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances, TupleSections, TypeApplications #-}
 module Laws where
 
 import Test.QuickCheck hiding (Failure, Success)
 import Data.Bifunctor (bimap, first, second)
 import Control.Arrow hiding (first, second)
-import Data.Functor.Const
 import Control.Selective
 import Data.Functor.Identity
 import Control.Monad.State
@@ -99,8 +98,9 @@ propertyPureLeft x y = (pure (Left x) <*? y) == (($x) <$> y)
 --------------------------------------------------------------------------------
 ------------------------ Over --------------------------------------------------
 --------------------------------------------------------------------------------
-deriving instance Eq m => Eq (Over m a)
-deriving via (Const m a) instance Arbitrary m => Arbitrary (Over m a)
+instance Arbitrary a => Arbitrary (Over a b) where
+    arbitrary = Over <$> arbitrary
+    shrink    = map Over . shrink . getOver
 
 propertyPureRightOver :: IO ()
 propertyPureRightOver = quickCheck (propertyPureRight @(Over String) @Int)
@@ -108,8 +108,9 @@ propertyPureRightOver = quickCheck (propertyPureRight @(Over String) @Int)
 --------------------------------------------------------------------------------
 ------------------------ Under -------------------------------------------------
 --------------------------------------------------------------------------------
-deriving instance Eq m => Eq (Under m a)
-deriving via (Const m a) instance Arbitrary m => Arbitrary (Under m a)
+instance Arbitrary a => Arbitrary (Under a b) where
+    arbitrary = Under <$> arbitrary
+    shrink    = map Under . shrink . getUnder
 
 propertyPureRightUnder :: IO ()
 propertyPureRightUnder = quickCheck (propertyPureRight @(Under String) @Int)
