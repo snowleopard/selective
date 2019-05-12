@@ -1,5 +1,5 @@
-{-# LANGUAGE TupleSections, DeriveFunctor #-}
-{-# LANGUAGE DerivingVia, StandaloneDeriving, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP, TupleSections, DeriveFunctor #-}
+{-# LANGUAGE StandaloneDeriving, GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Control.Selective
@@ -23,8 +23,7 @@ module Control.Selective (
     foldS, anyS, allS, bindS, Cases, casesEnum, cases, matchS, matchM,
 
     -- * Selective functors
-    SelectA (..), SelectM (..), Over (..), getOver, Under (..), getUnder,
-    Validation (..)
+    SelectA (..), SelectM (..), Over (..), Under (..), Validation (..)
     ) where
 
 import Control.Applicative
@@ -45,6 +44,7 @@ import Data.Functor.Identity
 import Data.Functor.Product
 import Data.List.NonEmpty
 import Data.Proxy
+import Data.Semigroup (Semigroup (..))
 import GHC.Conc (STM)
 
 import qualified Control.Monad.Trans.RWS.Strict    as S
@@ -306,7 +306,11 @@ allS :: Selective f => (a -> f Bool) -> [a] -> f Bool
 allS p = foldr ((<&&>) . p) (pure True)
 
 -- | Generalised folding with the short-circuiting behaviour.
-foldS :: (Selective f, Foldable t, Monoid a) => t (f (Either e a)) -> f (Either e a)
+foldS :: (Selective f, Foldable t, Monoid a
+#if !MIN_VERSION_base(4,11,0)
+  , Semigroup a
+#endif
+    ) => t (f (Either e a)) -> f (Either e a)
 foldS = foldr andAlso (pure (Right mempty))
 
 -- Instances
@@ -335,25 +339,26 @@ instance Monad f => Selective (SelectM f) where
     select = selectM
 
 -- | Static analysis of selective functors with over-approximation.
-newtype Over m a = Over m
-    deriving (Functor, Applicative, Selective) via SelectA (Const m)
-    deriving Show
+newtype Over m a = Over { getOver :: m }
+    deriving (Eq, Functor, Ord, Show)
 
--- | Extract the contents of 'Over'.
-getOver :: Over m a -> m
-getOver (Over x) = x
+instance Monoid m => Applicative (Over m) where
+    pure _            = Over mempty
+    Over x <*> Over y = Over (mappend x y)
+
+instance Monoid m => Selective (Over m) where
+    select (Over x) (Over y) = Over (mappend x y)
 
 -- | Static analysis of selective functors with under-approximation.
-newtype Under m a = Under m
-    deriving (Functor, Applicative) via Const m
-    deriving Show
+newtype Under m a = Under { getUnder :: m }
+    deriving (Eq, Functor, Ord, Show)
+
+instance Monoid m => Applicative (Under m) where
+    pure _              = Under mempty
+    Under x <*> Under y = Under (mappend x y)
 
 instance Monoid m => Selective (Under m) where
     select (Under m) _ = Under m
-
--- | Extract the contents of 'Under'.
-getUnder :: Under m a -> m
-getUnder (Under x) = x
 
 -- The 'Selective' 'ZipList' instance corresponds to the SIMT execution model.
 -- Quoting https://en.wikipedia.org/wiki/Single_instruction,_multiple_threads:
@@ -362,7 +367,7 @@ getUnder (Under x) = x
 -- different paths, all threads must actually process both paths (as all threads
 -- of a processor always execute in lock-step), but masking is used to disable
 -- and enable the various threads as appropriate..."
-deriving via SelectA ZipList instance Selective ZipList
+instance Selective ZipList where select = selectA
 
 -- | Selective instance for the standard applicative functor Validation.
 -- This is a good example of a selective functor which is not a monad.
@@ -390,36 +395,36 @@ instance (Selective f, Selective g) => Selective (Product f g) where
 -- instance (Alternative f, Applicative g) => Alternative (Compose f g) ...
 --
 instance (Applicative f, Selective g) => Selective (Compose f g) where
-    select (Compose x) (Compose y) = Compose $ select <$> x <*> y
+    select (Compose x) (Compose y) = Compose (select <$> x <*> y)
 
 -- Monad instances
 
 -- As a quick experiment, try: ifS (pure True) (print 1) (print 2)
-deriving via SelectM IO instance Selective IO
+instance Selective IO where select = selectM
 
 -- And... we need to write a lot more instances
-deriving via SelectM []         instance             Selective []
-deriving via SelectM ((,) a)    instance Monoid a => Selective ((,) a)
-deriving via SelectM ((->) a)   instance             Selective ((->) a)
-deriving via SelectM (Either e) instance             Selective (Either e)
-deriving via SelectM Identity   instance             Selective Identity
-deriving via SelectM Maybe      instance             Selective Maybe
-deriving via SelectM NonEmpty   instance             Selective NonEmpty
-deriving via SelectM Proxy      instance             Selective Proxy
-deriving via SelectM (ST s)     instance             Selective (ST s)
-deriving via SelectM STM        instance             Selective STM
+instance             Selective []         where select = selectM
+instance Monoid a => Selective ((,) a)    where select = selectM
+instance             Selective ((->) a)   where select = selectM
+instance             Selective (Either e) where select = selectM
+instance             Selective Identity   where select = selectM
+instance             Selective Maybe      where select = selectM
+instance             Selective NonEmpty   where select = selectM
+instance             Selective Proxy      where select = selectM
+instance             Selective (ST s)     where select = selectM
+instance             Selective STM        where select = selectM
 
-deriving via SelectM (ContT      r m) instance                        Selective (ContT      r m)
-deriving via SelectM (ExceptT    e m) instance            Monad m  => Selective (ExceptT    e m)
-deriving via SelectM (IdentityT    m) instance            Monad m  => Selective (IdentityT    m)
-deriving via SelectM (MaybeT       m) instance            Monad m  => Selective (MaybeT       m)
-deriving via SelectM (ReaderT    r m) instance            Monad m  => Selective (ReaderT    r m)
-deriving via SelectM (RWST   r w s m) instance (Monoid w, Monad m) => Selective (RWST   r w s m)
-deriving via SelectM (S.RWST r w s m) instance (Monoid w, Monad m) => Selective (S.RWST r w s m)
-deriving via SelectM (StateT     s m) instance            Monad m  => Selective (StateT     s m)
-deriving via SelectM (S.StateT   s m) instance            Monad m  => Selective (S.StateT   s m)
-deriving via SelectM (WriterT    w m) instance (Monoid w, Monad m) => Selective (WriterT    w m)
-deriving via SelectM (S.WriterT  w m) instance (Monoid w, Monad m) => Selective (S.WriterT  w m)
+instance                        Selective (ContT      r m) where select = selectM
+instance            Monad m  => Selective (ExceptT    e m) where select = selectM
+instance            Monad m  => Selective (IdentityT    m) where select = selectM
+instance            Monad m  => Selective (MaybeT       m) where select = selectM
+instance            Monad m  => Selective (ReaderT    r m) where select = selectM
+instance (Monoid w, Monad m) => Selective (RWST   r w s m) where select = selectM
+instance (Monoid w, Monad m) => Selective (S.RWST r w s m) where select = selectM
+instance            Monad m  => Selective (StateT     s m) where select = selectM
+instance            Monad m  => Selective (S.StateT   s m) where select = selectM
+instance (Monoid w, Monad m) => Selective (WriterT    w m) where select = selectM
+instance (Monoid w, Monad m) => Selective (S.WriterT  w m) where select = selectM
 
 ------------------------------------ Arrows ------------------------------------
 -- See the following standard definitions in "Control.Arrow".
@@ -436,10 +441,17 @@ toArrow (ArrowMonad f) = arr (\x -> ((), x)) >>> first f >>> arr (uncurry ($))
 ---------------------------------- Alternative ---------------------------------
 newtype ComposeEither f e a = ComposeEither (f (Either e a))
     deriving Functor
-    deriving Applicative via Compose f (Either e)
 
-instance (Selective f, Monoid e) => Alternative (ComposeEither f e) where
-    empty = ComposeEither $ pure $ Left mempty
+instance Applicative f => Applicative (ComposeEither f e) where
+    pure a                              = ComposeEither (pure $ Right a)
+    ComposeEither x <*> ComposeEither y = ComposeEither ((<*>) <$> x <*> y)
+
+instance (Selective f, Monoid e
+#if !MIN_VERSION_base(4,11,0)
+  , Semigroup e
+#endif
+    ) => Alternative (ComposeEither f e) where
+    empty                               = ComposeEither (pure $ Left mempty)
     ComposeEither x <|> ComposeEither y = ComposeEither (x `orElse` y)
 
 {- One could also try implementing 'select' via 'Alternative' as follows:

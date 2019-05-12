@@ -1,11 +1,11 @@
-{-# LANGUAGE StandaloneDeriving, DerivingVia #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances, TupleSections, TypeApplications #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Laws where
 
 import Test.QuickCheck hiding (Failure, Success)
 import Data.Bifunctor (bimap, first, second)
 import Control.Arrow hiding (first, second)
-import Data.Functor.Const
 import Control.Selective
 import Data.Functor.Identity
 import Control.Monad.State
@@ -99,8 +99,9 @@ propertyPureLeft x y = (pure (Left x) <*? y) == (($x) <$> y)
 --------------------------------------------------------------------------------
 ------------------------ Over --------------------------------------------------
 --------------------------------------------------------------------------------
-deriving instance Eq m => Eq (Over m a)
-deriving via (Const m a) instance Arbitrary m => Arbitrary (Over m a)
+instance Arbitrary a => Arbitrary (Over a b) where
+    arbitrary = Over <$> arbitrary
+    shrink    = map Over . shrink . getOver
 
 propertyPureRightOver :: IO ()
 propertyPureRightOver = quickCheck (propertyPureRight @(Over String) @Int)
@@ -108,8 +109,9 @@ propertyPureRightOver = quickCheck (propertyPureRight @(Over String) @Int)
 --------------------------------------------------------------------------------
 ------------------------ Under -------------------------------------------------
 --------------------------------------------------------------------------------
-deriving instance Eq m => Eq (Under m a)
-deriving via (Const m a) instance Arbitrary m => Arbitrary (Under m a)
+instance Arbitrary a => Arbitrary (Under a b) where
+    arbitrary = Under <$> arbitrary
+    shrink    = map Under . shrink . getUnder
 
 propertyPureRightUnder :: IO ()
 propertyPureRightUnder = quickCheck (propertyPureRight @(Under String) @Int)
@@ -119,18 +121,10 @@ propertyPureRightUnder = quickCheck (propertyPureRight @(Under String) @Int)
 --------------------------------------------------------------------------------
 deriving instance (Eq e, Eq a) => Eq (Validation e a)
 
--- | This is a copy-paste of the 'Arbitrary2' instance for 'Either' defined in
---   the 'Test.QuickCheck.Arbitrary' module. 'Left' is renamed to 'Failure' and
---   'Right' to 'Success'.
-instance Arbitrary2 Validation where
-  liftArbitrary2 arbA arbB = oneof [liftM Failure arbA, liftM Success arbB]
-
-  liftShrink2 shrA _ (Failure x)  = [ Failure  x' | x' <- shrA x ]
-  liftShrink2 _ shrB (Success y) = [ Success y' | y' <- shrB y ]
-
 instance (Arbitrary e, Arbitrary a) => Arbitrary (Validation e a) where
-  arbitrary = arbitrary2
-  shrink = shrink2
+  arbitrary = oneof [liftM Failure arbitrary, liftM Success arbitrary]
+  shrink (Failure x) = [ Failure x' | x' <- shrink x ]
+  shrink (Success y) = [ Success y' | y' <- shrink y ]
 
 --------------------------------------------------------------------------------
 ------------------------ ArrowMonad --------------------------------------------

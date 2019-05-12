@@ -75,6 +75,7 @@ overLaws = testGroup "Laws"
         \x -> lawAssociativity @(Over String) @Int @Int x
     ]
 
+overTheorems :: TestTree
 overTheorems = testGroup "Theorems"
     [ testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
         \x -> theorem1 @(Over String) @Int @Int x
@@ -90,6 +91,7 @@ overTheorems = testGroup "Theorems"
         \x -> theorem6 @(Over String) @Int @Int x
     ]
 
+overProperties :: TestTree
 overProperties = testGroup "Properties"
     [ expectFail $
       testProperty "pure-right: pure (Right x) <*? y = pure x" $
@@ -124,8 +126,8 @@ underTheorems = testGroup "Theorems"
         \x -> theorem3 @(Under String) @Int @Int @Int x
     , testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
         \x -> theorem4 @(Under String) @Int @Int x
-    , expectFailBecause "'Under' is a non-rigid selective functor" $
-      testProperty "(f <*> g) == (f `apS` g)" $
+    -- 'Under' is a non-rigid selective functor
+    , expectFail $ testProperty "(f <*> g) == (f `apS` g)" $
         \x -> theorem5 @(Under String) @Int @Int x
     , testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
         \x -> theorem6 @(Under String) @Int @Int x
@@ -167,11 +169,11 @@ validationTheorems = testGroup "Theorems"
         \x -> theorem3 @(Validation String) @Int @Int @Int x
     , testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
         \x -> theorem4 @(Validation String) @Int @Int x
-    , expectFailBecause "'Validation' is a non-rigid selective functor" $
-      testProperty "(f <*> g) == (f `apS` g)" $
+    -- 'Validation' is a non-rigid selective functor
+    , expectFail $ testProperty "(f <*> g) == (f `apS` g)" $
         \x -> theorem5 @(Validation String) @Int @Int x
-    , expectFailBecause "'Validation' is a non-rigid selective functor" $
-      testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
+    -- 'Validation' is a non-rigid selective functor
+    , expectFail $ testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
         \x -> theorem6 @(Validation String) @Int @Int @Int x
     ]
 
@@ -207,6 +209,7 @@ arrowMonad :: TestTree
 arrowMonad = testGroup "ArrowMonad (->)"
     [arrowMonadLaws, arrowMonadTheorems, arrowMonadProperties]
 
+arrowMonadLaws :: TestTree
 arrowMonadLaws = testGroup "Laws"
     [ testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
         \x -> lawIdentity @(ArrowMonad (->)) @Int x
@@ -220,6 +223,7 @@ arrowMonadLaws = testGroup "Laws"
         \x -> selectALaw @(ArrowMonad (->)) @Int @Int x
     ]
 
+arrowMonadTheorems :: TestTree
 arrowMonadTheorems = testGroup "Theorems"
     [ testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
         \x -> theorem1 @(ArrowMonad (->)) @Int @Int @Int x
@@ -235,6 +239,7 @@ arrowMonadTheorems = testGroup "Theorems"
         \x -> theorem6 @(ArrowMonad (->)) @Int @Int @Int x
     ]
 
+arrowMonadProperties :: TestTree
 arrowMonadProperties = testGroup "Properties"
     [ testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @(ArrowMonad (->)) @Int @Int x
@@ -247,6 +252,7 @@ arrowMonadProperties = testGroup "Properties"
 maybe :: TestTree
 maybe = testGroup "Maybe" [maybeLaws, maybeTheorems, maybeProperties]
 
+maybeLaws :: TestTree
 maybeLaws = testGroup "Laws"
     [ testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
         \x -> lawIdentity @Maybe @Int x
@@ -258,6 +264,7 @@ maybeLaws = testGroup "Laws"
         \x -> lawMonad @Maybe @Int @Int x
     ]
 
+maybeTheorems :: TestTree
 maybeTheorems = testGroup "Theorems"
     [ testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
         \x -> theorem1 @Maybe @Int @Int @Int x
@@ -273,6 +280,7 @@ maybeTheorems = testGroup "Theorems"
         \x -> theorem6 @Maybe @Int @Int @Int x
     ]
 
+maybeProperties :: TestTree
 maybeProperties = testGroup "Properties"
     [ testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @Maybe @Int @Int x
@@ -286,6 +294,7 @@ identity :: TestTree
 identity = testGroup "Identity"
     [identityLaws, identityTheorems, identityProperties]
 
+identityLaws :: TestTree
 identityLaws = testGroup "Laws"
     [ testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
         \x -> lawIdentity @Identity @Int x
@@ -297,6 +306,7 @@ identityLaws = testGroup "Laws"
         \x -> lawMonad @Identity @Int @Int x
     ]
 
+identityTheorems :: TestTree
 identityTheorems = testGroup "Theorems"
     [ testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
         \x -> theorem1 @Identity @Int @Int @Int x
@@ -312,6 +322,7 @@ identityTheorems = testGroup "Theorems"
         \x -> theorem6 @Identity @Int @Int @Int x
     ]
 
+identityProperties :: TestTree
 identityProperties = testGroup "Properties"
     [ testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @Identity @Int @Int x

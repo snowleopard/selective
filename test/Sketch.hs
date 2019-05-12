@@ -464,7 +464,7 @@ newtype ConstArrow m a b = ConstArrow { getConstArrow :: m }
 
 instance Monoid m => Category (ConstArrow m) where
     id = ConstArrow mempty
-    ConstArrow x . ConstArrow y = ConstArrow (x <> y)
+    ConstArrow x . ConstArrow y = ConstArrow (mappend x y)
 
 instance Monoid m => Arrow (ConstArrow m) where
     arr _ = ConstArrow mempty
