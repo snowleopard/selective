@@ -271,9 +271,9 @@ willOverflow arg1 arg2 =
 
 renderState :: State -> String
 renderState state =
-  "Registers: " <> show (registers state) <> "\n" <>
-  "Flags: " <> show (Map.toList $ flags state) <> "\n" <>
-  "Log: " <>  show (log state)
+  "Registers: " ++ show (registers state)          ++ "\n" ++
+  "Flags: "     ++ show (Map.toList $ flags state) ++ "\n" ++
+  "Log: "       ++ show (log state)
 
 instance Show State where
     show = renderState

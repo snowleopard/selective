@@ -1,4 +1,4 @@
-{-# LANGUAGE TupleSections, DeriveFunctor #-}
+{-# LANGUAGE CPP, TupleSections, DeriveFunctor #-}
 {-# LANGUAGE StandaloneDeriving, GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
@@ -44,6 +44,7 @@ import Data.Functor.Identity
 import Data.Functor.Product
 import Data.List.NonEmpty
 import Data.Proxy
+import Data.Semigroup (Semigroup (..))
 import GHC.Conc (STM)
 
 import qualified Control.Monad.Trans.RWS.Strict    as S
@@ -286,7 +287,7 @@ untilRight x = select y h
     -- y :: f (Either a (a, b))
     y = fmap (mempty,) <$> x
     -- h :: f (a -> (a, b))
-    h = (\(as, b) a -> (a <> as, b)) <$> untilRight x
+    h = (\(as, b) a -> (mappend a as, b)) <$> untilRight x
 
 -- | A lifted version of lazy Boolean OR.
 (<||>) :: Selective f => f Bool -> f Bool -> f Bool
@@ -305,7 +306,11 @@ allS :: Selective f => (a -> f Bool) -> [a] -> f Bool
 allS p = foldr ((<&&>) . p) (pure True)
 
 -- | Generalised folding with the short-circuiting behaviour.
-foldS :: (Selective f, Foldable t, Monoid a) => t (f (Either e a)) -> f (Either e a)
+foldS :: (Selective f, Foldable t, Monoid a
+#if !MIN_VERSION_base(4,11,0)
+  , Semigroup a
+#endif
+    ) => t (f (Either e a)) -> f (Either e a)
 foldS = foldr andAlso (pure (Right mempty))
 
 -- Instances
@@ -339,10 +344,10 @@ newtype Over m a = Over { getOver :: m }
 
 instance Monoid m => Applicative (Over m) where
     pure _            = Over mempty
-    Over x <*> Over y = Over (x <> y)
+    Over x <*> Over y = Over (mappend x y)
 
 instance Monoid m => Selective (Over m) where
-    select (Over x) (Over y) = Over (x <> y)
+    select (Over x) (Over y) = Over (mappend x y)
 
 -- | Static analysis of selective functors with under-approximation.
 newtype Under m a = Under { getUnder :: m }
@@ -350,7 +355,7 @@ newtype Under m a = Under { getUnder :: m }
 
 instance Monoid m => Applicative (Under m) where
     pure _              = Under mempty
-    Under x <*> Under y = Under (x <> y)
+    Under x <*> Under y = Under (mappend x y)
 
 instance Monoid m => Selective (Under m) where
     select (Under m) _ = Under m
@@ -437,11 +442,15 @@ toArrow (ArrowMonad f) = arr (\x -> ((), x)) >>> first f >>> arr (uncurry ($))
 newtype ComposeEither f e a = ComposeEither (f (Either e a))
     deriving Functor
 
-instance (Applicative f, Semigroup e) => Applicative (ComposeEither f e) where
+instance Applicative f => Applicative (ComposeEither f e) where
     pure a                              = ComposeEither (pure $ Right a)
     ComposeEither x <*> ComposeEither y = ComposeEither ((<*>) <$> x <*> y)
 
-instance (Selective f, Monoid e) => Alternative (ComposeEither f e) where
+instance (Selective f, Monoid e
+#if !MIN_VERSION_base(4,11,0)
+  , Semigroup e
+#endif
+    ) => Alternative (ComposeEither f e) where
     empty                               = ComposeEither (pure $ Left mempty)
     ComposeEither x <|> ComposeEither y = ComposeEither (x `orElse` y)
 

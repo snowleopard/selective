@@ -1,5 +1,6 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances, TupleSections, TypeApplications #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Laws where
 
 import Test.QuickCheck hiding (Failure, Success)
@@ -120,18 +121,10 @@ propertyPureRightUnder = quickCheck (propertyPureRight @(Under String) @Int)
 --------------------------------------------------------------------------------
 deriving instance (Eq e, Eq a) => Eq (Validation e a)
 
--- | This is a copy-paste of the 'Arbitrary2' instance for 'Either' defined in
---   the 'Test.QuickCheck.Arbitrary' module. 'Left' is renamed to 'Failure' and
---   'Right' to 'Success'.
-instance Arbitrary2 Validation where
-  liftArbitrary2 arbA arbB = oneof [liftM Failure arbA, liftM Success arbB]
-
-  liftShrink2 shrA _ (Failure x)  = [ Failure  x' | x' <- shrA x ]
-  liftShrink2 _ shrB (Success y) = [ Success y' | y' <- shrB y ]
-
 instance (Arbitrary e, Arbitrary a) => Arbitrary (Validation e a) where
-  arbitrary = arbitrary2
-  shrink = shrink2
+  arbitrary = oneof [liftM Failure arbitrary, liftM Success arbitrary]
+  shrink (Failure x) = [ Failure x' | x' <- shrink x ]
+  shrink (Success y) = [ Success y' | y' <- shrink y ]
 
 --------------------------------------------------------------------------------
 ------------------------ ArrowMonad --------------------------------------------

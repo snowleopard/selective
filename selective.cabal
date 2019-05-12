@@ -10,8 +10,7 @@ homepage:      https://github.com/snowleopard/selective
 category:      Control
 build-type:    Simple
 cabal-version: 1.18
-tested-with:   GHC==7.10.3,
-               GHC==8.0.2,
+tested-with:   GHC==8.0.2,
                GHC==8.2.2,
                GHC==8.4.3,
                GHC==8.6.4
@@ -37,8 +36,8 @@ library
                         Control.Selective.Free,
                         Control.Selective.Free.Rigid
     build-depends:      base         >= 4.7     && < 5,
-                        containers   >= 0.5.7.1 && < 7,
-                        transformers >= 0.5.2.0 && < 0.6
+                        containers   >= 0.5.5.1 && < 0.7,
+                        transformers >= 0.4.2.0 && < 0.6
     default-language:   Haskell2010
     other-extensions:   DeriveFunctor,
                         FlexibleInstances,
@@ -66,13 +65,13 @@ test-suite test
     type:               exitcode-stdio-1.0
     main-is:            Main.hs
     build-depends:      base                   >= 4.7     && < 5,
-                        containers             >= 0.5.7.1 && < 7,
+                        containers             >= 0.5.5.1 && < 0.7,
                         mtl                    >= 2.2.1   && < 2.3,
-                        QuickCheck             >= 2.9     && < 2.13,
+                        QuickCheck             >= 2.8     && < 2.14,
                         selective,
-                        tasty                  >= 1.2,
-                        tasty-expected-failure >= 0.11.1.1,
-                        tasty-quickcheck       >= 0.10
+                        tasty                  >= 0.11,
+                        tasty-expected-failure >= 0.11,
+                        tasty-quickcheck       >= 0.8.4
     default-language:   Haskell2010
     GHC-options:        -Wall
                         -fno-warn-name-shadowing
@@ -80,5 +79,3 @@ test-suite test
                         -Wincomplete-record-updates
                         -Wincomplete-uni-patterns
                         -Wredundant-constraints
-                        -fno-warn-orphans
-                        -fno-warn-missing-signatures
