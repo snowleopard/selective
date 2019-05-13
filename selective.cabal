@@ -25,6 +25,7 @@ description:   Selective applicative functors: declare your effects statically,
                <https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf this paper>.
 
 extra-doc-files:
+    CHANGES.md
     README.md
 
 source-repository head
