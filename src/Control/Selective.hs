@@ -316,8 +316,15 @@ foldS = foldr andAlso (pure (Right mempty))
 -- Instances
 
 -- | Any applicative functor can be given a 'Selective' instance by defining
--- @select = selectA@.
-newtype SelectA f a = SelectA { fromSelectA :: f a }
+-- 'select' @=@ 'selectA'. This data type captures this pattern, so you can use
+-- it in combination with the @DerivingVia@ extension as follows:
+--
+-- @
+-- newtype Over m a = Over m
+--     deriving (Functor, Applicative, Selective) via SelectA (Const m)
+-- @
+--
+newtype SelectA f a = SelectA { getSelectA :: f a }
     deriving (Functor, Applicative)
 
 instance Applicative f => Selective (SelectA f) where
@@ -331,8 +338,15 @@ instance Selective f => Selective (Lift f) where
     select (Other       x ) (Other y) = Other $   x  <*? y
 
 -- | Any monad can be given a 'Selective' instance by defining
--- @select = selectM@.
-newtype SelectM f a = SelectM { fromSelectM :: f a }
+-- 'select' @=@ 'selectM'. This data type captures this pattern, so you can use
+-- it in combination with the @DerivingVia@ extension as follows:
+--
+-- @
+-- newtype V1 a = V1 a
+--     deriving (Functor, Applicative, Selective, Monad) via SelectM Identity
+-- @
+--
+newtype SelectM f a = SelectM { getSelectM :: f a }
     deriving (Functor, Applicative, Monad)
 
 instance Monad f => Selective (SelectM f) where
