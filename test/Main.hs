@@ -1,19 +1,22 @@
 {-# LANGUAGE TypeApplications #-}
 
-import Data.Maybe hiding (maybe)
+import Control.Arrow (ArrowMonad)
+import Control.Selective
 import Data.Functor.Identity
+import Data.Maybe hiding (maybe)
 import Prelude hiding (maybe)
 import Test.Tasty
 import Test.Tasty.QuickCheck hiding (Success, Failure)
 import Test.Tasty.ExpectedFailure
-import Control.Selective
-import Control.Selective.Free.Rigid
-import Control.Arrow (ArrowMonad)
 
 import Build
 import Laws
-import Teletype
 import Validation
+
+import qualified Control.Selective.Free       as F
+import qualified Control.Selective.Free.Rigid as FR
+import qualified Teletype                     as F
+import qualified Teletype.Rigid               as FR
 
 main :: IO ()
 main = defaultMain $ testGroup "Tests"
@@ -24,9 +27,13 @@ main = defaultMain $ testGroup "Tests"
 --------------------------------------------------------------------------------
 pingPong :: TestTree
 pingPong = testGroup "pingPong"
-    [ testProperty "getEffects pingPongS == [Read,Write \"pong\"]" $
-       getEffects pingPongS == [Read (const ()),Write "pong" ()]
-    ]
+    [ testProperty "Free.getEffects pingPongS == [Read,Write \"pong\"]" $
+       F.getEffects F.pingPongS == [F.Read (const ()),F.Write "pong" ()]
+    , testProperty "Free.getNecessaryEffects pingPongS == [Read]" $
+       F.getNecessaryEffects F.pingPongS == [F.Read (const ())]
+    , testProperty "Free.Rigid.getEffects pingPongS == [Read,Write \"pong\"]" $
+       FR.getEffects FR.pingPongS == [FR.Read (const ()),FR.Write "pong" ()] ]
+
 --------------------------------------------------------------------------------
 ------------------------ Build -------------------------------------------------
 --------------------------------------------------------------------------------
@@ -42,22 +49,19 @@ cyclicDeps = testGroup "cyclicDeps"
     , testProperty "dependenciesUnder (fromJust $ cyclic \"B1\") == [\"C1\"]" $
        dependenciesUnder (fromJust $ cyclic "B1") == ["C1"]
     , testProperty "dependenciesUnder cyclic \"B2\") == [\"C1\"]" $
-        dependenciesUnder (fromJust $ cyclic "B2") == ["C1"]
-    ]
+        dependenciesUnder (fromJust $ cyclic "B2") == ["C1"] ]
 
 taskBindDeps :: TestTree
 taskBindDeps = testGroup "taskBindDeps"
     [ testProperty "dependenciesOver taskBind == [\"A1\",\"A2\",\"C5\",\"C6\",\"A2\",\"D5\",\"D6\"]" $
        dependenciesOver taskBind == ["A1","A2","C5","C6","A2","D5","D6"]
     , testProperty "dependenciesUnder taskBind == [\"A1\"]" $
-       dependenciesUnder taskBind == ["A1"]
-    ]
+       dependenciesUnder taskBind == ["A1"] ]
 
 runBuildDeps :: TestTree
 runBuildDeps = testGroup "runBuildDeps"
     [ testProperty "runBuild (fromJust $ cyclic \"B1\") == [Fetch \"C1\",Fetch \"B2\",Fetch \"A2\"]" $
-       runBuild (fromJust $ cyclic "B1") == [Fetch "C1" (const ()),Fetch "B2" (const ()),Fetch "A2" (const ())]
-    ]
+       runBuild (fromJust $ cyclic "B1") == [Fetch "C1" (const ()),Fetch "B2" (const ()),Fetch "A2" (const ())] ]
 
 --------------------------------------------------------------------------------
 ------------------------ Over --------------------------------------------------
@@ -72,8 +76,7 @@ overLaws = testGroup "Laws"
     , testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
         \x -> lawDistributivity @(Over String) @Int @Int x
     , testProperty "Associativity: take a look at tests/Laws.hs" $
-        \x -> lawAssociativity @(Over String) @Int @Int x
-    ]
+        \x -> lawAssociativity @(Over String) @Int @Int x ]
 
 overTheorems :: TestTree
 overTheorems = testGroup "Theorems"
@@ -88,8 +91,7 @@ overTheorems = testGroup "Theorems"
     , testProperty "(f <*> g) == (f `apS` g)" $
         \x -> theorem5 @(Over String) @Int @Int x
     , testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
-        \x -> theorem6 @(Over String) @Int @Int x
-    ]
+        \x -> theorem6 @(Over String) @Int @Int x ]
 
 overProperties :: TestTree
 overProperties = testGroup "Properties"
@@ -97,8 +99,7 @@ overProperties = testGroup "Properties"
       testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @(Over String) @Int @Int x
     , testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
-        \x -> propertyPureLeft @(Over String) @Int @Int x
-    ]
+        \x -> propertyPureLeft @(Over String) @Int @Int x ]
 
 --------------------------------------------------------------------------------
 ------------------------ Under -------------------------------------------------
@@ -113,8 +114,7 @@ underLaws = testGroup "Laws"
     , testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
         \x -> lawDistributivity @(Under String) @Int @Int x
     , testProperty "Associativity: take a look at tests/Laws.hs" $
-        \x -> lawAssociativity @(Under String) @Int @Int x
-    ]
+        \x -> lawAssociativity @(Under String) @Int @Int x ]
 
 underTheorems :: TestTree
 underTheorems = testGroup "Theorems"
@@ -130,8 +130,7 @@ underTheorems = testGroup "Theorems"
     , expectFail $ testProperty "(f <*> g) == (f `apS` g)" $
         \x -> theorem5 @(Under String) @Int @Int x
     , testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
-        \x -> theorem6 @(Under String) @Int @Int x
-    ]
+        \x -> theorem6 @(Under String) @Int @Int x ]
 
 underProperties :: TestTree
 underProperties = testGroup "Properties"
@@ -139,8 +138,8 @@ underProperties = testGroup "Properties"
         \x -> propertyPureRight @(Under String) @Int @Int x
     , expectFail $
       testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
-        \x -> propertyPureLeft @(Under String) @Int @Int x
-    ]
+        \x -> propertyPureLeft @(Under String) @Int @Int x ]
+
 --------------------------------------------------------------------------------
 ------------------------ Validation --------------------------------------------
 --------------------------------------------------------------------------------
@@ -156,8 +155,7 @@ validationLaws = testGroup "Laws"
     , testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
         \x -> lawDistributivity @(Validation String) @Int @Int x
     , testProperty "Associativity: take a look at tests/Laws.hs" $
-        \x -> lawAssociativity @(Validation String) @Int @Int @Int x
-    ]
+        \x -> lawAssociativity @(Validation String) @Int @Int @Int x ]
 
 validationTheorems :: TestTree
 validationTheorems = testGroup "Theorems"
@@ -174,16 +172,14 @@ validationTheorems = testGroup "Theorems"
         \x -> theorem5 @(Validation String) @Int @Int x
     -- 'Validation' is a non-rigid selective functor
     , expectFail $ testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
-        \x -> theorem6 @(Validation String) @Int @Int @Int x
-    ]
+        \x -> theorem6 @(Validation String) @Int @Int @Int x ]
 
 validationProperties :: TestTree
 validationProperties = testGroup "Properties"
     [ testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @(Validation String) @Int @Int x
     , testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
-        \x -> propertyPureLeft @(Validation String) @Int @Int x
-    ]
+        \x -> propertyPureLeft @(Validation String) @Int @Int x ]
 
 validationExample :: TestTree
 validationExample = testGroup "validationExample"
@@ -198,13 +194,11 @@ validationExample = testGroup "validationExample"
     , testProperty "shape (Failure [\"choice?\"]) (Failure [\"radius?\"]) (Success 2) (Failure [\"height?\"])" $
         shape (Failure ["choice?"]) (Failure ["radius?"]) (Success 2) (Failure ["height?"]) == Failure ["choice?"]
     , testProperty "twoShapes s1 s2" $
-        twoShapes (shape (Failure ["choice 1?"]) (Success 1) (Failure ["width 1?"]) (Success 3)) (shape (Success False) (Success 1) (Success 2) (Failure ["height 2?"])) == Failure ["choice 1?","height 2?"]
-    ]
+        twoShapes (shape (Failure ["choice 1?"]) (Success 1) (Failure ["width 1?"]) (Success 3)) (shape (Success False) (Success 1) (Success 2) (Failure ["height 2?"])) == Failure ["choice 1?","height 2?"] ]
 
 --------------------------------------------------------------------------------
 ------------------------ ArrowMonad --------------------------------------------
 --------------------------------------------------------------------------------
-
 arrowMonad :: TestTree
 arrowMonad = testGroup "ArrowMonad (->)"
     [arrowMonadLaws, arrowMonadTheorems, arrowMonadProperties]
@@ -220,8 +214,7 @@ arrowMonadLaws = testGroup "Laws"
     , testProperty "select == selectM" $
         \x -> lawMonad @(ArrowMonad (->)) @Int @Int x
     , testProperty "select == selectA" $
-        \x -> selectALaw @(ArrowMonad (->)) @Int @Int x
-    ]
+        \x -> selectALaw @(ArrowMonad (->)) @Int @Int x ]
 
 arrowMonadTheorems :: TestTree
 arrowMonadTheorems = testGroup "Theorems"
@@ -236,16 +229,15 @@ arrowMonadTheorems = testGroup "Theorems"
     , testProperty "(f <*> g) == (f `apS` g)" $
         \x -> theorem5 @(ArrowMonad (->)) @Int @Int x
     , testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
-        \x -> theorem6 @(ArrowMonad (->)) @Int @Int @Int x
-    ]
+        \x -> theorem6 @(ArrowMonad (->)) @Int @Int @Int x ]
 
 arrowMonadProperties :: TestTree
 arrowMonadProperties = testGroup "Properties"
     [ testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @(ArrowMonad (->)) @Int @Int x
     , testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
-        \x -> propertyPureLeft @(ArrowMonad (->)) @Int @Int x
-    ]
+        \x -> propertyPureLeft @(ArrowMonad (->)) @Int @Int x ]
+
 --------------------------------------------------------------------------------
 ------------------------ Maybe -------------------------------------------------
 --------------------------------------------------------------------------------
@@ -261,8 +253,7 @@ maybeLaws = testGroup "Laws"
     , testProperty "Associativity: take a look at tests/Laws.hs" $
         \x -> lawAssociativity @Maybe @Int @Int @Int x
     , testProperty "select == selectM" $
-        \x -> lawMonad @Maybe @Int @Int x
-    ]
+        \x -> lawMonad @Maybe @Int @Int x ]
 
 maybeTheorems :: TestTree
 maybeTheorems = testGroup "Theorems"
@@ -277,16 +268,15 @@ maybeTheorems = testGroup "Theorems"
     , testProperty "(f <*> g) == (f `apS` g)" $
         \x -> theorem5 @Maybe @Int @Int x
     , testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
-        \x -> theorem6 @Maybe @Int @Int @Int x
-    ]
+        \x -> theorem6 @Maybe @Int @Int @Int x ]
 
 maybeProperties :: TestTree
 maybeProperties = testGroup "Properties"
     [ testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @Maybe @Int @Int x
     , testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
-        \x -> propertyPureLeft @Maybe @Int @Int x
-    ]
+        \x -> propertyPureLeft @Maybe @Int @Int x ]
+
 --------------------------------------------------------------------------------
 ------------------------ Identity ----------------------------------------------
 --------------------------------------------------------------------------------
@@ -303,8 +293,7 @@ identityLaws = testGroup "Laws"
     , testProperty "Associativity: take a look at tests/Laws.hs" $
         \x -> lawAssociativity @Identity @Int @Int @Int x
     , testProperty "select == selectM" $
-        \x -> lawMonad @Identity @Int @Int x
-    ]
+        \x -> lawMonad @Identity @Int @Int x ]
 
 identityTheorems :: TestTree
 identityTheorems = testGroup "Theorems"
@@ -319,13 +308,11 @@ identityTheorems = testGroup "Theorems"
     , testProperty "(f <*> g) == (f `apS` g)" $
         \x -> theorem5 @Identity @Int @Int x
     , testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
-        \x -> theorem6 @Identity @Int @Int @Int x
-    ]
+        \x -> theorem6 @Identity @Int @Int @Int x ]
 
 identityProperties :: TestTree
 identityProperties = testGroup "Properties"
     [ testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @Identity @Int @Int x
     , testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
-        \x -> propertyPureLeft @Identity @Int @Int x
-    ]
+        \x -> propertyPureLeft @Identity @Int @Int x ]
