@@ -46,6 +46,11 @@ putStrLn s = liftSelect (Write s ())
 -- [Read,Write "pong"]
 -- @
 --
+-- @
+-- > getNecessaryEffects pingPongS
+-- [Read]
+-- @
+--
 -- If can also be executed in IO:
 --
 -- @
