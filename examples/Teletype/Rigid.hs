@@ -1,10 +1,10 @@
 {-# LANGUAGE DeriveFunctor, FlexibleInstances, GADTs #-}
-module Teletype where
+module Teletype.Rigid where
 
 import Prelude hiding (getLine, putStrLn)
 import qualified Prelude as IO
 import Control.Selective
-import Control.Selective.Free
+import Control.Selective.Free.Rigid
 
 -- See Section 5.2 of the paper:
 -- https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf
