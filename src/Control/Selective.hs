@@ -411,6 +411,22 @@ instance (Selective f, Selective g) => Selective (Product f g) where
 instance (Applicative f, Selective g) => Selective (Compose f g) where
     select (Compose x) (Compose y) = Compose (select <$> x <*> y)
 
+{- Here is why composing selective functors is tricky.
+
+Consider @Compose Maybe IO@. The only type safe implementation is:
+
+> select :: Maybe (IO (Either a b)) -> Maybe (IO (a -> b)) -> Maybe (IO b)
+> select Nothing  _        = Nothing
+> select (Just x) (Just y) = Just (select x y)
+> select (Just x) Nothing  = Nothing -- Can't use Just: we don't have @a -> b@!
+
+In other words, we have to be 'Applicative' on the outside functor 'Maybe',
+because there is no way to peek inside 'IO', which forces us to statically
+choose between 'Just', which doesn't work since we have no function @a -> b@,
+and 'Nothing' which corresponds to the behaviour of 'selectA'.
+
+-}
+
 -- Monad instances
 
 -- As a quick experiment, try: ifS (pure True) (print 1) (print 2)
