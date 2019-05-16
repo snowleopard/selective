@@ -264,6 +264,16 @@ normalise2 x y z = (f <$> x) <*? (g <$> y) <*? (h <$> z)
 -- Alternative type classes for selective functors. They all come with an
 -- additional requirement that we run effects from left to right.
 
+-- A first-order version of selective functors.
+class Applicative f => SelectiveF f where
+    selectF :: f (Either a b) -> f c -> f (Either a (b, c))
+
+toF :: Selective f => f (Either a b) -> f c -> f (Either a (b, c))
+toF x y = branch x (pure Left) ((\c b -> Right (b, c)) <$> y)
+
+fromF :: SelectiveF f => f (Either a b) -> f (a -> b) -> f b
+fromF x y = either id (uncurry (flip ($))) <$> selectF (swapEither <$> x) y
+
 -- Composition of Applicative and Either monad
 class Applicative f => SelectiveA f where
     (|*|) :: f (Either e (a -> b)) -> f (Either e a) -> f (Either e b)
@@ -272,7 +282,6 @@ class Applicative f => SelectiveA f where
 -- See: https://duplode.github.io/posts/applicative-archery.html
 class Applicative f => SelectiveS f where
     (|.|) :: f (Either e (b -> c)) -> f (Either e (a -> b)) -> f (Either e (a -> c))
-
 
 -- Composition of Monoidal and Either monad
 -- See: http://blog.ezyang.com/2012/08/applicative-functors/
