@@ -3,6 +3,10 @@
 This Docker image contains a snapshot of the software packages related to the
 paper "Selective Applicative Functors" and all their dependencies.
 
+The image and this description are also available at Docker Hub:
+
+https://hub.docker.com/r/geo2a/selective-icfp19
+
 ## Running the image
 
 To run it interactively use the command: `docker run -it geo2a/selective-icfp19`.
