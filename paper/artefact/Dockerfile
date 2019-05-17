@@ -32,7 +32,7 @@ RUN unzip selective-coq.zip && rm selective-coq.zip && mv selective-theory-coq-0
 # Pull the Haskell sources from GitHub
 RUN wget -O selective.zip https://github.com/snowleopard/selective/archive/v0.2.zip
 RUN unzip selective.zip && rm selective.zip
-RUN cd selective-0.2 && stack build
+RUN cd selective-0.2 && stack build && stack test
 RUN mv selective-0.2 selective-haskell
 
 RUN exit
