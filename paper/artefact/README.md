@@ -1,20 +1,20 @@
-# ICFP 2019 Artefact Evaluation submission
+# Selective Applicative Functors: ICFP 2019 Artefact
 
-This image contains a snapshot of the software packages related to the paper
-"Selective Applicative Functors" and all their dependencies.
+This Docker image contains a snapshot of the software packages related to the
+paper "Selective Applicative Functors" and all their dependencies.
 
 ## Running the image
 
 To run it interactively use the command: `docker run -it geo2a/selective-icfp19`.
 You will find yourself in the directory `/home/coq`.
 
-The Haskell package contains an comprehensive suite of QuickCheck properties and
-working examples, and is the most informative part of the artefact. We recommend
-taking a look at it first.
+The Haskell package contains a comprehensive suite of QuickCheck properties as
+well as working examples from the paper, and is the most informative part of the
+artefact. We recommend taking a look at it first.
 
 ## Haskell implementation
 
-Change into the Haskell directory:
+Change into the Haskell implementation directory:
 
 ```
 cd ~/selective-haskell
@@ -26,17 +26,20 @@ And run tests with `stack`:
 stack test
 ```
 
-Then you may take a look at the code and documentation in the top-level module
+Then you might want to browse the code and documentation in the top-level module
 `src/Control/Selective.hs`, which provides the `Selective` type class and
-auxiliary combinators. The free construction for rigid selective functors can be
+selective combinators. The free construction for rigid selective functors can be
 found in `src/Control/Selective/Free/Rigid.hs`. Another free construction for
-general selective functors is also available in `src/Control/Selective/Free.hs`.
+general selective functors is available in `src/Control/Selective/Free.hs`.
 
-Also see the Hackage package: http://hackage.haskell.org/package/selective.
+This package is also available on Hackage: http://hackage.haskell.org/package/selective-0.2.
 
-## Check Coq proofs
+## Coq proofs
 
-To access the Coq development, execute the following command:
+We also provide a formalisation of selective functors in Coq, along with proofs
+of correctness of several `Selective` instances.
+
+To access Coq proofs, execute the following command:
 
 ```
 cd ~/selective-coq
@@ -49,22 +52,32 @@ several Selective instances being lawful, execute:
 make
 ```
 
-You may take a look at the simple instances in the files `src/Data/Over.v`,
+Start by taking a look at the simple proofs in files `src/Data/Over.v`,
 `src/Data/Under.v` and `src/Data/Validation.v`.
 
 ## OCaml implementation
 
-Change into the OCaml directory:
+We also provide an implementation of selective functors in OCaml. To access it,
+change to the corresponding directory:
 
 ```
 cd ~/selective-ocaml
 ```
 
-The file `src/selective_intf.ml` contains the signature of the module definition
-`Selective.S` module, which provides the interface comprising all the Selective
-combinators.
+You can build and test the project using the Dune build system:
 
-You can take a look at an example S-expression parser, List instance, and
-the Task abstraction from section 3.2 in the `examples/` directory.
+```
+dune build
+dune runtest
+```
 
-Also see the OPAM package: https://opam.ocaml.org/packages/selective/.
+Note that lack of output means all tests have passed.
+
+The file `src/selective_intf.ml` contains the signature of the definition of the
+main module `Selective.S`, which provides the interface comprising all the
+selective combinators.
+
+You can take a look at an example S-expression parser, a `List` instance, and
+the `Task` abstraction from section 3.2 in the `example` directory.
+
+This package is available on OPAM: https://opam.ocaml.org/packages/selective/selective.0.1.0/.
