@@ -6,9 +6,9 @@
 # To run a container interactively:
 # `docker run -it geo2a/selective-icfp19`
 #
-# We have chosen to use the Coq base image as a base because it includes all
+# We chose to use the Coq base image as a base because it includes all
 # software required for building the Coq and OCaml parts of the artefact.
-# We will augment the image with the software require for the Haskell part.
+# We have augmented the image with the software required for the Haskell part.
 FROM coqorg/coq:8.9
 
 MAINTAINER Georgy Lukyanov
