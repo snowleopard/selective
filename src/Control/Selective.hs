@@ -1,5 +1,4 @@
-{-# LANGUAGE CPP, TupleSections, DeriveFunctor #-}
-{-# LANGUAGE StandaloneDeriving, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP, TupleSections, DeriveFunctor, GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Control.Selective
@@ -52,9 +51,9 @@ import qualified Control.Monad.Trans.State.Strict  as S
 import qualified Control.Monad.Trans.Writer.Strict as S
 
 -- | Selective applicative functors. You can think of 'select' as a selective
--- function application: when given a value of type @Left a@, you __must apply__
--- the given function, but when given a @Right b@, you __may skip__ the function
--- and associated effects, and simply return the @b@.
+-- function application: when given a value of type 'Left' @a@, you __must apply__
+-- the given function, but when given a 'Right' @b@, you __may skip__ the
+-- function and associated effects, and simply return the @b@.
 --
 -- Note that it is not a requirement for selective functors to skip unnecessary
 -- effects. It may be counterintuitive, but this makes them more useful. Why?
@@ -92,7 +91,7 @@ import qualified Control.Monad.Trans.Writer.Strict as S
 --     h z = uncurry z
 -- @
 --
--- * Monadic @select@ (for selective functors that are also monads):
+-- * Monadic 'select' (for selective functors that are also monads):
 --
 -- @
 -- select = selectM
@@ -124,29 +123,17 @@ import qualified Control.Monad.Trans.Writer.Strict as S
 -- x \<*? pure y = either y id \<$\> x
 -- @
 --
--- * A selective functor is /rigid/ if it satisfies @\<*\> = apS@. The following
--- /interchange/ law holds for rigid selective functors:
+-- * A selective functor is /rigid/ if it satisfies '<*>' @=@ 'apS'. The
+-- following /interchange/ law holds for rigid selective functors:
 --
 -- @
 -- x *\> (y \<*? z) = (x *\> y) \<*? z
 -- @
 --
 -- If f is also a 'Monad', we require that 'select' = 'selectM', from which one
--- can prove @\<*\> = apS@.
+-- can prove '<*>' @=@ 'apS'.
 class Applicative f => Selective f where
     select :: f (Either a b) -> f (a -> b) -> f b
-
--- | A list of values, equipped with a fast membership test.
-data Cases a = Cases [a] (a -> Bool)
-
--- | The list of all possible values of an enumerable data type.
-casesEnum :: (Bounded a, Enum a) => Cases a
-casesEnum = Cases [minBound..maxBound] (const True)
-
--- | Embed a list of values into 'Cases' using the trivial but slow membership
--- test based on 'elem'.
-cases :: Eq a => [a] -> Cases a
-cases as = Cases as (`elem` as)
 
 -- | An operator alias for 'select', which is sometimes convenient. It tries to
 -- follow the notational convention for 'Applicative' operators. The angle
@@ -162,12 +149,16 @@ infixl 4 <*?
 -- functions to apply to a given argument; the other effect is unnecessary. It
 -- is possible to implement 'branch' in terms of 'select', which is a good
 -- puzzle (give it a try!).
-branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
-branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
-
--- Implementing select via branch:
+--
+-- We can also implement 'select' via 'branch':
+--
+-- @
 -- selectB :: Selective f => f (Either a b) -> f (a -> b) -> f b
 -- selectB x y = branch x y (pure id)
+-- @
+--
+branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
+branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 
 -- | We can write a function with the type signature of 'select' using the
 -- 'Applicative' type class, but it will always execute the effects associated
@@ -175,8 +166,8 @@ branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
 selectA x y = (\e f -> either f id e) <$> x <*> y
 
-{-| Recover the application operator @\<*\>@ from 'select'. /Rigid/ selective
-functors satisfy the law @(\<*\>) = apS@ and furthermore, the resulting
+{-| Recover the application operator '<*>' from 'select'. /Rigid/ selective
+functors satisfy the law '<*>' @=@ 'apS' and furthermore, the resulting
 applicative functor satisfies all laws of 'Applicative':
 
 * Identity:
@@ -222,6 +213,18 @@ eliminate x fb fa = select (match x <$> fa) (const . Right <$> fb)
   where
     match _ (Right y) = Right (Right y)
     match x (Left  y) = if x == y then Left () else Right (Left y)
+
+-- | A list of values, equipped with a fast membership test.
+data Cases a = Cases [a] (a -> Bool)
+
+-- | The list of all possible values of an enumerable data type.
+casesEnum :: (Bounded a, Enum a) => Cases a
+casesEnum = Cases [minBound..maxBound] (const True)
+
+-- | Embed a list of values into 'Cases' using the trivial but slow membership
+-- test based on 'elem'.
+cases :: Eq a => [a] -> Cases a
+cases as = Cases as (`elem` as)
 
 -- | Eliminate all specified values @a@ from @f (Either a b)@ by replacing each
 -- of them with a given @f a@.
@@ -383,8 +386,8 @@ instance Monoid m => Selective (Under m) where
 -- and enable the various threads as appropriate..."
 instance Selective ZipList where select = selectA
 
--- | Selective instance for the standard applicative functor Validation.
--- This is a good example of a selective functor which is not a monad.
+-- | Selective instance for the standard applicative functor Validation. This is
+-- a good example of a non-trivial selective functor which is not a monad.
 data Validation e a = Failure e | Success a deriving (Functor, Show)
 
 instance Semigroup e => Applicative (Validation e) where
@@ -413,7 +416,7 @@ instance (Applicative f, Selective g) => Selective (Compose f g) where
 
 {- Here is why composing selective functors is tricky.
 
-Consider @Compose Maybe IO@. The only type safe implementation is:
+Consider @Compose Maybe IO@. The only sensible implementation is:
 
 > select :: Maybe (IO (Either a b)) -> Maybe (IO (a -> b)) -> Maybe (IO b)
 > select Nothing  _        = Nothing
