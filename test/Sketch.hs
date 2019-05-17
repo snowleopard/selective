@@ -261,8 +261,7 @@ normalise2 x y z = (f <$> x) <*? (g <$> y) <*? (h <$> z)
     g y = \a -> bimap (\c f -> f c a) ($a) y
     h z = ($z) -- h = flip ($)
 
--- Alternative type classes for selective functors. They all come with an
--- additional requirement that we run effects from left to right.
+-- Alternative formulations of selective functors.
 
 -- A first-order version of selective functors.
 class Applicative f => SelectiveF f where
@@ -273,6 +272,10 @@ toF x y = branch x (pure Left) ((\c b -> Right (b, c)) <$> y)
 
 fromF :: SelectiveF f => f (Either a b) -> f (a -> b) -> f b
 fromF x y = either id (uncurry (flip ($))) <$> selectF (swapEither <$> x) y
+
+-- A few variants that have a sum type in both arguments. They are not
+-- equivalent to 'Selective' of 'SelectiveF' unless we require that effects are
+-- executed from left to right.
 
 -- Composition of Applicative and Either monad
 class Applicative f => SelectiveA f where
