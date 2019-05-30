@@ -96,4 +96,4 @@
 
 > C: It is hard to understand the program presented here [in Fig. 6]
 
-
+* Rename `ISA` to `Program`.

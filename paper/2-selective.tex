@@ -7,8 +7,8 @@ class Functor f where
 \end{minted}
 \vspace{1mm}
 \begin{minted}[fontsize=\small]{haskell}
--- An infix synonym for fmap
-(<$>) :: Functor f => (a -> b) -> f a -> f b       -- (<$>) is pronounced "fmap"
+-- An infix left-associative synonym for fmap
+(<$>) :: Functor f => (a -> b) -> f a -> f b      -- (<$>) is pronounced "fmap" or "map"
 \end{minted}
 \vspace{2mm}
 \hrule
@@ -16,7 +16,7 @@ class Functor f where
 \begin{minted}[fontsize=\small]{haskell}
 class Functor f => Applicative f where
     pure  :: a -> f a
-    (<*>) :: f (a -> b) -> f a -> f b              -- (<*>) is pronounced "apply"
+    (<*>) :: f (a -> b) -> f a -> f b             -- (<*>) is pronounced "apply"
 \end{minted}
 \vspace{1mm}
 \begin{minted}[fontsize=\small]{haskell}
@@ -33,15 +33,15 @@ class Applicative f => Selective f where
 \vspace{1mm}
 \begin{minted}[fontsize=\small]{haskell}
 -- An infix left-associative synonym for select
-(<*?) :: f (Either a b) -> f (a -> b) -> f b       -- (<*?) is pronounced "select"
+(<*?) :: f (Either a b) -> f (a -> b) -> f b      -- (<*?) is pronounced "select"
 \end{minted}
 \vspace{2mm}
 \hrule
 \vspace{2mm}
 \begin{minted}[fontsize=\small]{haskell}
 class Selective f => Monad f where
-    return :: a -> f a                             -- Note the law: return = pure
-    (>>=)  :: f a -> (a -> f b) -> f b             -- (>>=) is pronounced "bind"
+    return :: a -> f a                            -- Note the law: return = pure
+    (>>=)  :: f a -> (a -> f b) -> f b            -- (>>=) is pronounced "bind"
 \end{minted}
 \vspace{1mm}
 \begin{minted}[fontsize=\small]{haskell}
@@ -67,9 +67,10 @@ subsequently refer to as simply \emph{selective functors}, for brevity. We start
 by defining the new abstraction, and then use it in~\S\ref{sec-combinators} to
 implement several derived combinators, such as the aforementioned \hs{whenS}.
 In~\S\ref{sec-instances} we provide several examples of selective functors, and
-discuss the relationships between applicative functors, selective functors, and
-monads. In~\S\ref{sec-laws}, these relationships are further elaborated and
-expressed as a set of laws that all selective functors are required to satisfy.
+further discuss the relationships between applicative functors, selective
+functors, and monads. In~\S\ref{sec-laws}, these relationships are further
+elaborated and expressed as a set of laws that all selective functors are
+required to satisfy.
 
 Like applicative functors~\citep{mcbride2008applicative}, selective functors
 provide a way to embed pure values into an effectful context \hs{f} using the
@@ -95,11 +96,11 @@ parametricity~\citep{wadler1989theorems} dictates that, when given a
 \hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{b)}, apply the obtained function to \hs{a}, and
 return the resulting \hs{b}; on the other hand, when given a \hs{Right}~\hs{b},
 we \emph{may skip the effects} associated with the function, and return the
-given \hs{b}. Note, however, that if \hs{a} is a \emph{phantom type
-variable}~\cite{leijen2000domain}, i.e. \hs{f}~\hs{a} holds no values of type
-\hs{a}, then we can skip the effects in \hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{b)}
-unconditionally, e.g. see the selective functor \hs{Under}
-in~\S\ref{sec-instances}.
+given \hs{b}\footnote{Note, however, that if \hs{f}~\hs{a} holds no values of
+type \hs{a}, i.e. \hs{a} is a \emph{phantom type
+variable}~\cite{leijen2000domain}, then the effects in
+\hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{b)} can be skipped unconditionally, e.g. see the
+selective functor \hs{Under} in~\S\ref{sec-instances}.}.
 
 Following the notational convention for applicative operators, we also define
 the infix operator alias \hs{<*?} for \hs{select}: the angle bracket pointing to
@@ -130,7 +131,7 @@ used throughout the paper.}\label{fig-std}
 One can implement \hs{select} using monads in a straightforward manner: examine
 the value produced by \hs{f}~\hs{(Either}~\hs{a}~\hs{b)} with the bind operator,
 and then, in the \hs{Left}~\hs{a} case, execute the subsequent effect
-\hs{f}~\hs{(a}~\hs{->}~\hs{b)}, passing the \hs{a} to it using the
+\hs{f}~\hs{(@@a}~\hs{->}~\hs{b)}, passing the \hs{a} to it using the
 \hs{Functor}'s map operator, as shown below. We will use~\hs{<@\dollar@>}, an
 infix synonym of \hs{fmap}, throughout the paper (see Fig.~\ref{fig-types} for
 \hs{Functor}'s API).
@@ -154,7 +155,7 @@ still satisfy the law \hs{select}~\hs{=}~\hs{selectM} at the semantic level.
 One can also implement a function with the type signature of \hs{select} using
 applicative functors, but it will always execute the effects associated with the
 second argument, rendering any conditional execution of effects impossible, as
-in the \hs{pingPongA} example in~\S\ref{sec-intro}:
+in the \hs{pingPongA} example in the introduction~(\S\ref{sec-intro}):
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -196,6 +197,41 @@ equality \hs{(<*>)}~\hs{=}~\hs{apS} does not always hold. Selective functors
 that satisfy the law \hs{(<*>)}~\hs{=}~\hs{apS} will be called \emph{rigid};
 they will turn out to have a particularly simple normal form, which we will
 exploit in the free construction in~\S\ref{sec-free}.
+
+It is worth emphasising that the relationship between \hs{Applicative} and
+\hs{Selective} differs from the relationship between \hs{Applicative} and
+\hs{Monad}. Not every \hs{Applicative} is a \hs{Monad}, but every
+\hs{Applicative} is a \hs{Selective}, as witnessed by the function \hs{selectA}.
+The subclass relationship \hs{Applicative}~\hs{f}~\hs{=>}~\hs{Selective}~\hs{f}
+is justified not by possible instances, but by the extra method \hs{select} in
+\hs{Selective}. While \hs{select}~\hs{=}~\hs{selectA} is a valid implementation
+of \hs{select}, \emph{it is not the only useful implementation}, as will be
+demonstrated in~\S\ref{sec-instances}. The applicative-selective-monad hierarchy
+therefore reflects method set inclusion:
+$\{\hs{<*>}\} \subset \{\hs{<*>}, \hs{select}\} \subset \{\hs{<*>}, \hs{select}, \hs{>>=}\}$.
+Table~\ref{tab-operators} compares the three operators in terms their expressive
+power. Different applications require different sets of methods. For example, as
+we will see in~\S\ref{sec-haxl}, Haxl requires all three: \hs{<*>} gives
+parallelism, \hs{select} gives speculative execution, and \hs{>>=} gives
+arbitrary dynamic effects.
+
+\begin{table*}[t]
+\smaller
+\centering
+\begin{tabular}{l||c|c|c}
+Expressive power                          & apply (\hs{<*>}) & select (\hs{<*?}) & bind (\hs{>>=}) \\\hline
+Independent effects and parallelism       & \checkmark       & ~                 & ~               \\
+Static visibility and analysis of effects & \checkmark       & \checkmark        & ~               \\
+Speculative execution of effects          & ~                & \checkmark        & ~               \\
+Conditional execution of effects          & ~                & \checkmark        & \checkmark      \\
+Arbitrary dynamic effects                 & ~                & ~                 & \checkmark      \\
+\end{tabular}
+\vspace{2mm}
+\caption{Comparison of apply, select and bind operators in terms of their
+expressive power.
+\label{tab-operators}}
+\vspace{-4mm}
+\end{table*}
 
 We will come back to the relationship between applicative functors, selective
 functors and monads in \S\ref{sec-laws}, after first exploring \emph{selective
