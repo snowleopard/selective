@@ -334,7 +334,7 @@ We introduce two convenience combinators, which lift the data constructors of
 the \hs{RW} data type into the free selective, thus making them directly usable
 in the definitions of instruction semantics:
 
-\vspace{1mm}
+\vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 read :: Key -> ISA Value
 read k = liftSelect (Read k id)
@@ -342,15 +342,8 @@ read k = liftSelect (Read k id)
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 write :: Key -> ISA Value -> ISA Value
-write k fv = fv *> liftSelect (Write k fv id)
+write k fv = liftSelect (Write k fv id)
 \end{minted}
-\vspace{1mm}
-
-\noindent
-While the \hs{read} combinator is exactly the lifted \hs{Read} data
-constructor, the \hs{write}'s implementation deviates from the trivial lifting
-of the \hs{Write} data constructor and \emph{evaluates its second argument},
-thus executing the associated effects.
 
 \subsubsection{Example 1. Addition}
 
@@ -405,6 +398,24 @@ rectangles, instructions as rounded rectangles, and reads/writes as arcs.
 \vspace{-1mm}
 
 \noindent
+To implement \hs{getEffectsISA}, we apply the natural transformation \hs{toOver}
+to the effects of a free selective computation, which recursively
+collects the effects that occur in the \hs{Write}'s argument \hs{fv}:
+
+\vspace{0.5mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+getEffectsISA :: ISA a -> [RW ()]
+getEffectsISA = getOver . runSelect toOver
+\end{minted}
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+toOver :: RW a -> Over [RW ()] a
+toOver (Read  k _   ) = Over [Read k (const ())]
+toOver (Write k fv _) = runSelect toOver fv *> Over [Write k fv (const ())]
+\end{minted}
+\vspace{0.5mm}
+
+\noindent
 The semantics of the addition instruction has only used applicative combinators
 and we thus could have analysed it statically using free applicative functors.
 However, there are important instructions whose semantics cannot be expressed
@@ -414,7 +425,7 @@ free selective construction becomes irreplaceable.
 \subsubsection{Example 2. Conditional jump}
 
 Selective functors introduce limited dependencies between effectful
-computations, giving as enough power to express the semantics of branching
+computations, giving us enough power to express the semantics of branching
 instructions, which modify the program counter by a given offset if a certain
 condition holds. Consider the following instruction that performs a jump if the
 result of the previous operation was zero.
@@ -469,7 +480,7 @@ sequencing operator (\hs{*>}):
 addAndJump :: ISA ()
 addAndJump = add R0 1 *> jumpZero 42
 \end{minted}
-\newpage
+\vspace{1mm}
 
 \noindent
 We can analyse such compound computations in the same way as we analyse

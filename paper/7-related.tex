@@ -60,7 +60,7 @@ definitions:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-newtype ArrowMonad a b = ArrowMonad (a () b) -- See Control.Arrow
+newtype ArrowMonad a o = ArrowMonad (a () o) -- See Control.Arrow
 \end{minted}
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -82,7 +82,7 @@ instance ArrowChoice a => Selective (ArrowMonad a) where
 \end{minted}
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-toArrow :: Arrow a => ArrowMonad a (b -> c) -> a b c
+toArrow :: Arrow a => ArrowMonad a (i -> o) -> a i o
 toArrow (ArrowMonad f) = arr (\x -> ((), x)) >>> first f >>> arr (uncurry ($))
 \end{minted}
 \vspace{1mm}

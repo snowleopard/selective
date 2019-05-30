@@ -1,6 +1,7 @@
 %% For double-blind review submission, w/o CCS and ACM Reference (max submission space)
 % \documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
-\documentclass[acmsmall,review]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
+% \documentclass[acmsmall,review]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
+\documentclass[acmsmall,review]{acmart}\settopmatter{printfolios=true}
 %% For double-blind review submission, w/ CCS and ACM Reference
 %\documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true}
 %% For single-blind review submission, w/o CCS and ACM Reference (max submission space)
@@ -16,7 +17,7 @@
 %% use defaults for review submission.
 \acmJournal{PACMPL}
 \acmVolume{1}
-\acmNumber{NNN} % CONF = POPL or ICFP or OOPSLA
+\acmNumber{ICFP} % CONF = POPL or ICFP or OOPSLA
 \acmArticle{1}
 \acmYear{2019}
 \acmMonth{1}
@@ -115,12 +116,12 @@
 }
 \email{jdimino@janestreet.com}
 
-\fancypagestyle{firstpagestyle}
-{
-   \fancyhf{}
-   \renewcommand{\headrulewidth}{0.2pt}
-   \fancyhead[C]{Under review, feedback is sought}
-}
+% \fancypagestyle{firstpagestyle}
+% {
+%    \fancyhf{}
+%    \renewcommand{\headrulewidth}{0.2pt}
+%    \fancyhead[C]{Under review, feedback is sought}
+% }
 
 \begin{abstract}
 Applicative functors and monads have conquered the world of functional
@@ -175,10 +176,15 @@ two real-life case studies.
   \vspace{-0.5mm}
   We are very grateful to everyone who contributed by participating in numerous
   discussions and providing feedback on earlier drafts: Arseniy Alekseyev,
-  Baldur Bl{\"o}ndal, Ulan Degenbaev, Dominique Devriese, G\'abor Lehel,
-  Neil Mitchell, Daniel Peebles, Artem Pelenitsyn, Simon Peyton Jones,
-  Ivan Polyakov, Asad Saeeduddin, and reddit users \cmd{Darwin226}, \cmd{dmwit}
-  and \cmd{yakrar}.
+  Thorsten Altenkirch, Baldur Bl{\"o}ndal, Ulan Degenbaev, Dominique Devriese,
+  Ivan Gotovchits, Oleg Grenrus, Jennifer Hackett, Graham Hutton,
+  Luka Jacobowitz, Edward Kmett, Lennox S. Leary, G\'abor Lehel, Sam Lindley,
+  Tim McGilchrist, James McKinna, Yaron Minsky, Neil Mitchell, Matthew Naylor,
+  Daniel Peebles, Artem Pelenitsyn, Simon Peyton Jones, Ivan Polyakov,
+  Gabriel Radanne, Asad Saeeduddin, Irakli Safareli, Carter Schonwald,
+  Danil Sokolov, Cristian Urlea, Sjoerd Visscher, Alexa de Wit, Brent Yorgey,
+  and reddit users \cmd{Darwin226}, \cmd{dmwit}, \cmd{sclv}, \cmd{viercc} and
+  \cmd{yakrar}.
 
   Andrey Mokhov's research is supported by a Royal Society Industry Fellowship
   \cmd{IF160117} on the topic ``Towards Cloud Build Systems with Dynamic

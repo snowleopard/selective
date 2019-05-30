@@ -461,14 +461,14 @@ instance (Monoid w, Monad m) => Selective (S.WriterT  w m) where select = select
 
 ------------------------------------ Arrows ------------------------------------
 -- See the following standard definitions in "Control.Arrow".
--- newtype ArrowMonad a b = ArrowMonad (a () b)
+-- newtype ArrowMonad a o = ArrowMonad (a () o)
 -- instance Arrow a => Functor (ArrowMonad a)
 -- instance Arrow a => Applicative (ArrowMonad a)
 
 instance ArrowChoice a => Selective (ArrowMonad a) where
     select (ArrowMonad x) y = ArrowMonad $ x >>> (toArrow y ||| returnA)
 
-toArrow :: Arrow a => ArrowMonad a (b -> c) -> a b c
+toArrow :: Arrow a => ArrowMonad a (i -> o) -> a i o
 toArrow (ArrowMonad f) = arr (\x -> ((), x)) >>> first f >>> arr (uncurry ($))
 
 ---------------------------------- Alternative ---------------------------------

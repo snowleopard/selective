@@ -32,7 +32,7 @@ class Applicative f => Selective f where
 \end{minted}
 \vspace{1mm}
 \begin{minted}[fontsize=\small]{haskell}
--- An infix synonym for select
+-- An infix left-associative synonym for select
 (<*?) :: f (Either a b) -> f (a -> b) -> f b       -- (<*?) is pronounced "select"
 \end{minted}
 \vspace{2mm}
@@ -95,7 +95,11 @@ parametricity~\citep{wadler1989theorems} dictates that, when given a
 \hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{b)}, apply the obtained function to \hs{a}, and
 return the resulting \hs{b}; on the other hand, when given a \hs{Right}~\hs{b},
 we \emph{may skip the effects} associated with the function, and return the
-given \hs{b}.
+given \hs{b}. Note, however, that if \hs{a} is a \emph{phantom type
+variable}~\cite{leijen2000domain}, i.e. \hs{f}~\hs{a} holds no values of type
+\hs{a}, then we can skip the effects in \hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{b)}
+unconditionally, e.g. see the selective functor \hs{Under}
+in~\S\ref{sec-instances}.
 
 Following the notational convention for applicative operators, we also define
 the infix operator alias \hs{<*?} for \hs{select}: the angle bracket pointing to
@@ -338,8 +342,8 @@ type class, can be expressed using selective functors, as shown in
 Fig.~\ref{fig-library}, making them reusable in new contexts. In particular, the
 logical combinators \hs{<||>} and \hs{<&&>} will play an important role in
 improving the efficiency of the \Haxl framework in~\S\ref{sec-haxl}. To
-emphasise the monadic flavour of selective functors, we can rewrite \hs{ifS} in
-the form of the bind operator specialised to \hs{Bool}:
+emphasise the monadic flavour of selective functors, we can use \hs{ifS} to
+implement the bind operator specialised to \hs{Bool}:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -489,10 +493,10 @@ instance Semigroup e => Applicative (Validation e) where
 \vspace{1mm}
 
 \noindent
-The error-accumulating behaviour cannot be extended to a \hs{Monad} instance,
-since the bind operator has nothing to bind to if the first computation fails.
-We can, however, define the following \hs{Selective} instance, which allows us
-to validate data in the presence of conditions.
+The error-accumulating behaviour cannot be extended to a \hs{Monad} instance:
+after the first \hs{Failure} we have no value to pass to the second argument of
+the bind operator. We can, however, define the following \hs{Selective}
+instance, which allows us to validate data in the presence of conditions.
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -584,7 +588,7 @@ presented in this section allow us to safely refactor such code while keeping
 its original meaning.
 
 Fig.~\ref{fig-laws} lists all laws for selective functors, as well as some
-useful theorems that can be derived from the laws and
+useful theorems that can be derived from these laws and
 parametricity~\citep{wadler1989theorems}. Below we discuss them in order.
 
 The \emph{identity} and \emph{distributivity} laws determine the interaction of
@@ -679,9 +683,9 @@ skip any effects, because this would defeat the purpose of static analysis.
 \hs{Over} is an example of a selective functor that would violate the
 requirement to skip unnecessary effects. Similarly, we do not require that
 \hs{pure}~\hs{(Left}~\hs{x)}~\hs{<*?}~\hs{y}~\hs{=}~\hs{(@\dollar@}\hs{x)}~\hs{<@\dollar@>}~\hs{y}
-thus legalising under-approximating instances like \hs{Under} and
-\hs{Validation}. It is worth noting, however, that the monadic select operator
-\hs{selectM} does satisfy the \emph{pure Left} and \emph{pure Right} properties.
+thus legalising under-approximating instances like \hs{Under}. It is worth
+noting, however, that the monadic select operator \hs{selectM} does satisfy the
+\emph{pure Left} and \emph{pure Right} properties.
 
 Such loose requirements on \hs{select} with respect to unnecessary effects might
 seem troublesome. Below we list three reasons why we chose to keep the

@@ -1,3 +1,4 @@
+\vspace{-0.5mm}
 \section{Introduction}\label{sec-intro}
 
 \emph{Monads}, introduced to functional programming
@@ -9,11 +10,11 @@ presented ideas are not language specific. We release two libraries for
 selective applicative functors along with this paper, for Haskell and OCaml, and
 are also aware of a PureScript fork.}:
 
-\vspace{1mm}
+% \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 (>>=) :: Monad f => f a -> (a -> f b) -> f b
 \end{minted}
-\vspace{1mm}
+% \vspace{1mm}
 
 \noindent
 The operator takes two arguments: an effectful computation \hs{f}~\hs{a}, which
@@ -28,12 +29,12 @@ Consider a simple example, where we use the monad \hs{f}~\hs{=}~\hs{IO} to
 describe an effectful program that prints \hs{"pong"} if the user enters
 \hs{"ping"}:
 
-\vspace{1mm}
+\vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 pingPongM :: IO ()
 pingPongM = getLine >>= \s -> if s@\,@==@\,@"ping" then putStrLn "pong" else pure ()
 \end{minted}
-\vspace{1mm}
+\vspace{0.5mm}
 
 \noindent
 The first argument of the bind operator reads a string using
@@ -76,12 +77,12 @@ Our ping-pong example cannot be expressed using applicative functors. Since the
 two computations must be independent, the best we can do is to print \hs{"pong"}
 unconditionally:
 
-% \vspace{0.5mm}
-% pingPongA :: IO ()
+\vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
+pingPongA :: IO ()
 pingPongA = fmap (\s -> id) getLine <*> putStrLn "pong"
 \end{minted}
-% \vspace{0.5mm}
+\vspace{0.5mm}
 
 \noindent
 We use \hs{fmap}~\hs{(\s}~\hs{->}~\hs{id)} to replace the input string \hs{s},
@@ -108,15 +109,15 @@ whenS :: IO Bool -> IO () -> IO ()
 
 \noindent
 This primitive executes the first computation, and then uses the obtained
-\hs{Bool} to decide whether to execute the second computation or not. Let us
+\hs{Bool} to decide whether to execute the second computation or skip it. Let us
 rewrite the ping-pong example using \hs{whenS}:
 
-% pingPongS :: IO ()
-% \vspace{0.5mm}
+\vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
+pingPongS :: IO ()
 pingPongS = whenS (fmap (=="ping") getLine) (putStrLn "pong")
 \end{minted}
-% \vspace{0.5mm}
+\vspace{0.5mm}
 
 \noindent
 We replace the input string~\hs{s} with \hs{True} if it is equal to \hs{"ping"},
@@ -133,11 +134,11 @@ combinators, can be seen as special cases of a new intermediate abstraction,
 called \emph{selective applicative functors}, whose main operator for composing
 effectful computations is \emph{select}:
 
-\vspace{0.5mm}
+% \vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 select :: Selective f => f (Either a b) -> f (a -> b) -> f b
 \end{minted}
-\vspace{0.5mm}
+% \vspace{0.5mm}
 
 \noindent
 Intuitively, the first effectful computation is used to select what happens
@@ -146,9 +147,10 @@ computation in order to produce a \hs{b} in the end; otherwise, if it yields a
 \hs{Right}~\hs{b}, you \emph{may skip} the subsequent effect, because you have
 no use for the resulting function.
 
+\noindent
 The contributions of this paper are as follows:
 
-\vspace{-1mm}
+% \vspace{-1mm}
 \begin{itemize}
     \item We introduce \emph{selective applicative functors} as a general
     abstraction situated between applicative functors and monads, characterising

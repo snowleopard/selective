@@ -154,10 +154,11 @@ script _ = Nothing
 \vspace{1mm}
 
 \noindent
-We assume the existence of functions \hs{tar} (creating an archive),
-\hs{compile} (compiling an OCaml executable from sources and libraries), and
-\hs{parse} (parsing a configuration file); their implementation is irrelevant
-for our purposes.
+Functions
+\hs{tar},~\hs{compile}~\hs{::}~\hs{Selective}~\hs{f}~\hs{=>}~\hs{[@@f}~\hs{String]}~\hs{->}~\hs{f}~\hs{String}
+create an archive and compile an OCaml executable from sources/libraries, while
+\hs{parse}~\hs{::}~\hs{Selective}~\hs{f}~\hs{=>}~\hs{f}~\hs{String}~\hs{->}~\hs{f}~\hs{Bool}
+parses a configuration file; their implementation is irrelevant for our purposes.
 
 \begin{figure}
 \centerline{\includegraphics[scale=0.3]{fig/build-dependencies.pdf}}

@@ -26,25 +26,25 @@
 
 * Go's `select` statement: https://golangbot.com/select/, as suggested
   [in this Tweet](https://twitter.com/igstan/status/1102560124726583297).
-  
+
 * SmallCheck defines so called "parallel conjunction", which turns out to be very
   similar to `pAnd` in Haxl:
-  
+
   > Another addition w.r.t. a standard functional language is a possibility to
-  > perform parallel evaluation \[1\]. This is useful in the presence of meta 
-  > variables. In particular, consider a predicate which is a conjunction of 
+  > perform parallel evaluation \[1\]. This is useful in the presence of meta
+  > variables. In particular, consider a predicate which is a conjunction of
   > two other predicates, `p x = p1 x && p2 x`. Both `p1` and `p2` put
   > restrictions on `x`. If `(&&)` is defined in the normal way, i.e. by looking
   > at the arguments one at a time from left to right, we may have a situation
   > where `x` is partially instantiated in such a way that, at this point, the
   > value of `p2 x` is known to be `False`, whereas the value of `p1 x` is still
   > unknown.
-  
+
   See [SmallCheck and Lazy SmallCheck](https://www.cs.york.ac.uk/fp/smallcheck/smallcheck.pdf)
   and [Property Directed Generation of First-Order Test Data](https://pdfs.semanticscholar.org/855f/6135cae8daa88a7296f525deaeb87c4a4ee9.pdf?_ga=2.215432343.1498597309.1553279121-20980404.1478796250).
 
-  
-  
+
+
 
 ## Existing similar abstractions
 
@@ -60,7 +60,7 @@
   > > Tagless Final: it’s a type class that gives you a (generalised version of) if statement, which you can
   > > mix&match with other capabilities! In fact, one of the examples in Typed Tagless Final is the type class
   > > BoolSYM with if_ method.
-  
+
   > That’s exactly how I’m seeing it. Not to diminish the value of the work, but just to fit into the
   > mathematical framework, I would say that Selective is a signature of a particular language (structure)
   > and you’re applying the tagless-final approach to investigate its behavior and capabilities.
@@ -82,4 +82,18 @@
   > (The idea of this bitwise testing thing is inspired by some of the tricks used in the classic
   > "Implicit Configurations" paper: http://okmij.org/ftp/Haskell/tr-15-04.pdf)
   > So in "real" terms, bind is by a series of dirty hacks, fully recoverable from select.
-  
+
+
+## Remaining bits and pieces from reviews: address if enough space
+
+> Showing the Selective instance for Haxl would be more valuable if you explained (briefly) how it achieves speculative execution.
+
+> You omit various performance improvements for clarity, but can you say something about the performance of the free selective functors. It looks like there would be a lot of book-keeping overhead from all the nested sum types.
+
+> Now that I read more on the paper I see that such an alternative is briefly discussed in Section 6. Wouldn't there also be quite a few advantages of having selective in the Applicative instance?
+
+* One advantage is that adding select to Applicative avoids breaking the Applicative => Monad hierarchy. However, that would still break some code, because select would clash with existing definitions with the same name. We can elaborate on this in the revision.
+
+> C: It is hard to understand the program presented here [in Fig. 6]
+
+
