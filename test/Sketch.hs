@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, GADTs, RankNTypes, ScopedTypeVariables, TupleSections #-}
+{-# LANGUAGE DeriveFunctor, GADTs, RankNTypes, ScopedTypeVariables, TupleSections #-}
 module Sketch where
 
 import Control.Arrow hiding (first, second)
@@ -6,6 +6,7 @@ import Control.Category (Category)
 import Control.Monad
 import Control.Selective
 import Data.Bifunctor
+import Data.Bool
 import Data.Void
 
 import qualified Control.Arrow    as A
@@ -263,6 +264,12 @@ normalise2 x y z = (f <$> x) <*? (g <$> y) <*? (h <$> z)
 
 -- Alternative formulations of selective functors.
 
+class Applicative f => SelectiveBy f where
+    selectBy :: (a -> Either (b -> c) c) -> f a -> f b -> f c
+
+whenBy :: SelectiveBy f => f Bool -> f () -> f ()
+whenBy = selectBy (bool (Right ()) (Left id))
+
 -- A first-order version of selective functors.
 class Applicative f => SelectiveF f where
     selectF :: f (Either a b) -> f c -> f (Either a (b, c))
@@ -492,3 +499,45 @@ foldArrowChoice f arr = getConstArrow $ runFreeArrowChoice arr (ConstArrow . f)
 -- Execute a 'FreeArrowChoice' in an arbitrary monad.
 runArrowChoice :: Monad m => (forall i o. f i o -> (i -> m o)) -> FreeArrowChoice f a b -> (a -> m b)
 runArrowChoice f arr = runKleisli $ runFreeArrowChoice arr (Kleisli . f)
+
+-------------------------------- Simplified Haxl -------------------------------
+
+data BlockedRequest
+
+data Result a = Done a | Blocked [BlockedRequest] (Haxl a) deriving Functor
+
+newtype Haxl a = Haxl { runHaxl :: IO (Result a) } deriving Functor
+
+instance Applicative Haxl where
+    pure = return
+
+    Haxl iof <*> Haxl iox = Haxl $ do
+        rf <- iof
+        rx <- iox
+        return $ case (rf, rx) of
+            (Done       f, Done       x) -> Done               (f        x)
+            (Done       f, Blocked bx x) -> Blocked bx         (f    <$> x)
+            (Blocked bf f, Done       x) -> Blocked bf         (($x) <$> f)
+            (Blocked bf f, Blocked bx x) -> Blocked (bf ++ bx) (f    <*> x)
+
+instance Selective Haxl where
+    select (Haxl iox) (Haxl iof) = Haxl $ do
+        rx <- iox
+        case rx of
+            Done (Right b) -> return (Done b)
+            Done (Left  a) -> runHaxl (($a) <$> Haxl iof)
+            Blocked bx x -> do
+                rf <- iof
+                case rf of
+                    Done f       -> runHaxl (either f id <$> x)
+                    Blocked bf f -> return (Blocked (bx ++ bf) (select x f))
+
+instance Monad Haxl where
+    return = Haxl . return . Done
+
+    Haxl iox >>= f = Haxl $ do
+        x <- iox
+        case x of
+            Done       x -> runHaxl (f x)
+            Blocked bx x -> return (Blocked bx (x >>= f))
+
