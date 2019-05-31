@@ -8,6 +8,7 @@ import Control.Monad
 import Control.Selective
 import Data.Bifunctor
 import Data.Bool
+import Data.Semigroup (Semigroup (..))
 import Data.Void
 
 import qualified Control.Arrow    as A
@@ -265,8 +266,12 @@ normalise2 x y z = (f <$> x) <*? (g <$> y) <*? (h <$> z)
 
 -- Alternative formulations of selective functors.
 
+-- Factoring out the selection logic into a pure argument
 class Applicative f => SelectiveBy f where
     selectBy :: (a -> Either (b -> c) c) -> f a -> f b -> f c
+
+selectFromBy :: SelectiveBy f => f (Either a b) -> f (a -> b) -> f b
+selectFromBy = selectBy (first (flip ($)))
 
 whenBy :: SelectiveBy f => f Bool -> f () -> f ()
 whenBy = selectBy (bool (Right ()) (Left id))
@@ -503,10 +508,10 @@ runArrowChoice f arr = runKleisli $ runFreeArrowChoice arr (Kleisli . f)
 
 -------------------------------- Simplified Haxl -------------------------------
 
-data BlockedRequests
-instance Semigroup BlockedRequests where (<>) x _ = case x of {}
+data Requests
+instance Semigroup Requests where (<>) x _ = case x of {}
 
-data Result a = Done a | Blocked BlockedRequests (Haxl a) deriving Functor
+data Result a = Done a | Blocked Requests (Haxl a) deriving Functor
 
 newtype Haxl a = Haxl { runHaxl :: IO (Result a) } deriving Functor
 
