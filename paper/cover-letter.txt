@@ -1,0 +1,21 @@
+Dear reviewers,
+
+We thank you once again for your suggestions and feedback. In the revised
+version of our paper "Selective Applicative Functors" we addressed your
+suggestions, including one mandatory change, copied below:
+
+=========================================================================
+MANDATORY CHANGE: Please clarify your stance on the (non-)inclusion of
+applicative/selective/monad, at it would be most helpful for the reader
+who are likely to try and situate your work in the existing hierarchy.
+=========================================================================
+
+To clarify the applicative-selective-monad hierarchy, we added a new paragraph
+on page 5 (line 220), which starts with "It is worth emphasising that...". We
+also added Table 1 on top of the same page 5, which compares the expressive
+power of the three operators in question (apply, select and bind). We hope that
+you will find this change satisfactory. Please do not hesitate to get in touch
+with us in case anything remains unclear.
+
+Kind regards,
+Andrey, Georgy, Simon and Jeremie
