@@ -57,19 +57,17 @@ transformation on the monadic \hs{do} syntax to automatically use
 \hs{Applicative} operators where possible \cite{marlow2016applicativedo}.
 
 One of the key tools found to be useful in the kind of code written
-using \Haxl in production is the ``lazy'' conditional operators:
-
-% Andrey: The above read "using \Haxl at Facebook"
-% Replaced "at Facebook" with "in production" for blind review
+using \Haxl at Facebook is the ``lazy'' conditional operators:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 (.||), (.&&) :: Haxl Bool -> Haxl Bool -> Haxl Bool
-x .|| y = do b <- x; if b then return True else y
-x .&& y = do b <- x; if b then y           else return False
+@\blk{x}@ .|| y = do b <- x; if b then return True else y
+@\blk{x}@ .&& y = do b <- x; if b then y           else return False
 \end{minted}
 \vspace{1mm}
 
+\noindent
 These are typically used to improve performance by guarding slow
 checks with faster checks.  For example, we might write:
 
@@ -132,12 +130,12 @@ instance Selective Haxl where
                 case rf of
                     Done f  -> unHaxl (either f id <$> c)
                     Throw e -> return (Blocked bx (select c (Haxl (return rf))))
-                    Blocked by d -> return (Blocked (bx <> by) (select c d)
+                    Blocked bf d -> return (Blocked (bx <> bf) (select c d)
 \end{minted}
-\vspace{-1mm}
+\vspace{-2mm}
 \caption{An implementation of \hs{Selective} instance for \Haxl.}
 \label{fig-haxl-select}
-\vspace{-3mm}
+\vspace{-4mm}
 \end{figure}
 
 There is one wrinkle with implementing \hs{pOr} and \hs{pAnd}

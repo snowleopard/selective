@@ -25,14 +25,16 @@ As mentioned in~\S\ref{sec-selective}, \hs{branch} is a strong contender to be
 the main method of the \hs{Selective} type class: it is parametric and all
 selective combinators, including \hs{select} itself, can be derived from it:
 
-\vspace{1mm}
+\vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
-
+\end{minted}
+\vspace{0mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
 selectB :: Selective f => f (Either a b) -> f (a -> b) -> f b
 selectB x y = branch x y (pure id)
 \end{minted}
-\vspace{1mm}
+\vspace{0.5mm}
 
 \noindent
 While we prefer \hs{select} for its simplicity, \hs{branch} does provide an

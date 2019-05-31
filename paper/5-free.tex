@@ -24,35 +24,6 @@ build a richer structure on top of this \emph{base functor}, which would have
 the desired instances, in our case \hs{Applicative} and \hs{Selective}. In this
 section we will denote the base functor by \hs{f}.
 
-As we remarked in~\S\ref{sec-laws}, rigid selective functors have a particularly
-simple normal form thanks to the additional law \hs{(<*>)}~\hs{=}~\hs{apS},
-which tells us that the apply operator \hs{<*>} is redundant and can be
-implemented via the selective interface. This normal form has the following
-linear structure:
-
-\begin{minted}[xleftmargin=10pt]{haskell}
-pure x <*? fa <*? fb <*? ... <*? fy
-  where
-    x  :: Either a (Either b (Either c (... z)))
-    fa :: f (a ->   Either b (Either c (... z)))
-    fb :: f (b ->             Either c (... z))
-    ...
-    fy :: f (y ->                           z)
-\end{minted}
-
-\noindent
-In words, any rigid selective computation can be rewritten as a left-associated
-sequence of select operators, where the initial pure value~\hs{x} comes from a
-large sum type (comprising alternatives~\hs{a} to~\hs{z} in the above snippet),
-and each effect in the sequence of select operators eliminates one of the
-alternatives, in order, until only one remains (namely, \hs{z}). Interestingly,
-there is no right-associative version of the normal form, because the
-associativity law can only be used to re-associate a given expression to the
-left (\S\ref{sec-laws}). To apply it in reverse, we would need a way to
-``factor out'' the reshaping functions \hs{f}, \hs{g} and \hs{h} from the base
-functor. This is different from applicative functors, which have two normal
-forms corresponding to left and right re-association~\citep{free-applicatives}.
-
 \begin{figure}
 \begin{minted}[fontsize=\small]{haskell}
 data Select f a where
@@ -106,11 +77,40 @@ getPure = runSelect (const Nothing)
 getEffects :: Functor f => Select f a -> [f ()]
 getEffects = getOver . runSelect (Over . pure . void)
 \end{minted}
-\vspace{-1mm}
+\vspace{-2mm}
 \caption{Free rigid selective functors (various performance improvements
 omitted for clarity).}\label{fig-free}
-\vspace{-3mm}
+\vspace{-4mm}
 \end{figure}
+
+As we remarked in~\S\ref{sec-laws}, rigid selective functors have a particularly
+simple normal form thanks to the additional law \hs{(<*>)}~\hs{=}~\hs{apS},
+which tells us that the apply operator \hs{<*>} is redundant and can be
+implemented via the selective interface. This normal form has the following
+linear structure:
+
+\begin{minted}[xleftmargin=10pt]{haskell}
+pure x <*? fa <*? fb <*? ... <*? fy
+  where
+    x  :: Either a (Either b (Either c (... z)))
+    fa :: f (a ->   Either b (Either c (... z)))
+    fb :: f (b ->             Either c (... z))
+    ...
+    fy :: f (y ->                           z)
+\end{minted}
+
+\noindent
+In words, any rigid selective computation can be rewritten as a left-associated
+sequence of select operators, where the initial pure value~\hs{x} comes from a
+large sum type (comprising alternatives~\hs{a} to~\hs{z} in the above snippet),
+and each effect in the sequence of select operators eliminates one of the
+alternatives, in order, until only one remains (namely, \hs{z}). Interestingly,
+there is no right-associative version of the normal form, because the
+associativity law can only be used to re-associate a given expression to the
+left (\S\ref{sec-laws}). To apply it in reverse, we would need a way to
+``factor out'' the reshaping functions \hs{f}, \hs{g} and \hs{h} from the base
+functor. This is different from applicative functors, which have two normal
+forms corresponding to left and right re-association~\citep{free-applicatives}.
 
 Fig.~\ref{fig-free} gives an encoding of this normal form in Haskell. The free
 data type \hs{Select} has two constructors: \hs{Pure}, to embed pure values in
@@ -299,12 +299,12 @@ instructions thus:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-type ISA a = Select RW a
+type Program a = Select RW a
 \end{minted}
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-data RW a = Read  Key             (Value -> a)
-          | Write Key (ISA Value) (Value -> a) deriving Functor
+data RW a = Read  Key                 (Value -> a)
+          | Write Key (Program Value) (Value -> a) deriving Functor
 \end{minted}
 \vspace{1mm}
 
@@ -316,8 +316,8 @@ computation which produces a value, \emph{write} its result into the store.
 Think of \hs{Value} as a machine word, and \hs{Key} as an ISA memory location
 (a register, a memory cell, or a processor flag). The base commands are similar
 to \cmd{Teletype}, with one key difference: the \hs{Write} constructor takes
-\hs{ISA}~\hs{Value}, i.e. a computation producing a value instead of just plain
-\hs{Value}.
+\hs{Program}~\hs{Value}, i.e. a computation producing a value instead of just
+plain \hs{Value}.
 
 This exact structure of the definition is required for accommodating a pattern
 that occurs frequently in instruction semantics: often we read a value from a
@@ -336,12 +336,12 @@ in the definitions of instruction semantics:
 
 \vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-read :: Key -> ISA Value
+read :: Key -> Program Value
 read k = liftSelect (Read k id)
 \end{minted}
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-write :: Key -> ISA Value -> ISA Value
+write :: Key -> Program Value -> Program Value
 write k fv = liftSelect (Write k fv id)
 \end{minted}
 
@@ -354,7 +354,7 @@ register, and also updates the state of the \hs{Zero} flag to indicate if the
 result is zero.
 
 \begin{minted}[xleftmargin=10pt]{haskell}
-add :: Register -> Address -> ISA Value
+add :: Register -> Address -> Program Value
 add reg addr = let arg1     = read (Reg reg)
                    arg2     = read (Cell addr)
                    result   = (+)   <$> arg1 <*> arg2
@@ -386,7 +386,7 @@ rectangles, instructions as rounded rectangles, and reads/writes as arcs.
 \begin{minipage}{0.53\textwidth}
 \raggedleft
 \begin{minted}[xleftmargin=10pt]{haskell}
-@\ghci@ getEffectsISA (add R0 1)
+@\ghci@ getProgramEffects (add R0 1)
 [Read R0,Read 1,Write R0,Write Zero]
 \end{minted}
  \end{minipage}
@@ -398,14 +398,14 @@ rectangles, instructions as rounded rectangles, and reads/writes as arcs.
 \vspace{-1mm}
 
 \noindent
-To implement \hs{getEffectsISA}, we apply the natural transformation \hs{toOver}
-to the effects of a free selective computation, which recursively
-collects the effects that occur in the \hs{Write}'s argument \hs{fv}:
+To implement \hs{getProgramEffects}, we apply the natural transformation
+\hs{toOver} to the effects of a \hs{Program}, which recursively collects the
+effects that occur in the \hs{Write}'s argument \hs{fv}:
 
 \vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-getEffectsISA :: ISA a -> [RW ()]
-getEffectsISA = getOver . runSelect toOver
+getProgramEffects :: Program a -> [RW ()]
+getProgramEffects = getOver . runSelect toOver
 \end{minted}
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -432,7 +432,7 @@ result of the previous operation was zero.
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-jumpZero :: Value -> ISA ()
+jumpZero :: Value -> Program ()
 jumpZero offset = let zeroSet  = (==1) <$> read (Flag Zero)
                       modifyPC = void $ write PC ((+offset) <$> read PC)
                   in whenS zeroSet modifyPC
@@ -449,7 +449,7 @@ simulator for branching programs and perform their static analysis:
  \begin{minipage}{0.43\textwidth}
 \raggedleft
 \begin{minted}[xleftmargin=10pt]{haskell}
-@\ghci@ getEffectsISA (jumpZero 42)
+@\ghci@ getProgramEffects (jumpZero 42)
 [Read Zero,Read PC,Write PC]
 \end{minted}
  \end{minipage}
@@ -477,7 +477,7 @@ sequencing operator (\hs{*>}):
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-addAndJump :: ISA ()
+addAndJump :: Program ()
 addAndJump = add R0 1 *> jumpZero 42
 \end{minted}
 \vspace{1mm}
@@ -491,7 +491,7 @@ individual instructions:
  \begin{minipage}{0.46\textwidth}
 \raggedleft
 \begin{minted}{haskell}
-@\ghci@ getEffectsISA addAndJump
+@\ghci@ getProgramEffects addAndJump
 [Read R0,Read 1,Write R0,Write Zero
 ,Read Zero,Read PC,Write PC]
 \end{minted}
@@ -548,12 +548,12 @@ the new value and return it.
 
 The natural transformation \hs{toState} gives interpretation to individual
 \hs{Read} and \hs{Write} commands, and now this interpretation can be extended
-to any \hs{ISA} computation by plugging it into a \hs{runSelect} call, as has
-already been done once in the implementation of \hs{toState} itself:
+to any \hs{Program} by plugging it into a \hs{runSelect} call, as has already
+been done once in the implementation of \hs{toState} itself:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-runProgram :: ISA a -> ISAState -> (a, ISAState)
+runProgram :: Program a -> ISAState -> (a, ISAState)
 runProgram p = runState (runSelect toState p)
 \end{minted}
 
@@ -565,12 +565,12 @@ load/store and branching instructions. However, one should remember that
 selective functors still lack the full expressive power of the monadic interface
 and are unable to accommodate an important class of instructions, specifically
 those that use the \emph{memory-indirect addressing mode}. If we had a
-\hs{Monad}~\hs{ISA} instance, we could give the following semantics to the
+\hs{Monad}~\hs{Program} instance, we could give the following semantics to the
 memory-indirect load instruction \hs{loadMI}:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-loadMI :: Register -> Address -> ISA Value
+loadMI :: Register -> Address -> Program Value
 loadMI reg addr = read (Cell addr) >>= \x -> write (Reg reg) (read (Cell x))
 \end{minted}
 \vspace{1mm}
@@ -587,7 +587,7 @@ be terribly slow, since it would also follow the same linear exploration of the
 memory address space (although see \S\ref{sec-alt-multi} for a possible solution
 of the performance issue).
 
-% not get any strong benefits. Specifically, since the \hs{getEffectsISA} function,
+% not get any strong benefits. Specifically, since the \hs{getProgramEffects} function,
 % which performs static analysis of effects, constructs a conservative
 % over-approximation, it would always report something similar to this:
 % \hs{[Read addr,Write reg, Write reg...}, which would contain as much instances

@@ -86,21 +86,21 @@ of \emph{values} \hs{v}, e.g. file contents. A task takes a \emph{callback} of
 type \hs{k}~\hs{->}~\hs{f}~\hs{v}, that the task can use to find values of its
 dependencies, and returns the result embedded in a selective context~\hs{f}:
 
-\vspace{1mm}
+\vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 newtype Task k v = Task { run :: forall f. Selective f => (k -> f v) -> f v }
 \end{minted}
-\vspace{1mm}
+\vspace{0.5mm}
 
 \noindent
-The task needs to be polymorphic over the \hs{f} so that it can be run both in
+The task needs to be polymorphic over \hs{f} so that it can be run both in
 \emph{build mode}, by actually executing build commands, and in the \emph{mock
 mode}, where build commands are skipped but dependencies are recorded, as
 explained in \S\ref{sec-dune-intro}. For example, to compute over- and
 under-approximation of build dependencies we can run the task in selective
 functors \hs{f}~\hs{=}~\hs{Over} and \hs{f}~\hs{=}~\hs{Under}, respectively:
 
-\vspace{1mm}
+\vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 dependenciesOver :: Task k v -> [k]
 dependenciesOver task = getOver $ run task (\k -> Over [k])
@@ -108,7 +108,7 @@ dependenciesOver task = getOver $ run task (\k -> Over [k])
 dependenciesUnder :: Task k v -> [k]
 dependenciesUnder task = getUnder $ run task (\k -> Under [k])
 \end{minted}
-\vspace{1mm}
+\vspace{0.5mm}
 
 \noindent
 Thanks to the polymorphism of \hs{Task} over \hs{f}, we can ``execute'' a given
@@ -123,11 +123,11 @@ build \hs{Task} or \hs{Nothing} to indicate that this key is an input~(external)
 dependency that cannot be built and should therefore be available before the
 build starts:
 
-\vspace{1mm}
+\vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 type Script k v = k -> Maybe (Task k v)
 \end{minted}
-\vspace{1mm}
+\vspace{0.5mm}
 
 \noindent
 Now we have all the ingredients for creating a simple build script comprising
@@ -139,7 +139,7 @@ stored in the \cmd{config} file (it is common to use an optimised low-level C
 implementation of a performance-critical function, falling back to high-level
 OCaml implementation if the former is unavailable on the system):
 
-\vspace{1mm}
+\vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 script :: Script FilePath String
 script "release.tar" = Just $ Task $ \fetch -> tar [fetch@\,@"LICENSE",@\,\blk{fetch}\,@"exe"]
@@ -151,7 +151,7 @@ script "exe" = Just $ Task $ \fetch ->
     in compile [src, ifS (parse cfg) libc libml]
 script _ = Nothing
 \end{minted}
-\vspace{1mm}
+\vspace{0.5mm}
 
 \noindent
 Functions
@@ -162,17 +162,19 @@ parses a configuration file; their implementation is irrelevant for our purposes
 
 \begin{figure}
 \centerline{\includegraphics[scale=0.3]{fig/build-dependencies.pdf}}
+\vspace{-2mm}
 \caption{An example build dependency graph. Input files are shown in rectangles,
 intermediate and output files are shown in rounded rectangles. Approximate
 dependencies are highlighted with dashed lines.}
 \label{fig-build}
+\vspace{-4mm}
 \end{figure}
 
 By analysing individual build tasks using \hs{dependenciesOver} and
 \hs{dependenciesUnder}, we can obtain an approximate build dependency
 information for the whole dependency graph:
 
-\vspace{1mm}
+\vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 @\ghci@ dependenciesOver (fromJust $ script "release.tar")
 ["LICENSE","exe"]
@@ -183,7 +185,7 @@ information for the whole dependency graph:
 @\ghci@ dependenciesUnder (fromJust $ script "exe")
 ["src.ml","config"]
 \end{minted}
-\vspace{1mm}
+\vspace{0.5mm}
 
 \noindent
 Fig.~\ref{fig-build} visualises the graph obtained by traversing approximate
