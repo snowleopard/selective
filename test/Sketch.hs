@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveFunctor, GADTs, RankNTypes, ScopedTypeVariables, TupleSections #-}
+{-# LANGUAGE DeriveFunctor, EmptyCase, GADTs, RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables, TupleSections #-}
 module Sketch where
 
 import Control.Arrow hiding (first, second)
@@ -502,9 +503,10 @@ runArrowChoice f arr = runKleisli $ runFreeArrowChoice arr (Kleisli . f)
 
 -------------------------------- Simplified Haxl -------------------------------
 
-data BlockedRequest
+data BlockedRequests
+instance Semigroup BlockedRequests where (<>) x _ = case x of {}
 
-data Result a = Done a | Blocked [BlockedRequest] (Haxl a) deriving Functor
+data Result a = Done a | Blocked BlockedRequests (Haxl a) deriving Functor
 
 newtype Haxl a = Haxl { runHaxl :: IO (Result a) } deriving Functor
 
@@ -515,22 +517,21 @@ instance Applicative Haxl where
         rf <- iof
         rx <- iox
         return $ case (rf, rx) of
-            (Done       f, Done       x) -> Done               (f        x)
-            (Done       f, Blocked bx x) -> Blocked bx         (f    <$> x)
-            (Blocked bf f, Done       x) -> Blocked bf         (($x) <$> f)
-            (Blocked bf f, Blocked bx x) -> Blocked (bf ++ bx) (f    <*> x)
+            (Done       f, Done       x) -> Done (f x)
+            (Done       f, Blocked bx x) -> Blocked bx (f <$> x)
+            (Blocked bf f, Done       x) -> Blocked bf (($x) <$> f)
+            (Blocked bf f, Blocked bx x) -> Blocked (bf <> bx) (f <*> x)
 
 instance Selective Haxl where
     select (Haxl iox) (Haxl iof) = Haxl $ do
         rx <- iox
-        case rx of
-            Done (Right b) -> return (Done b)
-            Done (Left  a) -> runHaxl (($a) <$> Haxl iof)
-            Blocked bx x -> do
-                rf <- iof
-                case rf of
-                    Done f       -> runHaxl (either f id <$> x)
-                    Blocked bf f -> return (Blocked (bx ++ bf) (select x f))
+        rf <- iof
+        return $ case (rx, rf) of
+            (Done (Right b), _           ) -> Done b -- short-circuit
+            (Done (Left  a), Done       f) -> Done (f a)
+            (Done (Left  a), Blocked bf f) -> Blocked bf (($a) <$> f)
+            (Blocked bx  x , Done       f) -> Blocked bx (either f id <$> x)
+            (Blocked bx  x , Blocked bf f) -> Blocked (bx <> bf) (select x f)
 
 instance Monad Haxl where
     return = Haxl . return . Done
@@ -540,4 +541,3 @@ instance Monad Haxl where
         case x of
             Done       x -> runHaxl (f x)
             Blocked bx x -> return (Blocked bx (x >>= f))
-
