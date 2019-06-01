@@ -508,11 +508,11 @@ runArrowChoice f arr = runKleisli $ runFreeArrowChoice arr (Kleisli . f)
 
 -------------------------------- Simplified Haxl -------------------------------
 
-data Requests
-instance Semigroup Requests where (<>) x _ = case x of {}
+data BlockedRequests
+instance Semigroup BlockedRequests where (<>) x _ = case x of {}
 
-data Result a = Done a | Blocked Requests (Haxl a) deriving Functor
-
+-- A Haxl computation is either completed (Done) or Blocked on pending data requests
+data Result a = Done a | Blocked BlockedRequests (Haxl a) deriving Functor
 newtype Haxl a = Haxl { runHaxl :: IO (Result a) } deriving Functor
 
 instance Applicative Haxl where
@@ -522,27 +522,24 @@ instance Applicative Haxl where
         rf <- iof
         rx <- iox
         return $ case (rf, rx) of
-            (Done       f, Done       x) -> Done (f x)
-            (Done       f, Blocked bx x) -> Blocked bx (f <$> x)
-            (Blocked bf f, Done       x) -> Blocked bf (($x) <$> f)
-            (Blocked bf f, Blocked bx x) -> Blocked (bf <> bx) (f <*> x)
+            (Done f      , _           ) -> f    <$> rx
+            (_           , Done x      ) -> ($x) <$> rf
+            (Blocked bf f, Blocked bx x) -> Blocked (bf <> bx) (f <*> x) -- parallelism
 
 instance Selective Haxl where
     select (Haxl iox) (Haxl iof) = Haxl $ do
         rx <- iox
         rf <- iof
         return $ case (rx, rf) of
-            (Done (Right b), _           ) -> Done b -- short-circuit
-            (Done (Left  a), Done       f) -> Done (f a)
-            (Done (Left  a), Blocked bf f) -> Blocked bf (($a) <$> f)
-            (Blocked bx  x , Done       f) -> Blocked bx (either f id <$> x)
-            (Blocked bx  x , Blocked bf f) -> Blocked (bx <> bf) (select x f)
-
+            (Done (Right b), _           ) -> Done b -- abandon the second computation
+            (Done (Left  a), _           ) -> ($a) <$> rf
+            (_             , Done       f) -> either f id <$> rx
+            (Blocked bx x  , Blocked bf f) -> Blocked (bx <> bf) (select x f) -- speculative
+                                                                              -- execution
 instance Monad Haxl where
     return = Haxl . return . Done
 
     Haxl iox >>= f = Haxl $ do
-        x <- iox
-        case x of
-            Done       x -> runHaxl (f x)
-            Blocked bx x -> return (Blocked bx (x >>= f))
+        rx <- iox
+        case rx of Done       x -> runHaxl (f x) -- dynamic dependency on runtime value 'x'
+                   Blocked bx x -> return (Blocked bx (x >>= f))

@@ -48,13 +48,20 @@ up the queries into a single request to the remote database.
 These optimisations are performed automatically by \Haxl, using a
 special \hs{Applicative} instance that exploits the lack of
 dependency between the two computations to explore the computations
-and collect the data fetch operations that can be performed in
-parallel or batched together. \Haxl also has a \hs{Monad} instance
-that sequentialises operations as you would expect, but code written
-to use \hs{Applicative} operations benefits from the automatic
-concurrency. This optimisation is further exploited by using a
-transformation on the monadic \hs{do} syntax to automatically use
-\hs{Applicative} operators where possible \cite{marlow2016applicativedo}.
+and collect the data fetch requests that can be performed in
+parallel or batched together. Fig.~\ref{fig-haxl} shows an implementation
+from~\citet{marlow2014haxl}; for the purposes of the presentation here
+we have renamed \hs{Fetch} to \hs{Haxl} and omitted the exception-handling code.
+The key piece of \Haxl's design is the \hs{Blocked}/\hs{Blocked} case, where
+two independent sets of \hs{BlockedRequests} are combined together (the
+semigroup operator \hs{<>} is just a customised set union). \Haxl also has a
+\hs{Monad} instance, also shown in Fig.~\ref{fig-haxl}, which provides support
+for \emph{dynamic} data fetches that are based on results obtained earlier.
+Such dynamic data fetches are sequentialised as you would expect, but code
+written to use \hs{Applicative} operations benefits from the automatic
+concurrency. This optimisation is further exploited by using a transformation
+on the monadic \cmd{do}-notation to automatically use \hs{Applicative}
+operators where possible~\cite{marlow2016applicativedo}.
 
 One of the key tools found to be useful in the kind of code written
 using \Haxl at Facebook is the ``lazy'' conditional operators:
@@ -109,40 +116,64 @@ would be less efficient in the case of exceptions.
 
 It should come as no surprise that \hs{pOr} and \hs{pAnd} can be
 implemented using \hs{select}, indeed \hs{pOr}~\hs{=}~\hs{(<||>)} and
-\hs{pAnd}~\hs{=}~\hs{(<&&>)} from Fig.~\ref{fig-library}. A \hs{Selective}
-instance in terms of the \Haxl implementation from \citet{marlow2014haxl} is
-given in Fig.~\ref{fig-haxl-select}.  For the purposes of the presentation
-here we have renamed \hs{Fetch} to \hs{Haxl} and added support for
-exceptions in the form of the \hs{Throw} cases.
+\hs{pAnd}~\hs{=}~\hs{(<&&>)} from Fig.~\ref{fig-library}. The corresponding
+\hs{Selective} instance is given in Fig.~\ref{fig-haxl}: in the
+\hs{Blocked}/\hs{Blocked} case we speculatively explore both computations,
+and if we obtain a \hs{Done}/\hs{Right} result, the second computation is
+safely abandoned and subsequently cancelled.
 
-% It would be nice to also show instances of Applicative and Monad.
 \begin{figure}
 \begin{minted}[fontsize=\small]{haskell}
+-- A Haxl computation is either completed (Done) or Blocked on pending data requests
+data Result a = Done a | Blocked BlockedRequests (Haxl a) deriving Functor
+newtype Haxl a = Haxl { runHaxl :: IO (Result a) } deriving Functor
+\end{minted}
+\vspace{1mm}
+\begin{minted}[fontsize=\small]{haskell}
+instance Applicative Haxl where
+  pure = Haxl . return . Done
+  Haxl iof <*> Haxl iox = Haxl $ do
+    rf <- iof
+    rx <- iox
+    return $ case (rf, rx) of
+      (Done f      , _           ) -> f    <$> rx
+      (_           , Done x      ) -> ($x) <$> rf
+      (Blocked bf f, Blocked bx x) -> Blocked (bf <> bx) (f <*> x) -- parallelism
+                                                                   -- and batching
+\end{minted}
+\vspace{-3mm}
+\begin{minted}[fontsize=\small]{haskell}
 instance Selective Haxl where
-    select (Haxl x) (Haxl f) = Haxl $ do
-        rx <- x
-        case rx of
-            Done (Right b) -> return (Done b)
-            Done (Left  a) -> unHaxl (($a) <$> Haxl f)
-            Throw e        -> return (Throw e)
-            Blocked bx c   -> do
-                rf <- f
-                case rf of
-                    Done f  -> unHaxl (either f id <$> c)
-                    Throw e -> return (Blocked bx (select c (Haxl (return rf))))
-                    Blocked bf d -> return (Blocked (bx <> bf) (select c d)
+  select (Haxl iox) (Haxl iof) = Haxl $ do
+    rx <- iox
+    rf <- iof
+    return $ case (rx, rf) of
+      (Done (Right b), _           ) -> Done b -- abandon the second computation
+      (Done (Left  a), _           ) -> ($a) <$> rf
+      (_             , Done       f) -> either f id <$> rx
+      (Blocked bx x  , Blocked bf f) -> Blocked (bx <> bf) (select x f) -- speculative
+                                                                        -- execution
+\end{minted}
+\vspace{-3mm}
+\begin{minted}[fontsize=\small]{haskell}
+instance Monad Haxl where
+  return = Haxl . return . Done
+  Haxl iox >>= f = Haxl $ do
+    rx <- iox
+    case rx of Done       x -> runHaxl (f x) -- dynamic dependency on runtime value 'x'
+               Blocked bx x -> return (Blocked bx (x >>= f))
 \end{minted}
 \vspace{-2mm}
-\caption{An implementation of \hs{Selective} instance for \Haxl.}
-\label{fig-haxl-select}
+\caption{An implementation of \hs{Applicative}, \hs{Selective} and \hs{Monad} instances for \Haxl.}
+\label{fig-haxl}
 \vspace{-4mm}
 \end{figure}
 
 There is one wrinkle with implementing \hs{pOr} and \hs{pAnd}
 in terms of \hs{select}. Ideally, \hs{pOr} and \hs{pAnd} would be
-symmetric: just as we can abort the right argument if the left
-argument determines the answer, we should be able to abort the left
-argument in the same way. Yet \hs{select} is inherently left-biased:
+symmetric: just as we can cancel the second computation if the first
+one determines the answer, we should be able to cancel the first
+computation in the same way. Yet \hs{select} is inherently left-biased:
 it requires that all the effects of the first argument are performed.
 In~\S\ref{sec-alt-symmetric} we consider an alternative combinator
 related to \hs{select} that allows this kind of symmetry to be expressed.

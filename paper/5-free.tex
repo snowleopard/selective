@@ -77,7 +77,7 @@ getPure = runSelect (const Nothing)
 getEffects :: Functor f => Select f a -> [f ()]
 getEffects = getOver . runSelect (Over . pure . void)
 \end{minted}
-\vspace{-2mm}
+\vspace{-3mm}
 \caption{Free rigid selective functors (various performance improvements
 omitted for clarity).}\label{fig-free}
 \vspace{-4mm}
@@ -446,9 +446,9 @@ selective interface, we achieve both the ability to implement an adequate
 simulator for branching programs and perform their static analysis:
 
 \begin{figure}[!h]
- \begin{minipage}{0.43\textwidth}
+ \begin{minipage}{0.45\textwidth}
 \raggedleft
-\begin{minted}[xleftmargin=10pt]{haskell}
+\begin{minted}[xleftmargin=7pt]{haskell}
 @\ghci@ getProgramEffects (jumpZero 42)
 [Read Zero,Read PC,Write PC]
 \end{minted}
