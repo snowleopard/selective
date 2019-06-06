@@ -25,9 +25,9 @@ module Control.Selective.Free.Rigid (
     ) where
 
 import Control.Monad.Trans.Except
+import Control.Selective
 import Data.Bifunctor
 import Data.Functor
-import Control.Selective
 
 -- Inspired by free applicative functors by Capriotti and Kaposi.
 -- See: https://arxiv.org/pdf/1403.0749.pdf

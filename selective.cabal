@@ -76,7 +76,8 @@ test-suite test
                         selective,
                         tasty                  >= 0.11,
                         tasty-expected-failure >= 0.11,
-                        tasty-quickcheck       >= 0.8.4
+                        tasty-quickcheck       >= 0.8.4,
+                        transformers           >= 0.4.2.0 && < 0.6
     default-language:   Haskell2010
     GHC-options:        -Wall
                         -fno-warn-name-shadowing

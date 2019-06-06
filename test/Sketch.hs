@@ -270,8 +270,11 @@ normalise2 x y z = (f <$> x) <*? (g <$> y) <*? (h <$> z)
 class Applicative f => SelectiveBy f where
     selectBy :: (a -> Either (b -> c) c) -> f a -> f b -> f c
 
-selectFromBy :: SelectiveBy f => f (Either a b) -> f (a -> b) -> f b
-selectFromBy = selectBy (first (flip ($)))
+fromSelectBy :: SelectiveBy f => f (Either a b) -> f (a -> b) -> f b
+fromSelectBy = selectBy (first (flip ($)))
+
+toSelectBy :: Selective f => (a -> Either (b -> c) c) -> f a -> f b -> f c
+toSelectBy f x y = select (f <$> x) (flip ($) <$> y)
 
 whenBy :: SelectiveBy f => f Bool -> f () -> f ()
 whenBy = selectBy (bool (Right ()) (Left id))
