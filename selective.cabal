@@ -59,8 +59,8 @@ library
 test-suite test
     hs-source-dirs:     test, examples
     other-modules:      Build,
-                        FreeRigid2,
-                        FreeRigid3,
+                        FreerRigid,
+                        FasterFreerRigid,
                         Laws,
                         Parser,
                         Processor,
