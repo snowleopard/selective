@@ -64,6 +64,7 @@ test-suite test
                         Laws,
                         Parser,
                         Processor,
+                        Query,
                         Sketch,
                         Teletype,
                         Teletype.Rigid,
