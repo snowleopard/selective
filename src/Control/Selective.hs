@@ -15,7 +15,7 @@
 -----------------------------------------------------------------------------
 module Control.Selective (
     -- * Type class
-    Selective (..), (<*?), branch, selectA, apS, selectM,
+    Selective (..), (<*?), branch, selectA, apS, selectM, biselect,
 
     -- * Conditional combinators
     ifS, whenS, fromMaybeS, orElse, andAlso, untilRight, whileS, (<||>), (<&&>),
@@ -508,3 +508,13 @@ This has two issues:
    generically for any Alternative.
 
 -}
+
+biselect
+  :: Selective f
+  => f(Either a b)
+  -> f(Either a c)
+  -> f(Either a (b,c))
+biselect x y =
+  select ((fmap Left . swap) <$> x) ((\e a -> fmap (a,) e) <$> y)
+  where
+    swap = either Right Left
