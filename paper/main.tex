@@ -1,47 +1,21 @@
-%% For double-blind review submission, w/o CCS and ACM Reference (max submission space)
-% \documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
-% \documentclass[acmsmall,review]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
-\documentclass[acmsmall,review]{acmart}\settopmatter{printfolios=true}
-%% For double-blind review submission, w/ CCS and ACM Reference
-%\documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true}
-%% For single-blind review submission, w/o CCS and ACM Reference (max submission space)
-%\documentclass[acmsmall,review]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
-%% For single-blind review submission, w/ CCS and ACM Reference
-%\documentclass[acmsmall,review]{acmart}\settopmatter{printfolios=true}
-%% For final camera-ready submission, w/ required CCS and ACM Reference
-%\documentclass[acmsmall]{acmart}\settopmatter{}
+\documentclass[acmsmall,screen]{acmart}
 
-
-%% Journal information
-%% Supplied to authors by publisher for camera-ready submission;
-%% use defaults for review submission.
-\acmJournal{PACMPL}
-\acmVolume{1}
-\acmNumber{ICFP} % CONF = POPL or ICFP or OOPSLA
-\acmArticle{1}
+%%% The following is specific to ICFP '19 and the paper
+%%% 'Selective Applicative Functors'
+%%% by Andrey Mokhov, Georgy Lukyanov, Simon Marlow, and Jeremie Dimino.
+\setcopyright{rightsretained}
+\acmPrice{}
+\acmDOI{10.1145/3341694}
 \acmYear{2019}
-\acmMonth{1}
-\acmDOI{} % \acmDOI{10.1145/nnnnnnn.nnnnnnn}
-\startPage{1}
-
-%% Copyright information
-%% Supplied to authors (based on authors' rights management selection;
-%% see authors.acm.org) by publisher for camera-ready submission;
-%% use 'none' for review submission.
-\setcopyright{none}
-%\setcopyright{acmcopyright}
-%\setcopyright{acmlicensed}
-%\setcopyright{rightsretained}
-%\copyrightyear{2018}           %% If different from \acmYear
+\copyrightyear{2019}
+\acmJournal{PACMPL}
+\acmVolume{3}
+\acmNumber{ICFP}
+\acmArticle{90}
+\acmMonth{8}
 
 \bibliographystyle{ACM-Reference-Format}
 \citestyle{acmauthoryear}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Note: Authors migrating a paper from PACMPL format to traditional
-%% SIGPLAN proceedings format must update the '\documentclass' and
-%% topmatter commands above; see 'acmart-sigplanproc-template.tex'.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Some recommended packages.
 \usepackage{booktabs}   %% For formal tables:
@@ -49,11 +23,9 @@
 \usepackage{subcaption} %% For complex figures with subfigures/subcaptions
                         %% http://ctan.org/pkg/subcaption
 
-
 \usepackage{bookmark}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-% \usepackage{lmodern}
 \usepackage{xspace}
 \usepackage{fancyhdr}
 
@@ -82,22 +54,20 @@
 
 %% Title information
 \title{Selective Applicative Functors}
-% \titlenote{with title note}
-\subtitle{Declare Your Effects Statically, Select Which to Execute Dynamically}
+
+%% Sadly, it looks like we can't have a subtitle that doesn't also appear in the
+%% ACM Reference.
+% \subtitle{Declare Your Effects Statically, Select Which to Execute Dynamically}
 
 \author{Andrey Mokhov}
 \affiliation{
-%   \department{School of Engineering}
   \institution{Newcastle University}
-%   \city{Newcastle upon Tyne}
   \country{United Kingdom}
 }
 \email{andrey.mokhov@ncl.ac.uk}
 \author{Georgy Lukyanov}
 \affiliation{
-%   \department{School of Engineering}
   \institution{Newcastle University}
-%   \city{Newcastle upon Tyne}
   \country{United Kingdom}
 }
 \email{g.lukyanov2@ncl.ac.uk}
@@ -116,6 +86,7 @@
 }
 \email{jdimino@janestreet.com}
 
+% Don't forget \thispagestyle{firstpagestyle} after \maketitle
 % \fancypagestyle{firstpagestyle}
 % {
 %    \fancyhf{}
@@ -145,19 +116,24 @@ two real-life case studies.
 \begin{CCSXML}
 <ccs2012>
 <concept>
-<concept_id>10011007.10011006.10011008</concept_id>
-<concept_desc>Software and its engineering~General programming languages</concept_desc>
+<concept_id>10011007</concept_id>
+ <concept_desc>Software and its engineering</concept_desc>
 <concept_significance>500</concept_significance>
+</concept>
+<concept>
+<concept_id>10002950</concept_id>
+ <concept_desc>Mathematics of computing</concept_desc>
+<concept_significance>300</concept_significance>
 </concept>
 </ccs2012>
 \end{CCSXML}
+\ccsdesc[500]{Software and its engineering}
+\ccsdesc[300]{Mathematics of computing}
 
-\ccsdesc[500]{Software and its engineering~General programming languages}
-
-% \keywords{applicative functors, monads, effects}
+\keywords{applicative functors, selective functors, monads, effects}
 
 \maketitle
-\thispagestyle{firstpagestyle}
+% \thispagestyle{firstpagestyle}
 
 \input{1-intro}
 \input{2-selective}
@@ -194,9 +170,4 @@ two real-life case studies.
 \end{acks}
 
 \bibliography{refs}
-
-%% Appendix
-% \appendix
-% \section{Appendix}
-
 \end{document}
