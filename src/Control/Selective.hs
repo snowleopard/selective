@@ -38,6 +38,7 @@ import Control.Monad.Trans.RWS
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
 import Data.Bool
+import Data.Function
 import Data.Functor.Compose
 import Data.Functor.Identity
 import Data.Functor.Product
@@ -114,7 +115,7 @@ import qualified Control.Monad.Trans.Writer.Strict as S
 -- * Apply a pure function to the second argument:
 --
 -- @
--- select x (f \<$\> y) = select (first (flip f) \<$\> x) (flip ($) \<$\> y)
+-- select x (f \<$\> y) = select (first (flip f) \<$\> x) ((&) \<$\> y)
 -- @
 --
 -- * Generalised identity:
@@ -187,7 +188,7 @@ applicative functor satisfies all laws of 'Applicative':
     > (.) <$> u <*> v <*> w = u <*> (v <*> w)
 -}
 apS :: Selective f => f (a -> b) -> f a -> f b
-apS f x = select (Left <$> f) (flip ($) <$> x)
+apS f x = select (Left <$> f) ((&) <$> x)
 
 -- | One can easily implement a monadic 'selectM' that satisfies the laws,
 -- hence any 'Monad' is 'Selective'.

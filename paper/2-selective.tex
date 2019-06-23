@@ -125,29 +125,6 @@ Note that some monads, e.g. the \Haxl monad (\S\ref{sec-haxl}), choose to
 implement the  \hs{select} method differently for performance reasons, but they
 still satisfy the law \hs{select}~\hs{=}~\hs{selectM} at the semantic level.
 
-\begin{figure}
-\begin{minted}[fontsize=\small]{haskell}
-($)     :: (a -> b) -> a -> b                               -- Function application
-(.)     :: (b -> c) -> (a -> b) -> a -> c                   -- Function composition
-id      :: a -> a                                           -- Identity function
-const   :: a -> b -> a                                      -- Constant function
-flip    :: (a -> b -> c) -> b -> a -> c                     -- Flip function arguments
-uncurry :: (a -> b -> c) -> (a, b) -> c                     -- Uncurry a function
-foldr   :: (a -> b -> b) -> b -> [a] -> b                   -- Reduce a list to a value
-bool    :: a -> a -> Bool -> a                              -- Deconstruct a Bool
-maybe   :: b -> (a -> b) -> Maybe a -> b                    -- Deconstruct a Maybe
-either  :: (a -> c) -> (b -> c) -> Either a b -> c          -- Deconstruct an Either
-first   :: (a -> c) -> Either a b -> Either c b             -- Map over Left
-second  :: (b -> c) -> Either a b -> Either a c             -- Map over Right
-bimap   :: (a -> c) -> (b -> d) -> Either a b -> Either c d -- Map over Left and Right
-void    :: Functor f => f a -> f ()                         -- Discard an effect's value
-\end{minted}
-\vspace{-2mm}
-\caption{Type signatures and descriptions of standard operators and functions
-used throughout the paper.}\label{fig-std}
-\vspace{-3mm}
-\end{figure}
-
 One can also implement a function with the type signature of \hs{select} using
 applicative functors, but it will always execute the effects associated with the
 second argument, rendering any conditional execution of effects impossible, as
@@ -172,27 +149,50 @@ collect information about all possible effects instead of skipping some of them,
 hence they directly use \hs{select}~\hs{=}~\hs{selectA} in their \hs{Selective}
 instance definitions.
 
+\begin{table*}[t]
+\smaller
+\centering
+\begin{tabular}{l||c|c|c}
+Notions that can be expressed using an operator & apply (\hs{<*>}) & select (\hs{<*?}) & bind (\hs{>>=}) \\\hline
+Arbitrary dynamic effects                       & ~                & ~                 & \checkmark      \\
+Conditional execution of effects                & ~                & \checkmark        & \checkmark      \\
+Speculative execution of effects                & ~                & \checkmark        & ~               \\
+Static visibility and analysis of effects       & \checkmark       & \checkmark        & ~               \\
+Independent effects and parallelism             & \checkmark       & ~                 & ~               \\
+\end{tabular}
+\vspace{2mm}
+\caption{Comparison of apply, select and bind operators in terms of their
+expressive power. We discuss static analysis in~\S\ref{sec-instances}
+and~\S\ref{sec-static}; parallelism and speculative execution
+in~\S\ref{sec-haxl}; conditional and arbitrary dynamic effects
+in~\S\ref{sec-combinators}~(\hs{whenS}) and~\S\ref{sec-free-ping-pong}
+(\hs{greeting}). Note that each operator has one unique ability that the two
+others lack.
+\label{tab-operators}}
+\vspace{-5mm}
+\end{table*}
+
 Any \hs{Applicative} instance can thus be given a \hs{Selective} instance. The
 opposite is also true in the sense that one can recover the operator \hs{<*>}
 from \hs{select} as follows:
 
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 apS :: Selective f => f (a -> b) -> f a -> f b
-apS f x = select (Left <$> f) (flip ($) <$> x)
+apS f x = select (Left <$> f) ((&) <$> x)
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
 Here we tag a given function \hs{a}~\hs{->}~\hs{b} with \hs{Left} and turn a
-value of type \hs{a} into the reverse application function
-\hs{\}\hs{a}~\hs{f}~\hs{->}~\hs{f}~\hs{a}, which yields \hs{b} when given
+value of type \hs{a} into the reverse function application
+\hs{\}\hs{f}~\hs{->}~\hs{f}~\hs{a} that yields \hs{b} when given
 \hs{a}~\hs{->}~\hs{b}, as desired. Since the \hs{Right} case is impossible, the
 effect \hs{f}~\hs{a} is executed unconditionally. Note however, that the
 equality \hs{(<*>)}~\hs{=}~\hs{apS} does not always hold. Selective functors
 that satisfy the law \hs{(<*>)}~\hs{=}~\hs{apS} will be called \emph{rigid};
-they will turn out to have a particularly simple normal form, which we will
-exploit in the free construction in~\S\ref{sec-free}.
+they will turn out to have a very simple normal form, which we will exploit in
+the free construction in~\S\ref{sec-free}.
 
 It is worth emphasising that the subclass relationships
 \hs{Applicative}~\hs{f}~\hs{=>}~\hs{Selective}~\hs{f} and
@@ -213,34 +213,34 @@ we will see in~\S\ref{sec-haxl}, \Haxl requires all three: \hs{<*>} for
 parallelism, \hs{select} for speculative execution, and \hs{>>=} for arbitrary
 dynamic effects.
 
-\begin{table*}[t]
-\smaller
-\centering
-\begin{tabular}{l||c|c|c}
-Notions that can be expressed using an operator & apply (\hs{<*>}) & select (\hs{<*?}) & bind (\hs{>>=}) \\\hline
-Independent effects and parallelism             & \checkmark       & ~                 & ~               \\
-Static visibility and analysis of effects       & \checkmark       & \checkmark        & ~               \\
-Speculative execution of effects                & ~                & \checkmark        & ~               \\
-Conditional execution of effects                & ~                & \checkmark        & \checkmark      \\
-Arbitrary dynamic effects                       & ~                & ~                 & \checkmark      \\
-\end{tabular}
-\vspace{2mm}
-\caption{Comparison of apply, select and bind operators in terms of their
-expressive power. We discuss static analysis in~\S\ref{sec-instances}
-and~\S\ref{sec-static}; parallelism and speculative execution
-in~\S\ref{sec-haxl}; conditional and arbitrary dynamic effects
-in~\S\ref{sec-combinators}~(\hs{whenS}) and~\S\ref{sec-free-ping-pong}
-(\hs{greeting}). Note that each operator has one unique ability that the two
-others lack.
-\label{tab-operators}}
-\vspace{-8mm}
-\end{table*}
-
 We will come back to the relationship between applicative functors, selective
 functors and monads in \S\ref{sec-laws}, after first exploring \emph{selective
 combinators} that can be written using the selective interface
-(\S\ref{sec-combinators}), and looking at some concrete examples of selective
-functors (\S\ref{sec-instances}).
+(\S\ref{sec-combinators}), and then looking at some concrete examples of
+selective functors (\S\ref{sec-instances}).
+
+\begin{figure}[h]
+\begin{minted}[fontsize=\small]{haskell}
+($)     :: (a -> b) -> a -> b                               -- Function application
+(&)     :: a -> (a -> b) -> b                               -- Reverse function application
+(.)     :: (b -> c) -> (a -> b) -> a -> c                   -- Function composition
+id      :: a -> a                                           -- Identity function
+const   :: a -> b -> a                                      -- Constant function
+flip    :: (a -> b -> c) -> b -> a -> c                     -- Flip function arguments
+uncurry :: (a -> b -> c) -> (a, b) -> c                     -- Uncurry a function
+foldr   :: (a -> b -> b) -> b -> [a] -> b                   -- Reduce a list to a value
+bool    :: a -> a -> Bool -> a                              -- Deconstruct a Bool
+maybe   :: b -> (a -> b) -> Maybe a -> b                    -- Deconstruct a Maybe
+either  :: (a -> c) -> (b -> c) -> Either a b -> c          -- Deconstruct an Either
+first   :: (a -> c) -> Either a b -> Either c b             -- Map over Left
+bimap   :: (a -> c) -> (b -> d) -> Either a b -> Either c d -- Map over Left and Right
+void    :: Functor f => f a -> f ()                         -- Discard an effect's value
+\end{minted}
+\vspace{-2mm}
+\caption{Type signatures and descriptions of standard operators and functions
+used throughout the paper.}\label{fig-std}
+\vspace{-3mm}
+\end{figure}
 
 \subsection{Selective combinators}\label{sec-combinators}
 
@@ -248,7 +248,7 @@ As a first use-case of the interface provided by selective functors, let us
 revisit our ping-pong example from~\S\ref{sec-intro} and implement the
 combinator \hs{whenS}:
 
-\vspace{1mm}
+\vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 whenS :: Selective f => f Bool -> f () -> f ()
 whenS x y = selector <*? effect
@@ -357,8 +357,6 @@ retains the short-circuiting behaviour, i.e. if the second argument yields a
 \vspace{-3mm}
 \end{figure}
 
-% Add `orElse` and `andAlso' combinators?
-
 \noindent
 While we encourage the reader to derive an implementation of \hs{branch} as an
 exercise, we would like to share our intuition behind it, as it will be useful
@@ -391,7 +389,7 @@ ifS x t e = branch selector (const <$> t) (const <$> e)
   where
     selector = bool (Right ()) (Left ()) <$> x -- NB: convert True to Left ()
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
 Many conditional combinators, which are typically associated with the \hs{Monad}
@@ -411,7 +409,7 @@ bindBool x f = ifS x (f False) (f True)
 
 \noindent
 This can be achieved not only for \hs{Bool}, but for any \emph{enumerable}
-type, as we will discuss in \S\ref{sec-alt-multi}.
+type, as we will discuss in~\S\ref{sec-alt-multi}.
 
 \subsection{Examples of selective functors}\label{sec-instances}
 
@@ -427,8 +425,7 @@ session:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-instance Selective IO where
-    select = selectM
+instance Selective IO where select = selectM
 
 @\ghci@ pingPongS = whenS ((=="ping") <$> getLine) (putStrLn "pong")
 @\ghci@ pingPongS
@@ -446,13 +443,14 @@ In~\S\ref{sec-free-ping-pong} we will see how to statically analyse
 execution}, which can be done by interpreting \hs{pingPongS} in the selective
 functor \hs{Over}, introduced below.
 
-The \hs{Const}~\hs{m}~\hs{a} functor is an interesting instance of the
-\hs{Applicative} type class, which stores no values of type \hs{a}, but keeps
-track of the applicative structure in the monoid value of type \hs{m}:
+The \hs{Const}~\hs{m}~\hs{a} functor is an interesting and surprisingly useful
+instance of the \hs{Applicative} type class, which stores no values of type
+\hs{a}, but keeps track of the applicative structure in the monoid value of type
+\hs{m}:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-newtype Const m a = Const { getConst :: m }
+newtype Const m a = Const { getConst :: m } -- Defined in Data.Functor.Const
 \end{minted}
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -518,12 +516,15 @@ Under "ade"
 As expected, \hs{Over} collects all effects, whereas \hs{Under} does not look
 beyond ``opaque'' conditions. A deeper difference between them is that \hs{Over}
 is a rigid selective functor, i.e. \hs{(<*>)}~\hs{=}~\hs{apS}, but \hs{Under} is
-not: indeed, \hs{Under}~\hs{"a"}~\hs{<*>}~\hs{Under}~\hs{"b"} records both
+not. Indeed, \hs{Under}~\hs{"a"}~\hs{<*>}~\hs{Under}~\hs{"b"} records both
 \hs{"a"} and \hs{"b"}, but \hs{apS}~\hs{(Under}~\hs{"a")}~\hs{(Under}~\hs{"b")}
-records just \hs{"a"} since \hs{apS} is implemented via \hs{select}.
-Intuitively, non-rigid selective functors have a much richer structure, because
-\hs{<*>} is not expressible via \hs{select}, which significantly complicates the
-corresponding free construction (\S\ref{sec-free-construction}).
+records just \hs{"a"} since \hs{apS} is implemented via \hs{select} and
+therefore lacks information about the independence of the two effects.
+Intuitively, non-rigid selective functors have a richer structure, because
+\hs{<*>} is not expressible via \hs{select}.
+
+% , which in particular complicates the
+% corresponding free construction (\S\ref{sec-free-construction}).
 
 Our last example in this section is the selective functor
 \hs{Validation}\footnote{Applicative functors \hs{Const} and \hs{Validation}
@@ -536,7 +537,7 @@ the operator \hs{<>} from the semigroup \hs{e}) to be reported together.
 \begin{minted}[xleftmargin=10pt]{haskell}
 data Validation e a = Failure e | Success a deriving Functor
 \end{minted}
-\vspace{1mm}
+\vspace{0mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 instance Semigroup e => Applicative (Validation e) where
     pure = Success
@@ -553,14 +554,14 @@ after the first \hs{Failure} we have no value to pass to the second argument of
 the bind operator. We can, however, define the following \hs{Selective}
 instance, which allows us to validate data in the presence of conditions.
 
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 instance Semigroup e => Selective (Validation e) where
     select (Success (Right b)) _ = Success b
     select (Success (Left  a)) f = ($a) <$> f
     select (Failure e) _ = Failure e -- Discard@\,\,@errors@\,\,@behind@\,\,@failed@\,\,@conditions
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
 Here, the last line is particularly interesting: similarly to \hs{Under}, we
@@ -698,7 +699,7 @@ parametricity.
 \vspace{1mm}
 \begin{minted}{haskell}
 -- Apply a pure function to the second argument
-@\blk{select}@ x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
+@\blk{select}@ x (f <$> y) = select (first (flip f) <$> x) ((&) <$> y)
 \end{minted}
 \vspace{1mm}
 \begin{minted}{haskell}

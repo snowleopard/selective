@@ -84,7 +84,7 @@ overTheorems = testGroup "Theorems"
         \x -> theorem1 @(Over String) @Int @Int x
     , testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
         \x -> theorem2 @(Over String) @Int @Int @Int x
-    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
+    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) ((&) <$> y))" $
         \x -> theorem3 @(Over String) @Int @Int @Int x
     , testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
         \x -> theorem4 @(Over String) @Int @Int x
@@ -122,7 +122,7 @@ underTheorems = testGroup "Theorems"
         \x -> theorem1 @(Under String) @Int @Int x
     , testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
         \x -> theorem2 @(Under String) @Int @Int @Int x
-    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
+    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) ((&) <$> y))" $
         \x -> theorem3 @(Under String) @Int @Int @Int x
     , testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
         \x -> theorem4 @(Under String) @Int @Int x
@@ -163,7 +163,7 @@ validationTheorems = testGroup "Theorems"
         \x -> theorem1 @(Validation String) @Int @Int @Int x
     , testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
         \x -> theorem2 @(Validation String) @Int @Int @Int x
-    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
+    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) ((&) <$> y))" $
         \x -> theorem3 @(Validation String) @Int @Int @Int x
     , testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
         \x -> theorem4 @(Validation String) @Int @Int x
@@ -222,7 +222,7 @@ arrowMonadTheorems = testGroup "Theorems"
         \x -> theorem1 @(ArrowMonad (->)) @Int @Int @Int x
     , testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
         \x -> theorem2 @(ArrowMonad (->)) @Int @Int @Int x
-    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
+    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) ((&) <$> y))" $
         \x -> theorem3 @(ArrowMonad (->)) @Int @Int @Int x
     , testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
         \x -> theorem4 @(ArrowMonad (->)) @Int @Int x
@@ -261,7 +261,7 @@ maybeTheorems = testGroup "Theorems"
         \x -> theorem1 @Maybe @Int @Int @Int x
     , testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
         \x -> theorem2 @Maybe @Int @Int @Int x
-    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
+    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) ((&) <$> y))" $
         \x -> theorem3 @Maybe @Int @Int @Int x
     , testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
         \x -> theorem4 @Maybe @Int @Int x
@@ -301,7 +301,7 @@ identityTheorems = testGroup "Theorems"
         \x -> theorem1 @Identity @Int @Int @Int x
     , testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
         \x -> theorem2 @Identity @Int @Int @Int x
-    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))" $
+    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) ((&) <$> y))" $
         \x -> theorem3 @Identity @Int @Int @Int x
     , testProperty "Generalised identity: (x <*? pure y) == (either y id <$> x)" $
         \x -> theorem4 @Identity @Int @Int x

@@ -7,6 +7,7 @@ import Test.QuickCheck hiding (Failure, Success)
 import Data.Bifunctor (bimap, first, second)
 import Control.Arrow hiding (first, second)
 import Control.Selective
+import Data.Function
 import Data.Functor.Identity
 import Control.Monad.State
 import Text.Show.Functions()
@@ -64,7 +65,7 @@ theorem2 f x y = (select (first f <$> x) y) == (select x ((. f) <$> y))
 -- | Apply a pure function to the second argument:
 theorem3 :: (Selective f, Eq (f c)) =>
             (a -> b -> c) -> f (Either b c) -> f a -> Bool
-theorem3 f x y = (select x (f <$> y)) == (select (first (flip f) <$> x) (flip ($) <$> y))
+theorem3 f x y = (select x (f <$> y)) == (select (first (flip f) <$> x) ((&) <$> y))
 
 -- | Generalised identity:
 theorem4 :: (Selective f, Eq (f b)) => f (Either a b) -> (a -> b) -> Bool

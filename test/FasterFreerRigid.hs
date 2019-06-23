@@ -10,6 +10,7 @@ module FasterFreerRigid (
 import Control.Monad.Trans.Except
 import Control.Selective
 import Data.Bifunctor
+import Data.Function
 import Data.Functor
 
 -- Inspired by free applicative functors by Capriotti and Kaposi.
@@ -39,7 +40,7 @@ instance Applicative (Select f) where
 
 -- TODO: Prove that this is a lawful 'Selective'.
 instance Selective (Select f) where
-    select = selectBy (first (flip ($)))
+    select = selectBy (first (&))
       where
         selectBy :: (a -> Either (b -> c) c) -> Select f a -> Select f b -> Select f c
         selectBy f x (Pure y)       = either ($y) id . f <$> x
@@ -56,7 +57,7 @@ liftSelect f = Select (const $ Left id) (Pure ()) f
 -- natural transformation from @Select f@ to @g@.
 runSelect :: Selective g => (forall x. f x -> g x) -> Select f a -> g a
 runSelect _ (Pure a)       = pure a
-runSelect t (Select f x y) = select (f <$> runSelect t x) (flip ($) <$> t y)
+runSelect t (Select f x y) = select (f <$> runSelect t x) ((&) <$> t y)
 
 -- | Concatenate all effects of a free selective computation.
 foldSelect :: Monoid m => (forall x. f x -> m) -> Select f a -> m

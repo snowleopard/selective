@@ -104,7 +104,7 @@ from~\S\ref{sec-laws} looks much more natural for
 
 \vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-@\blk{x}@ ?*? (y ?*? z) = second assoc <$> ((x ?*? y) ?*? z)
+@\blk{x}@ ?*? (y ?*? z) = fmap assoc <$> ((x ?*? y) ?*? z)
   where
     assoc ((a, b), c) = (a, (b, c))
 \end{minted}

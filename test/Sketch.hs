@@ -8,6 +8,7 @@ import Control.Monad
 import Control.Selective
 import Data.Bifunctor
 import Data.Bool
+import Data.Function
 import Data.Semigroup (Semigroup (..))
 import Data.Void
 
@@ -53,9 +54,9 @@ f1 f x y = f <$> select x y === select (fmap f <$> x) (fmap f <$> y)
 f2 :: Selective f => (a -> c) -> f (Either a b) -> f (c -> b) -> f b
 f2 f x y = select (first f <$> x) y === select x ((. f) <$> y)
 
--- F3 (Free): select x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
+-- F3 (Free): select x (f <$> y) = select (first (flip f) <$> x) ((&) <$> y)
 f3 :: Selective f => (c -> a -> b) -> f (Either a b) -> f c -> f b
-f3 f x y = select x (f <$> y) === select (first (flip f) <$> x) (flip ($) <$> y)
+f3 f x y = select x (f <$> y) === select (first (flip f) <$> x) ((&) <$> y)
 
 -- P1 (Generalised identity): select x (pure y) == either y id <$> x
 p1 :: Selective f => f (Either a b) -> (a -> b) -> f b
@@ -143,11 +144,11 @@ t1 v =
     -- Express the lefthand side using 'apS'
     apS (pure id) v
     === -- Definition of 'apS'
-    select (Left <$> pure id) (flip ($) <$> v)
+    select (Left <$> pure id) ((&) <$> v)
     === -- Push 'Left' inside 'pure'
-    select (pure (Left id)) (flip ($) <$> v)
+    select (pure (Left id)) ((&) <$> v)
     === -- Apply P2
-    ($id) <$> (flip ($) <$> v)
+    ($id) <$> ((&) <$> v)
     === -- Simplify
     id <$> v
     === -- Functor identity: -- Functor identity: fmap id = id
@@ -159,15 +160,15 @@ t2 f x =
     -- Express the lefthand side using 'apS'
     apS (pure f) (pure x)
     === -- Definition of 'apS'
-    select (Left <$> pure f) (flip ($) <$> pure x)
+    select (Left <$> pure f) ((&) <$> pure x)
     === -- Push 'Left' inside 'pure'
-    select (pure (Left f)) (flip ($) <$> pure x)
+    select (pure (Left f)) ((&) <$> pure x)
     === -- Applicative's fmap-pure law
-    select (pure (Left f)) (pure (flip ($) x))
+    select (pure (Left f)) (pure ((&) x))
     === -- Apply P1
-    either ((flip ($) x)) id <$> pure (Left f)
+    either (((&) x)) id <$> pure (Left f)
     === -- Applicative's fmap-pure law
-    pure ((flip ($) x) f)
+    pure (((&) x) f)
     === -- Simplify
     pure (f x)
 
@@ -178,7 +179,7 @@ t3 u y =
     -- Express the lefthand side using 'apS'
     apS u (pure y)
     === -- Definition of 'apS'
-    select (Left <$> u) (flip ($) <$> pure y)
+    select (Left <$> u) ((&) <$> pure y)
     === -- Rewrite to have a pure second argument
     select (Left <$> u) (pure ($y))
     === -- Apply P1
@@ -189,11 +190,11 @@ t3 u y =
     === -- Express right-hand side of the theorem using 'apS'
     apS (pure ($y)) u
     === -- Definition of 'apS'
-    select (Left <$> pure ($y)) (flip ($) <$> u)
+    select (Left <$> pure ($y)) ((&) <$> u)
     === -- Push 'Left' inside 'pure'
-    select (pure (Left ($y))) (flip ($) <$> u)
+    select (pure (Left ($y))) ((&) <$> u)
     === -- Apply P2
-    ($($y)) <$> (flip ($) <$> u)
+    ($($y)) <$> ((&) <$> u)
     === -- Simplify, obtaining (#)
     ($y) <$> u
 
@@ -203,36 +204,36 @@ t4 u v w =
     -- Express the lefthand side using 'apS'
     apS (apS ((.) <$> u) v) w
     === -- Definition of 'apS'
-    select (Left <$> select (Left <$> (.) <$> u) (flip ($) <$> v)) (flip ($) <$> w)
+    select (Left <$> select (Left <$> (.) <$> u) ((&) <$> v)) ((&) <$> w)
     === -- Apply F1 to push the leftmost 'Left' inside 'select'
-    select (select (second Left <$> Left <$> (.) <$> u) ((Left .) <$> flip ($) <$> v)) (flip ($) <$> w)
+    select (select (second Left <$> Left <$> (.) <$> u) ((Left .) <$> (&) <$> v)) ((&) <$> w)
     === -- Simplify
-    select (select (Left <$> (.) <$> u) ((Left .) <$> flip ($) <$> v)) (flip ($) <$> w)
+    select (select (Left <$> (.) <$> u) ((Left .) <$> (&) <$> v)) ((&) <$> w)
     === -- Pull (.) outside 'Left'
-    select (select (first (.) <$> Left <$> u) ((Left .) <$> flip ($) <$> v)) (flip ($) <$> w)
+    select (select (first (.) <$> Left <$> u) ((Left .) <$> (&) <$> v)) ((&) <$> w)
     === -- Apply F2 to push @(.)@ to the function
-    select (select (Left <$> u) ((. (.)) <$> (Left .) <$> flip ($) <$> v)) (flip ($) <$> w)
+    select (select (Left <$> u) ((. (.)) <$> (Left .) <$> (&) <$> v)) ((&) <$> w)
     === -- Simplify, obtaining (#)
-    select (select (Left <$> u) ((Left .) <$> flip (.) <$> v)) (flip ($) <$> w)
+    select (select (Left <$> u) ((Left .) <$> flip (.) <$> v)) ((&) <$> w)
 
     === -- Express the righthand side using 'apS'
     apS u (apS v w)
     === -- Definition of 'apS'
-    select (Left <$> u) (flip ($) <$> select (Left <$> v) (flip ($) <$> w))
-    === -- Apply F1 to push @flip ($)@ inside 'select'
-    select (Left <$> u) (select (Left <$> v) ((flip ($) .) <$> flip ($) <$> w))
+    select (Left <$> u) ((&) <$> select (Left <$> v) ((&) <$> w))
+    === -- Apply F1 to push @(&)@ inside 'select'
+    select (Left <$> u) (select (Left <$> v) (((&) .) <$> (&) <$> w))
     === -- Apply A1 to reassociate to the left
-    select (select (Left <$> u) ((\y a -> bimap (,a) ($a) y) <$> Left <$> v)) (uncurry . (flip ($) .) <$> flip ($) <$> w)
+    select (select (Left <$> u) ((\y a -> bimap (,a) ($a) y) <$> Left <$> v)) (uncurry . ((&) .) <$> (&) <$> w)
     === -- Simplify
     select (select (Left <$> u) ((\y a -> Left (y, a)) <$> v)) ((\x (f, g) -> g (f x)) <$> w)
     === -- Apply F3 to pull the rightmost pure function inside 'select'
-    select (first (flip ((\x (f, g) -> g (f x)))) <$> select (Left <$> u) ((\y a -> Left (y, a)) <$> v)) (flip ($) <$> w)
+    select (first (flip ((\x (f, g) -> g (f x)))) <$> select (Left <$> u) ((\y a -> Left (y, a)) <$> v)) ((&) <$> w)
     === -- Simplify
-    select (first (\(f, g) -> g . f) <$> select (Left <$> u) ((\y a -> Left (y, a)) <$> v)) (flip ($) <$> w)
+    select (first (\(f, g) -> g . f) <$> select (Left <$> u) ((\y a -> Left (y, a)) <$> v)) ((&) <$> w)
     === -- Apply F1 to push the leftmost pure function inside 'select'
-    select (select (Left <$> u) (((first (\(f, g) -> g . f)).) <$> (\y a -> Left (y, a)) <$> v)) (flip ($) <$> w)
+    select (select (Left <$> u) (((first (\(f, g) -> g . f)).) <$> (\y a -> Left (y, a)) <$> v)) ((&) <$> w)
     === -- Simplify, obtaining (#)
-    select (select (Left <$> u) ((Left .) <$> flip (.) <$> v)) (flip ($) <$> w)
+    select (select (Left <$> u) ((Left .) <$> flip (.) <$> v)) ((&) <$> w)
 
 --------------------------------- End of proofs --------------------------------
 
@@ -262,7 +263,7 @@ normalise2 x y z = (f <$> x) <*? (g <$> y) <*? (h <$> z)
   where
     f x = Right <$> x
     g y = \a -> bimap (\c f -> f c a) ($a) y
-    h z = ($z) -- h = flip ($)
+    h z = ($z) -- h = (&)
 
 -- Alternative formulations of selective functors.
 
@@ -271,10 +272,10 @@ class Applicative f => SelectiveBy f where
     selectBy :: (a -> Either (b -> c) c) -> f a -> f b -> f c
 
 fromSelectBy :: SelectiveBy f => f (Either a b) -> f (a -> b) -> f b
-fromSelectBy = selectBy (first (flip ($)))
+fromSelectBy = selectBy (first ((&)))
 
 toSelectBy :: Selective f => (a -> Either (b -> c) c) -> f a -> f b -> f c
-toSelectBy f x y = select (f <$> x) (flip ($) <$> y)
+toSelectBy f x y = select (f <$> x) ((&) <$> y)
 
 whenBy :: SelectiveBy f => f Bool -> f () -> f ()
 whenBy = selectBy (bool (Right ()) (Left id))
@@ -287,7 +288,7 @@ toF :: Selective f => f (Either a b) -> f c -> f (Either a (b, c))
 toF x y = branch x (pure Left) ((\c b -> Right (b, c)) <$> y)
 
 fromF :: SelectiveF f => f (Either a b) -> f (a -> b) -> f b
-fromF x y = either id (uncurry (flip ($))) <$> selectF (swapEither <$> x) y
+fromF x y = either id (uncurry ((&))) <$> selectF (swapEither <$> x) y
 
 -- A few variants that have a sum type in both arguments. They are not
 -- equivalent to 'Selective' of 'SelectiveF' unless we require that effects are
@@ -318,7 +319,7 @@ a1M :: Selective f => f (Either a b) -> f (Either a c) -> f (Either a d)
 a1M x y z =
     x ?*? (y ?*? z)
     ===
-    second assoc <$> ((x ?*? y) ?*? z)
+    fmap assoc <$> ((x ?*? y) ?*? z)
   where
     assoc ((a, b), c) = (a, (b, c))
 
@@ -342,9 +343,9 @@ apSEqualsApply fab fa =
     === -- Law: <*> = ap
     ap fab fa
     === -- Free theorem (?)
-    selectM (Left <$> fab) (flip ($) <$> fa)
+    selectM (Left <$> fab) ((&) <$> fa)
     === -- Law: selectM = select
-    select (Left <$> fab) (flip ($) <$> fa)
+    select (Left <$> fab) ((&) <$> fa)
     === -- Definition of apS
     apS fab fa
 
@@ -406,19 +407,19 @@ t7 x y z =
     === -- Apply F3 to move the rightmost pure function into the outer 'select'
     select (first (flip $ (\ab bc -> (bc .) <$> ab)) <$> maybe (Right Nothing) Left <$> (select (maybe (Right Nothing) Left <$> x)
         ((\ab bc -> (bc .) <$> ab) <$> y)))
-        (flip ($) <$> z)
+        ((&) <$> z)
     === -- Simplify
     select (maybe (Right Nothing) (\bc -> Left $ fmap $ (bc .)) <$> (select (maybe (Right Nothing) Left <$> x)
         ((\ab bc -> (bc .) <$> ab) <$> y)))
-        (flip ($) <$> z)
+        ((&) <$> z)
     === -- Apply F1 to move the pure function into the inner 'select'
     select (select (second (maybe (Right Nothing) (\bc -> Left $ fmap $ (bc .))) <$> maybe (Right Nothing) Left <$> x)
         (((maybe (Right Nothing) (\bc -> Left $ fmap $ (bc .))).) <$> (\ab bc -> (bc .) <$> ab) <$> y))
-        (flip ($) <$> z)
+        ((&) <$> z)
     === -- Simplify, obtaining (#)
     select (select (maybe (Right (Right Nothing)) Left <$> x)
         ((\mbc cd -> maybe (Right Nothing) (\bc -> Left $ fmap ((cd . bc) .)) mbc) <$> y))
-        (flip ($) <$> z)
+        ((&) <$> z)
 
     === -- Righthand side
     x .? (y .? z)
@@ -441,12 +442,11 @@ t7 x y z =
     === -- Apply F3 to move the rightmost pure function into the outer 'select'
     select (first (flip $ \ab (bc, cd) -> ((cd . bc) .) <$> ab) <$> select (maybe (Right (Right Nothing)) Left <$> x)
         ((\m a -> maybe (Right Nothing) (Left . (,a)) m) <$> y))
-        (flip ($) <$> z)
+        ((&) <$> z)
     === -- Apply F1 to move the pure function into the inner 'select', obtaining (#)
     select (select (maybe (Right (Right Nothing)) Left <$> x)
         ((\mbc cd -> maybe (Right Nothing) (\bc -> Left $ fmap ((cd . bc) .)) mbc) <$> y))
-        (flip ($) <$> z)
-
+        ((&) <$> z)
 
 ------------------------ Carter Schonwald's copatterns -------------------------
 -- See: https://github.com/cartazio/symmetric-monoidal/blob/15b209953b7d4a47651f615b02dbb0171de8af40/src/Control/Monoidal.hs#L93

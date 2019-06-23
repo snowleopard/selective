@@ -61,7 +61,7 @@ commonly known functions).
 
 ```haskell
 apS :: Selective f => f (a -> b) -> f a -> f b
-apS f x = select (Left <$> f) (flip ($) <$> x)
+apS f x = select (Left <$> f) ((&) <$> x)
 ```
 
 Here we wrap a given function `a -> b` into `Left` and turn the value `a`
@@ -133,7 +133,7 @@ executed (by skipping unnecessary effects).
 Instances of the `Selective` type class must satisfy a few laws to make
 it possible to refactor selective computations. These laws also allow us
 to establish a formal relation with the `Applicative` and `Monad` type
-classes. 
+classes.
 
 * Identity:
     ```haskell
@@ -171,7 +171,7 @@ There are also a few useful theorems:
 
 * Apply a pure function to the second argument:
     ```haskell
-    select x (f <$> y) = select (first (flip f) <$> x) (flip ($) <$> y)
+    select x (f <$> y) = select (first (flip f) <$> x) ((&) <$> y)
     ```
 
 * Generalised identity:
@@ -205,7 +205,7 @@ in practice allows to under- or over-approximate possible effects in static
 analysis using instances like `Under` and `Over`.
 
 If `f` is also a `Monad`, we require that `select = selectM`, from which one
-can prove `apS = <*>`, and furthermore the above `Pure-Left` and `Pure-Right` 
+can prove `apS = <*>`, and furthermore the above `Pure-Left` and `Pure-Right`
 properties now hold.
 
 ## Static analysis of selective functors

@@ -8,7 +8,7 @@ ingredient of the monad abstraction is the \emph{bind} operator, denoted by
 \hs{>>=} in Haskell\footnote{We use Haskell throughout this paper, but the
 presented ideas are not language specific. We release two libraries for
 selective applicative functors along with this paper, written in Haskell
-(\cmd{http://hackage.haskell.org/package/selective})
+(\cmd{https://hackage.haskell.org/package/selective})
 and~OCaml~(\cmd{https://opam.ocaml.org/packages/selective}). The ideas have also
 been translated to Coq~\citep{selective2019coq},
 Kotlin~\citep{selective2019kotlin}, PureScript~\citep{selective2018purescript},
@@ -53,7 +53,7 @@ As we will see in sections~\S\ref{sec-static} and~\S\ref{sec-haxl}, in some
 applications it is desirable to know all possible effects \emph{statically},
 i.e. \emph{before the execution}. Alas, this is not possible with monadic effect
 composition. To \emph{inspect} the function \hs{\s}~\hs{->}~\hs{...}, we need
-an~\hs{s}, which becomes available only \emph{during execution}. We are
+a string~\hs{s}, which becomes available only \emph{during execution}. We are
 therefore unable to predict the effects that \hs{pingPongM} might perform:
 instead of conditionally executing \hs{putStrLn}, as intended, it might delete a
 file from disk, or launch proverbial missiles.
@@ -153,9 +153,11 @@ next: if it yields a \hs{Left}~\hs{a} you \emph{must execute} the second
 computation in order to produce a \hs{b} in the end; otherwise, if it yields a
 \hs{Right}~\hs{b}, you \emph{may skip} the subsequent effect, because you have
 no use for the resulting function. Note the possibility of \emph{speculative
-execution}: in some contexts, both computations can be executed in parallel,
-cancelling the second computation if/when the first one evaluates to \hs{Right}.
+execution}: in some contexts, we can execute both computations in parallel,
+cancelling the second computation if/when the first one evaluates to a
+\hs{Right}~\hs{b}.
 
+\vspace{1mm}
 The contributions of this paper are as follows:
 
 % \vspace{-1mm}
@@ -164,7 +166,7 @@ The contributions of this paper are as follows:
     abstraction situated between applicative functors and monads, characterising
     the relationships between all three abstractions with a set of laws, and
     defining a few important instances (\S\ref{sec-selective}).
-    \item We discuss applications of the abstraction on two real-life case
+    \item We discuss applications of the abstraction on two industrial case
     studies: the OCaml build system \Dune~\citep{dune} (\S\ref{sec-static}) and
     Facebook's \Haxl library~\cite{marlow2014haxl} (\S\ref{sec-haxl}).
     \item We present \emph{free selective applicative functors} and show how to
