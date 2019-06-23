@@ -1,5 +1,50 @@
 \section{Selective functors}\label{sec-selective}
 
+In this section we introduce selective applicative functors, which we will
+subsequently refer to as simply \emph{selective functors}, for brevity. We start
+by defining the new abstraction, and then use it in~\S\ref{sec-combinators} to
+implement several derived combinators, such as the aforementioned \hs{whenS}.
+In~\S\ref{sec-instances} we provide several examples of selective functors, and
+further discuss the relationships between applicative functors, selective
+functors, and monads. In~\S\ref{sec-laws}, these relationships are further
+elaborated and expressed as a set of laws that all selective functors are
+required to satisfy.
+
+Like applicative functors~\citep{mcbride2008applicative}, selective functors
+provide a way to embed pure values into an effectful context \hs{f} using the
+function \hs{pure}, and give meaning to composition of two \emph{independent}
+effectful computations using the operator \hs{<*>}. See Fig.~\ref{fig-types} for
+the standard definition of the corresponding type class \hs{Applicative}.
+Selective functors enrich the applicative interface with the \hs{select}
+function, which gives meaning to the composition of two effectful computations,
+where, in contrast to \hs{<*>}, the second computation \emph{depends} on the
+first one:
+
+\vspace{1mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
+class Applicative f => Selective f where
+    select :: f (Either a b) -> f (a -> b) -> f b
+\end{minted}
+\vspace{1mm}
+
+\noindent
+One can think of \hs{select} as a selective function application:
+parametricity~\citep{wadler1989theorems} dictates that, when given a
+\hs{Left}~\hs{a}, we \emph{must execute the effects} in
+\hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{b)}, apply the obtained function to \hs{a}, and
+return the resulting \hs{b}; on the other hand, when given a \hs{Right}~\hs{b},
+we \emph{may skip the effects} associated with the function, and return the
+given \hs{b}\footnote{Note, however, that if \hs{f}~\hs{a} holds no values of
+type \hs{a}, i.e. \hs{a} is a \emph{phantom type
+variable}~\cite{leijen2000domain}, then the effects in
+\hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{b)} can be skipped unconditionally. The
+selective functor \hs{Under} is a good example (see~\S\ref{sec-instances}).}.
+
+Following the notational convention for applicative operators, we also define
+the infix operator alias \hs{<*?} for \hs{select}: the angle bracket pointing to
+the left means we always use the corresponding value; the value on the right,
+however, may be skipped, hence the question mark.
+
 \begin{figure}
 \begin{minted}[fontsize=\small]{haskell}
 class Functor f where
@@ -56,56 +101,29 @@ a new intermediate abstraction introduced between \hs{Applicative} and
 % \vspace{-2mm}
 \end{figure}
 
-% \begin{minted}[fontsize=\small]{haskell}
-% -- A variant of (<*>) with the arguments reversed
-% (<**>) :: Applicative f => f a -> f (a -> b) -> f b
-% \end{minted}
-% \vspace{0.5mm}
+One can implement \hs{select} using monads in a straightforward manner: examine
+the value produced by \hs{f}~\hs{(Either}~\hs{a}~\hs{b)} with the bind operator,
+and then, in the \hs{Left}~\hs{a} case, execute the subsequent effect
+\hs{f}~\hs{(@@a}~\hs{->}~\hs{b)}, passing the \hs{a} to it using the
+\hs{Functor}'s map operator, as shown below. We will use~\hs{<@\dollar@>}, an
+infix synonym of \hs{fmap}, throughout the paper (see Fig.~\ref{fig-types} for
+\hs{Functor}'s API).
 
-In this section we introduce selective applicative functors, which we will
-subsequently refer to as simply \emph{selective functors}, for brevity. We start
-by defining the new abstraction, and then use it in~\S\ref{sec-combinators} to
-implement several derived combinators, such as the aforementioned \hs{whenS}.
-In~\S\ref{sec-instances} we provide several examples of selective functors, and
-further discuss the relationships between applicative functors, selective
-functors, and monads. In~\S\ref{sec-laws}, these relationships are further
-elaborated and expressed as a set of laws that all selective functors are
-required to satisfy.
-
-Like applicative functors~\citep{mcbride2008applicative}, selective functors
-provide a way to embed pure values into an effectful context \hs{f} using the
-function \hs{pure}, and give meaning to composition of two \emph{independent}
-effectful computations using the operator \hs{<*>}. See Fig.~\ref{fig-types} for
-the standard definition of the corresponding type class \hs{Applicative}.
-Selective functors enrich the applicative interface with the \hs{select}
-function, which gives meaning to the composition of two effectful computations,
-where, in contrast to \hs{<*>}, the second computation \emph{depends} on the
-first one:
-
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
-class Applicative f => Selective f where
-    select :: f (Either a b) -> f (a -> b) -> f b
+selectM :: Monad f => f (Either a b) -> f (a -> b) -> f b
+selectM x y = x >>= \e -> case e of Left  a -> ($a) <$> y -- Execute y
+                                    Right b -> pure b     -- Skip y
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
-One can think of \hs{select} as a selective function application:
-parametricity~\citep{wadler1989theorems} dictates that, when given a
-\hs{Left}~\hs{a}, we \emph{must execute the effects} in
-\hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{b)}, apply the obtained function to \hs{a}, and
-return the resulting \hs{b}; on the other hand, when given a \hs{Right}~\hs{b},
-we \emph{may skip the effects} associated with the function, and return the
-given \hs{b}\footnote{Note, however, that if \hs{f}~\hs{a} holds no values of
-type \hs{a}, i.e. \hs{a} is a \emph{phantom type
-variable}~\cite{leijen2000domain}, then the effects in
-\hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{b)} can be skipped unconditionally. The
-selective functor \hs{Under} is a good example (see~\S\ref{sec-instances}).}.
-
-Following the notational convention for applicative operators, we also define
-the infix operator alias \hs{<*?} for \hs{select}: the angle bracket pointing to
-the left means we always use the corresponding value; the value on the right,
-however, may be skipped, hence the question mark.
+Many monads directly use \hs{select}~\hs{=}~\hs{selectM} in their \hs{Selective}
+instance definitions, and in \S\ref{sec-laws} we argue that this should in fact
+be a law when both \hs{Selective}~\hs{f} and \hs{Monad}~\hs{f} instances exist.
+Note that some monads, e.g. the \Haxl monad (\S\ref{sec-haxl}), choose to
+implement the  \hs{select} method differently for performance reasons, but they
+still satisfy the law \hs{select}~\hs{=}~\hs{selectM} at the semantic level.
 
 \begin{figure}
 \begin{minted}[fontsize=\small]{haskell}
@@ -130,41 +148,17 @@ used throughout the paper.}\label{fig-std}
 \vspace{-3mm}
 \end{figure}
 
-One can implement \hs{select} using monads in a straightforward manner: examine
-the value produced by \hs{f}~\hs{(Either}~\hs{a}~\hs{b)} with the bind operator,
-and then, in the \hs{Left}~\hs{a} case, execute the subsequent effect
-\hs{f}~\hs{(@@a}~\hs{->}~\hs{b)}, passing the \hs{a} to it using the
-\hs{Functor}'s map operator, as shown below. We will use~\hs{<@\dollar@>}, an
-infix synonym of \hs{fmap}, throughout the paper (see Fig.~\ref{fig-types} for
-\hs{Functor}'s API).
-
-\vspace{0.5mm}
-\begin{minted}[xleftmargin=10pt]{haskell}
-selectM :: Monad f => f (Either a b) -> f (a -> b) -> f b
-selectM x y = x >>= \e -> case e of Left  a -> ($a) <$> y -- Execute y
-                                    Right b -> pure b     -- Skip y
-\end{minted}
-\vspace{0.5mm}
-
-\noindent
-Many monads directly use \hs{select}~\hs{=}~\hs{selectM} in their \hs{Selective}
-instance definitions, and in \S\ref{sec-laws} we argue that this should in fact
-be a law when both \hs{Selective}~\hs{f} and \hs{Monad}~\hs{f} instances exist.
-Note that some monads, e.g. the \Haxl monad (\S\ref{sec-haxl}), choose to
-implement the  \hs{select} method differently for performance reasons, but they
-still satisfy the law \hs{select}~\hs{=}~\hs{selectM} at the semantic level.
-
 One can also implement a function with the type signature of \hs{select} using
 applicative functors, but it will always execute the effects associated with the
 second argument, rendering any conditional execution of effects impossible, as
 in the \hs{pingPongA} example in the introduction~(\S\ref{sec-intro}):
 
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
 selectA x y = (\e f -> either f id e) <$> x <*> y -- Execute x and y
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
 Fig.~\ref{fig-std} gives type signatures and short descriptions for standard

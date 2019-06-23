@@ -7,14 +7,18 @@ describing effectful (or impure) computations using pure functions. The key
 ingredient of the monad abstraction is the \emph{bind} operator, denoted by
 \hs{>>=} in Haskell\footnote{We use Haskell throughout this paper, but the
 presented ideas are not language specific. We release two libraries for
-selective applicative functors along with this paper, for Haskell and OCaml, and
-are also aware of a PureScript fork.}:
+selective applicative functors along with this paper, written in Haskell
+(\cmd{http://hackage.haskell.org/package/selective})
+and~OCaml~(\cmd{https://opam.ocaml.org/packages/selective}). The ideas have also
+been translated to Coq~\citep{selective2019coq},
+Kotlin~\citep{selective2019kotlin}, PureScript~\citep{selective2018purescript},
+Scala~\citep{selective2019scala} and Swift~\citep{selective2019swift}.}:
 
-% \vspace{1mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 (>>=) :: Monad f => f a -> (a -> f b) -> f b
 \end{minted}
-% \vspace{1mm}
+\vspace{1mm}
 
 \noindent
 The operator takes two arguments: an effectful computation \hs{f}~\hs{a}, which
@@ -22,19 +26,22 @@ yields a value of type~\hs{a} when executed, and a recipe, i.e. a pure function
 of type \hs{a}~\hs{->}~\hs{f}~\hs{b}, for turning~\hs{a} into a subsequent
 computation of type \hs{f}~\hs{b}. This approach to composing effectful
 computations is inherently sequential: until we execute the effects in
-\hs{f}~\hs{a}, there is no way of obtaining the computation \hs{f}~\hs{b},
-i.e. these computations can only be performed in sequence.
+\hs{f}~\hs{a}, there is no way of obtaining the computation \hs{f}~\hs{b}, i.e.
+these computations must be performed in sequence. The ability to enforce
+a \emph{sequential execution} order is crucial for non-commutative effects, such
+as printing to the terminal; furthermore, the dependence between subsequent
+effects can be used for \emph{conditional execution} of effects, as shown below.
 
 Consider a simple example, where we use the monad \hs{f}~\hs{=}~\hs{IO} to
 describe an effectful program that prints \hs{"pong"} if the user enters
 \hs{"ping"}:
 
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 pingPongM :: IO ()
 pingPongM = getLine >>= \s -> if s@\,@==@\,@"ping" then putStrLn "pong" else pure ()
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
 The first argument of the bind operator reads a string using
@@ -57,11 +64,11 @@ long as these computations are \emph{independent} from each other. The key
 ingredient of applicative functors is the \emph{apply} operator, denoted
 by~\hs{<*>}:
 
-% \vspace{1mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 (<*>) :: Applicative f => f (a -> b) -> f a -> f b
 \end{minted}
-% \vspace{1mm}
+\vspace{1mm}
 
 \noindent
 The operator takes two effectful computations, which --- independently ---
@@ -101,23 +108,23 @@ a computation? It will hardly be a surprise that the answer is positive, but it
 is far from obvious what the right abstraction should be. For example, one might
 consider adding a new primitive called \hs{whenS} to \hs{IO}:
 
-% \vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 whenS :: IO Bool -> IO () -> IO ()
 \end{minted}
-% \vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
 This primitive executes the first computation, and then uses the obtained
 \hs{Bool} to decide whether to execute the second computation or skip it. Let us
 rewrite the ping-pong example using \hs{whenS}:
 
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 pingPongS :: IO ()
 pingPongS = whenS (fmap (=="ping") getLine) (putStrLn "pong")
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
 We replace the input string~\hs{s} with \hs{True} if it is equal to \hs{"ping"},
@@ -134,20 +141,21 @@ combinators, can be seen as special cases of a new intermediate abstraction,
 called \emph{selective applicative functors}, whose main operator for composing
 effectful computations is \emph{select}:
 
-% \vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 select :: Selective f => f (Either a b) -> f (a -> b) -> f b
 \end{minted}
-% \vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
 Intuitively, the first effectful computation is used to select what happens
 next: if it yields a \hs{Left}~\hs{a} you \emph{must execute} the second
 computation in order to produce a \hs{b} in the end; otherwise, if it yields a
 \hs{Right}~\hs{b}, you \emph{may skip} the subsequent effect, because you have
-no use for the resulting function.
+no use for the resulting function. Note the possibility of \emph{speculative
+execution}: in some contexts, both computations can be executed in parallel,
+cancelling the second computation if/when the first one evaluates to \hs{Right}.
 
-\noindent
 The contributions of this paper are as follows:
 
 % \vspace{-1mm}
