@@ -518,10 +518,10 @@ beyond ``opaque'' conditions. A deeper difference between them is that \hs{Over}
 is a rigid selective functor, i.e. \hs{(<*>)}~\hs{=}~\hs{apS}, but \hs{Under} is
 not. Indeed, \hs{Under}~\hs{"a"}~\hs{<*>}~\hs{Under}~\hs{"b"} records both
 \hs{"a"} and \hs{"b"}, but \hs{apS}~\hs{(Under}~\hs{"a")}~\hs{(Under}~\hs{"b")}
-records just \hs{"a"} since \hs{apS} is implemented via \hs{select} and
+records just \hs{"a"} because \hs{apS} is implemented via \hs{select} and
 therefore lacks information about the independence of the two effects.
-Intuitively, non-rigid selective functors have a richer structure, because
-\hs{<*>} is not expressible via \hs{select}.
+Intuitively, non-rigid selective functors have a richer structure due to the
+fact that \hs{<*>} is not expressible via \hs{select}.
 
 % , which in particular complicates the
 % corresponding free construction (\S\ref{sec-free-construction}).
@@ -557,18 +557,17 @@ instance, which allows us to validate data in the presence of conditions.
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 instance Semigroup e => Selective (Validation e) where
-    select (Success (Right b)) _ = Success b
     select (Success (Left  a)) f = ($a) <$> f
-    select (Failure e) _ = Failure e -- Discard@\,\,@errors@\,\,@behind@\,\,@failed@\,\,@conditions
+    select (Success (Right b)) _ = Success b -- Skip after false conditions
+    select (Failure e)         _ = Failure e -- Skip after failed conditions
 \end{minted}
 \vspace{1mm}
 
 \noindent
-Here, the last line is particularly interesting: similarly to \hs{Under}, we
-discard the second argument, but \emph{only if the first has failed}. This
-allows us not to report any validation errors that are hidden behind a failed
-conditional (we do not know whether the corresponding fields are actually
-needed).
+Similarly to \hs{Under}, we discard the second argument but only if the first
+has resulted in a \hs{Right} value or failed. This allows us not to report
+validation errors in inactive branches or in branches hidden behind failed
+conditionals (the corresponding fields are not necessarily needed).
 
 Below we define a function that constructs a shape (a circle or a rectangle)
 given a choice of the shape \hs{x}, and the shape's parameters (\hs{r}, \hs{w},
@@ -578,10 +577,6 @@ inputs as results of reading the corresponding fields from a web form, where
 may be empty.
 
 \vspace{0.5mm}
-% \begin{minted}[xleftmargin=10pt]{haskell}
-% type Radius = Word; type Width = Word; type Height = Word
-% \end{minted}
-% \vspace{0mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 data Shape = Circle Radius | Rectangle Width Height
 \end{minted}
@@ -630,8 +625,8 @@ Failure ["choice 1?","height 2?"]
 \vspace{0.5mm}
 
 \noindent
-Like \hs{Under}, the \hs{Validation} instance is not a rigid selective functor,
-since \hs{select} occasionally discards effects in the second argument.
+Like \hs{Under}, the \hs{Validation} instance is not a rigid selective functor
+because \hs{select} occasionally discards effects in the second argument.
 
 \subsection{Laws}\label{sec-laws}
 
@@ -784,7 +779,7 @@ requirements loose.
 
 The \emph{associativity} law states that it should always be possible to
 re-associate a sequence of select operators to the left, by doing the necessary
-adjustments to shapes of the inner values. These adjustments, called \hs{f},
+adjustments to the shapes of the inner values. These adjustments, called \hs{f},
 \hs{g}, and \hs{h} in Fig.~\ref{fig-laws}, are admittedly obscure and require an
 explanation. For the expression \hs{x}~\hs{<*?}~\hs{(}\hs{y}~\hs{<*?}~\hs{z)} to
 typecheck, the arguments should have the following types:
@@ -822,7 +817,7 @@ Fig.~\ref{fig-laws} also lists a few theorems that are useful when working with
 selective functors. The first three come for free from parametricity: they tell
 how one can reshape pure contents of selective functors. Last but not least, the
 \emph{interchange} property is a consequence of associativity and
-\hs{(<*>)}~\hs{=}~\hs{apS}, which allows to move computations inside the
+\hs{(<*>)}~\hs{=}~\hs{apS}, which allows us to move computations inside the
 condition argument of the select operator. This property does not always hold
 for non-rigid selective functors: while \hs{Under} respects it, \hs{Validation}
 does not, as demonstrated by the following example:

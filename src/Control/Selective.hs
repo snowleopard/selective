@@ -399,8 +399,8 @@ instance Semigroup e => Applicative (Validation e) where
     Success f  <*> Success a  = Success (f a)
 
 instance Semigroup e => Selective (Validation e) where
-    select (Success (Right b)) _ = Success b
     select (Success (Left  a)) f = ($a) <$> f
+    select (Success (Right b)) _ = Success b
     select (Failure e        ) _ = Failure e
 
 instance (Selective f, Selective g) => Selective (Product f g) where
