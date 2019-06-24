@@ -822,21 +822,21 @@ condition argument of the select operator. This property does not always hold
 for non-rigid selective functors: while \hs{Under} respects it, \hs{Validation}
 does not, as demonstrated by the following example:
 
-\vspace{1mm}
+\vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 @\ghci@ whenS (Under "a" *> Under "b") (Under "c")
 Under "ab"
 @\ghci@ Under "a" *> whenS (Under "b") (Under "c")
 Under "ab"
 \end{minted}
-\vspace{1mm}
+\vspace{0mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 @\ghci@ Failure "a" *> whenS (Success True) (Failure "b")
 Failure "ab"
 @\ghci@ whenS (Failure "a" *> Success True) (Failure "b")
 Failure "a"
 \end{minted}
-\vspace{1mm}
+\vspace{0.5mm}
 
 \noindent
 One example where the interchange law appears naturally is parser combinators,

@@ -3,9 +3,9 @@
 In this section we discuss a real-life application that benefits from static
 analysis of effectful computations -- the \Dune build system~\citep{dune}. We
 start by introducing \Dune and motivating the need for static analysis with
-over-approximation (\S\ref{sec-dune-intro}), and then show how one can implement
-static analysis of build system dependencies using selective functors
-(\S\ref{sec-static-example}).
+over-approximation~(\S\ref{sec-dune-intro}), and then show how one can implement
+static analysis of build system dependencies using selective
+functors~(\S\ref{sec-static-example}).
 
 \subsection{Dune build system}\label{sec-dune-intro}
 
@@ -67,12 +67,6 @@ suitability of selective functors for this task, we have successfully prototyped
 an alternative core for \Dune, which uses applicative and selective functors
 instead of arrows.
 
-% The reason Dune uses an arrow
-% rather than an applicative is discussed later, however applicatives
-% would be suitable as well in this context. In particular, a
-% successful attempt was made at replacing arrows by applicatives in
-% Dune in the past.
-
 \subsection{Static analysis of build dependencies}\label{sec-static-example}
 
 \Dune is written in OCaml, and we therefore developed an OCaml library for
@@ -86,11 +80,11 @@ of \emph{values} \hs{v}, e.g. file contents. A task takes a \emph{callback} of
 type \hs{k}~\hs{->}~\hs{f}~\hs{v}, that the task can use to find values of its
 dependencies, and returns the result embedded in a selective context~\hs{f}:
 
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 newtype Task k v = Task { run :: forall f. Selective f => (k -> f v) -> f v }
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
 The task needs to be polymorphic over \hs{f} so that it can be run both in
@@ -100,15 +94,17 @@ explained in \S\ref{sec-dune-intro}. For example, to compute over- and
 under-approximation of build dependencies we can run the task in selective
 functors \hs{f}~\hs{=}~\hs{Over} and \hs{f}~\hs{=}~\hs{Under}, respectively:
 
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 dependenciesOver :: Task k v -> [k]
 dependenciesOver task = getOver $ run task (\k -> Over [k])
-
+\end{minted}
+\vspace{0mm}
+\begin{minted}[xleftmargin=10pt]{haskell}
 dependenciesUnder :: Task k v -> [k]
 dependenciesUnder task = getUnder $ run task (\k -> Under [k])
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
 Thanks to the polymorphism of \hs{Task} over \hs{f}, we can ``execute'' a given
@@ -123,11 +119,11 @@ build \hs{Task} or \hs{Nothing} to indicate that this key is an input~(external)
 dependency that cannot be built and should therefore be available before the
 build starts:
 
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 type Script k v = k -> Maybe (Task k v)
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
 Now we have all the ingredients for creating a simple build script comprising
@@ -139,7 +135,7 @@ stored in the \cmd{config} file (it is common to use an optimised low-level C
 implementation of a performance-critical function, falling back to high-level
 OCaml implementation if the former is unavailable on the system):
 
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 script :: Script FilePath String
 script "release.tar" = Just $ Task $ \fetch -> tar [fetch@\,@"LICENSE",@\,\blk{fetch}\,@"exe"]
@@ -151,7 +147,7 @@ script "exe" = Just $ Task $ \fetch ->
     in compile [src, ifS (parse cfg) libc libml]
 script _ = Nothing
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
 Functions
@@ -164,17 +160,17 @@ parses a configuration file; their implementation is irrelevant for our purposes
 \centerline{\includegraphics[scale=0.3]{fig/build-dependencies.pdf}}
 \vspace{-2mm}
 \caption{An example build dependency graph. Input files are shown in rectangles,
-intermediate and output files are shown in rounded rectangles. Approximate
+intermediate and output files are shown in rounded rectangles. Conditional
 dependencies are highlighted with dashed lines.}
 \label{fig-build}
 \vspace{-4mm}
 \end{figure}
 
 By analysing individual build tasks using \hs{dependenciesOver} and
-\hs{dependenciesUnder}, we can obtain an approximate build dependency
-information for the whole dependency graph:
+\hs{dependenciesUnder}, we can construct a dependency graph, where some of the
+dependencies are conditional, see Fig.~\ref{fig-build}:
 
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 @\ghci@ dependenciesOver (fromJust $ script "release.tar")
 ["LICENSE","exe"]
@@ -185,19 +181,15 @@ information for the whole dependency graph:
 @\ghci@ dependenciesUnder (fromJust $ script "exe")
 ["src.ml","config"]
 \end{minted}
-\vspace{0.5mm}
-
-\noindent
-Fig.~\ref{fig-build} visualises the graph obtained by traversing approximate
-dependencies starting from the target key \cmd{release.tar}.
+\vspace{1mm}
 
 Note that while over-approximation is useful for installing all possible
 dependencies \emph{before the build}, under-approximation is useful for
 maximising parallelism \emph{during the build}: for example, if all input files
-in our example are actually generated, e.g. by running a text preprocessor, then
-we can start the three preprocessing tasks that are definitely needed
-(\cmd{LICENSE}, \cmd{src.ml}, \cmd{config}) in parallel, i.e. without waiting
-for the outcome of parsing the \cmd{config} file.
+are actually generated by running a text preprocessor, then we can start the
+three preprocessing tasks that are definitely needed (\cmd{LICENSE},
+\cmd{src.ml}, \cmd{config}) in parallel, i.e. without waiting for the outcome of
+parsing the \cmd{config} file.
 
 \emph{Applicative and monadic build systems} studied in~\citep{mokhov2018build}
 cannot support such over- and under-approximating static analysis, and the

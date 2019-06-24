@@ -13,12 +13,11 @@ write clear and concise application logic, because the framework
 abstracts away from the details of concurrency and efficient
 data-fetching.
 
-To illustrate the idea using a fragment of the example code from
-\citep{marlow2014haxl}, suppose we are writing the code to render a blog into
-HTML. The blog consists of a set of posts, where each post is
-identified by a \hs{PostId}.  The data for the blog is stored in a
-remote database.  The API for fetching the data from the database is
-as follows:
+To illustrate the idea using a fragment of the example code
+from~\citep{marlow2014haxl}, suppose we are writing the code to render a blog
+into HTML. The blog consists of a set of posts, where each post is identified by
+a \hs{PostId}. The data for the blog is stored in a remote database, and the API
+for fetching the data from the database is as follows:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -28,16 +27,16 @@ getPostContent :: PostId -> Haxl PostContent
 \vspace{1mm}
 
 \noindent
-We can fetch the set of all \hs{PostId}s using \hs{getPostIds}, and we
-can fetch the content of one post using \hs{getPostContent}. To get
-the content of all posts we could write:
+We can fetch the set of all \hs{PostId}s using \hs{getPostIds}, and we can fetch
+the content of one post using \hs{getPostContent}. To get the content of all
+posts we could write:
 
-\vspace{1mm}
+\vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 getAllPostsContent :: Haxl [PostContent]
 getAllPostsContent = getPostIds >>= mapM getPostContent
 \end{minted}
-\vspace{1mm}
+\vspace{0.5mm}
 
 \noindent
 Now, when we \hs{mapM}~\hs{getPostContent} we would really like the
@@ -45,12 +44,60 @@ database queries to happen in parallel, because there are no
 dependencies between them. Furthermore, we might even be able to batch
 up the queries into a single request to the remote database.
 
+\begin{figure}
+\begin{minted}[fontsize=\small]{haskell}
+-- A Haxl computation is either completed (Done) or Blocked on pending data requests
+data Result a = Done a | Blocked BlockedRequests (Haxl a) deriving Functor
+newtype Haxl a = Haxl { runHaxl :: IO (Result a) } deriving Functor
+\end{minted}
+\vspace{0mm}
+\begin{minted}[fontsize=\small]{haskell}
+instance Applicative Haxl where
+  pure = Haxl . return . Done
+  Haxl iof <*> Haxl iox = Haxl $ do
+    rf <- iof
+    rx <- iox
+    return $ case (rf, rx) of
+      (Done f      , _           ) -> f    <$> rx
+      (_           , Done x      ) -> ($x) <$> rf
+      (Blocked bf f, Blocked bx x) -> Blocked (bf <> bx) (f <*> x) -- parallelism
+                                                                   -- and batching
+\end{minted}
+\vspace{-3.5mm}
+\begin{minted}[fontsize=\small]{haskell}
+instance Selective Haxl where
+  select (Haxl iox) (Haxl iof) = Haxl $ do
+    rx <- iox
+    rf <- iof
+    return $ case (rx, rf) of
+      (Done (Right b), _           ) -> Done b -- abandon the second computation
+      (Done (Left  a), _           ) -> ($a) <$> rf
+      (_             , Done       f) -> either f id <$> rx
+      (Blocked bx x  , Blocked bf f) -> Blocked (bx <> bf) (select x f) -- speculative
+                                                                        -- execution
+\end{minted}
+\vspace{-3.5mm}
+\begin{minted}[fontsize=\small]{haskell}
+instance Monad Haxl where
+  return = Haxl . return . Done
+  Haxl iox >>= f = Haxl $ do
+    rx <- iox
+    case rx of Done       x -> runHaxl (f x) -- dynamic dependency on runtime value 'x'
+               Blocked bx x -> return (Blocked bx (x >>= f))
+\end{minted}
+\vspace{-2mm}
+\caption{An implementation of \hs{Applicative}, \hs{Selective} and \hs{Monad}
+instances for the \Haxl monad.}
+\label{fig-haxl}
+\vspace{-3mm}
+\end{figure}
+
 These optimisations are performed automatically by \Haxl, using a
 special \hs{Applicative} instance that exploits the lack of
 dependency between the two computations to explore the computations
 and collect the data fetch requests that can be performed in
 parallel or batched together. Fig.~\ref{fig-haxl} shows an implementation
-from~\citet{marlow2014haxl}; for the purposes of the presentation here
+by~\citet{marlow2014haxl}; for the purposes of the presentation here
 we have renamed \hs{Fetch} to \hs{Haxl} and omitted the exception-handling code.
 The key piece of \Haxl's design is the \hs{Blocked}/\hs{Blocked} case, where
 two independent sets of \hs{BlockedRequests} are combined together (the
@@ -121,53 +168,6 @@ implemented using \hs{select}, indeed \hs{pOr}~\hs{=}~\hs{(<||>)} and
 \hs{Blocked}/\hs{Blocked} case we speculatively explore both computations,
 and if we obtain a \hs{Done}/\hs{Right} result, the second computation is
 safely abandoned and subsequently cancelled.
-
-\begin{figure}
-\begin{minted}[fontsize=\small]{haskell}
--- A Haxl computation is either completed (Done) or Blocked on pending data requests
-data Result a = Done a | Blocked BlockedRequests (Haxl a) deriving Functor
-newtype Haxl a = Haxl { runHaxl :: IO (Result a) } deriving Functor
-\end{minted}
-\vspace{1mm}
-\begin{minted}[fontsize=\small]{haskell}
-instance Applicative Haxl where
-  pure = Haxl . return . Done
-  Haxl iof <*> Haxl iox = Haxl $ do
-    rf <- iof
-    rx <- iox
-    return $ case (rf, rx) of
-      (Done f      , _           ) -> f    <$> rx
-      (_           , Done x      ) -> ($x) <$> rf
-      (Blocked bf f, Blocked bx x) -> Blocked (bf <> bx) (f <*> x) -- parallelism
-                                                                   -- and batching
-\end{minted}
-\vspace{-3mm}
-\begin{minted}[fontsize=\small]{haskell}
-instance Selective Haxl where
-  select (Haxl iox) (Haxl iof) = Haxl $ do
-    rx <- iox
-    rf <- iof
-    return $ case (rx, rf) of
-      (Done (Right b), _           ) -> Done b -- abandon the second computation
-      (Done (Left  a), _           ) -> ($a) <$> rf
-      (_             , Done       f) -> either f id <$> rx
-      (Blocked bx x  , Blocked bf f) -> Blocked (bx <> bf) (select x f) -- speculative
-                                                                        -- execution
-\end{minted}
-\vspace{-3mm}
-\begin{minted}[fontsize=\small]{haskell}
-instance Monad Haxl where
-  return = Haxl . return . Done
-  Haxl iox >>= f = Haxl $ do
-    rx <- iox
-    case rx of Done       x -> runHaxl (f x) -- dynamic dependency on runtime value 'x'
-               Blocked bx x -> return (Blocked bx (x >>= f))
-\end{minted}
-\vspace{-2mm}
-\caption{An implementation of \hs{Applicative}, \hs{Selective} and \hs{Monad} instances for \Haxl.}
-\label{fig-haxl}
-\vspace{-4mm}
-\end{figure}
 
 There is one wrinkle with implementing \hs{pOr} and \hs{pAnd}
 in terms of \hs{select}. Ideally, \hs{pOr} and \hs{pAnd} would be
