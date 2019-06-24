@@ -80,7 +80,7 @@ getEffects = getOver . runSelect (Over . pure . void)
 \vspace{-3mm}
 \caption{Free rigid selective functors (various performance improvements
 omitted for clarity).}\label{fig-free}
-\vspace{-4mm}
+\vspace{-3mm}
 \end{figure}
 
 As we remarked in~\S\ref{sec-laws}, rigid selective functors have a particularly
@@ -89,6 +89,7 @@ which tells us that the apply operator \hs{<*>} is redundant and can be
 implemented via the selective interface. This normal form has the following
 linear structure:
 
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 pure x <*? fa <*? fb <*? ... <*? fy
   where
@@ -98,6 +99,7 @@ pure x <*? fa <*? fb <*? ... <*? fy
     ...
     fy :: f (y ->                           z)
 \end{minted}
+\vspace{1mm}
 
 \noindent
 In words, any rigid selective computation can be rewritten as a left-associated
@@ -107,10 +109,11 @@ and each effect in the sequence of select operators eliminates one of the
 alternatives, in order, until only one remains (namely, \hs{z}). Interestingly,
 there is no right-associative version of the normal form, because the
 associativity law can only be used to re-associate a given expression to the
-left (\S\ref{sec-laws}). To apply it in reverse, we would need a way to
-``factor out'' the reshaping functions \hs{f}, \hs{g} and \hs{h} from the base
-functor. This is different from applicative functors, which have two normal
-forms corresponding to left and right re-association~\citep{free-applicatives}.
+left (\S\ref{sec-laws}). To apply it in reverse, we would need to ``factor out''
+the reshaping functions \hs{f}, \hs{g} and \hs{h} from the base functor, which
+is not always possble. This is different from applicative functors that have two
+normal forms corresponding to left and right
+re-association~\citep{free-applicatives}.
 
 Fig.~\ref{fig-free} gives an encoding of this normal form in Haskell. The free
 data type \hs{Select} has two constructors: \hs{Pure}, to embed pure values in
@@ -137,8 +140,9 @@ but turns any subsequent effect into \hs{Nothing}. Similarly, \hs{getEffects}
 records all effects by stashing them in the selective functor \hs{Over}, which
 are subsequently extracted from it by \hs{getOver}.
 
-We do not present a free construction for non-rigid selective functors; while
-useful, it is more complex and not particularly enlightening.
+We do not present a free construction for non-rigid selective functors here but
+it can be found in the module \cmd{Control.Selective.Free} of the
+library~\citep{selective2019haskell} and in the supplementary material.
 
 \subsection{Ping-pong, freely}\label{sec-free-ping-pong}
 
@@ -148,9 +152,11 @@ two commands: \emph{reading} a string form the input stream and \emph{writing}
 a string to the output stream. The base functor has two corresponding
 constructors:
 
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 data Teletype a = Read (String -> a) | Write String a deriving Functor
 \end{minted}
+\vspace{1mm}
 
 \noindent
 For convenience, we can provide the following functions that embed the commands
@@ -196,10 +202,6 @@ The \hs{getEffects} function (Fig.~\ref{fig-free}) returns a list of all effects
 of a free selective computation. In the case of the \hs{Teletype} functor, we
 get a list of all commands that a computation might execute.
 
-% Internally, the \hs{getEffects} function interprets a free selective
-% computation in the \hs{Over} functor (see section~\ref{sec-instances}) to
-% construct an over-approximated list of effects.
-
 We can interpret \cmd{Teletype} programs in any other selective functor using
 the \hs{runSelect} function by providing a natural transformation
 \hs{forall}~\hs{x.}~\hs{Teletype}~\hs{x}~\hs{->}~\hs{g}~\hs{x}, which assigns an
@@ -238,10 +240,10 @@ greeting = getLine >>= \name -> putStrLn ("Hello " ++ name)
 \noindent
 Programs like this cannot be expressed in our simple \cmd{Teletype} DSL. Even if
 we had \hs{bindS} for strings~(\S\ref{sec-alt-multi}), it would be useless for
-static analysis because it would have to report effects \hs{Write}~\hs{name} for
-\emph{all possible strings} \hs{name}! Nevertheless, limitations of the
-selective interface can sometimes be worked around by using more sophisticated
-base functors, as we show in~\S\ref{sec-free-isa}.
+static analysis because it would have to report effects \hs{Write}~\hs{s} for
+\emph{all possible strings} \hs{s}! Nevertheless, limitations of the selective
+interface can sometimes be worked around by using more sophisticated base
+functors, as we show in~\S\ref{sec-free-isa}.
 
 % Software build systems can be modelled with purely functional
 % abstractions~\cite{mokhov2018build} that enable the model to accommodate many
@@ -301,7 +303,7 @@ instructions thus:
 \begin{minted}[xleftmargin=10pt]{haskell}
 type Program a = Select RW a
 \end{minted}
-\vspace{1mm}
+\vspace{0mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 data RW a = Read  Key                 (Value -> a)
           | Write Key (Program Value) (Value -> a) deriving Functor
@@ -334,24 +336,25 @@ We introduce two convenience combinators, which lift the data constructors of
 the \hs{RW} data type into the free selective, thus making them directly usable
 in the definitions of instruction semantics:
 
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 read :: Key -> Program Value
 read k = liftSelect (Read k id)
 \end{minted}
-\vspace{1mm}
+\vspace{0mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 write :: Key -> Program Value -> Program Value
 write k fv = liftSelect (Write k fv id)
 \end{minted}
+\vspace{1mm}
 
 \subsubsection{Example 1. Addition}
 
 To get acquainted with the introduced vocabulary, we start by describing the
 semantics for the addition instruction, which reads the summands from a
 register and a memory cell, adds them, writes the result back into the same
-register, and also updates the state of the \hs{Zero} flag to indicate if the
-result is zero.
+register, and also updates the state of the \hs{Zero} flag to indicate whether
+the resulting value is zero.
 
 \begin{minted}[xleftmargin=10pt]{haskell}
 add :: Register -> Address -> Program Value
@@ -369,8 +372,7 @@ locations and calculate the \hs{result} of addition by lifting \hs{(+)} into the
 free selective functor using applicative combinators. We then calculate the
 value of the \hs{Zero} flag in a similar way, but here we exploit the fact that
 the \hs{write} combinator returns the value it has just written, thus we can
-reuse the \hs{result} without recalculating it from scratch and triggering the
-associated effects again.
+reuse the \hs{result} without recalculating it from scratch.
 
 By analysing the free semantics of the \hs{add} instruction, we can obtain the
 list of all its effects, in the order they appear in the computation. We also
@@ -402,7 +404,7 @@ To implement \hs{getProgramEffects}, we apply the natural transformation
 \hs{toOver} to the effects of a \hs{Program}, which recursively collects the
 effects that occur in the \hs{Write}'s argument \hs{fv}:
 
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 getProgramEffects :: Program a -> [RW ()]
 getProgramEffects = getOver . runSelect toOver
@@ -413,7 +415,7 @@ toOver :: RW a -> Over [RW ()] a
 toOver (Read  k _   ) = Over [Read k (const ())]
 toOver (Write k fv _) = runSelect toOver fv *> Over [Write k fv (const ())]
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
 The semantics of the addition instruction has only used applicative combinators

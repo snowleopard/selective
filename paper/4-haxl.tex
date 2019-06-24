@@ -148,11 +148,9 @@ pOr, @\blu{pAnd}@ :: Haxl Bool -> Haxl Bool -> Haxl Bool
 \noindent
 These have the behaviour that: (i)~both arguments are evaluated in parallel;
 (ii)~the computation is aborted as soon as the answer is known, even if the
-other argument is still being evaluated.
-
-Data-fetches are not observable effects, so the parallelism is not
-observable to the programmer (this is the property that \Haxl relies
-on for the soundness of its parallel \hs{Applicative}
+other argument is still being evaluated. Data fetches are not observable
+effects, so the parallelism is not observable to the programmer (\Haxl relies
+on this property for the soundness of its parallel \hs{Applicative}
 instance). However, \hs{pOr} and \hs{pAnd} are non-deterministic with
 respect to exceptions: if an exception is thrown by either side, it
 will be thrown by the computation as a whole immediately without
