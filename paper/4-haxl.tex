@@ -60,32 +60,34 @@ instance Applicative Haxl where
     return $ case (rf, rx) of
       (Done f      , _           ) -> f    <$> rx
       (_           , Done x      ) -> ($x) <$> rf
-      (Blocked bf f, Blocked bx x) -> Blocked (bf <> bx) (f <*> x) -- parallelism
-                                                                   -- and batching
+      (Blocked bf f, Blocked bx x) -> Blocked (bf <> bx) (f <*> x)
 \end{minted}
-\vspace{-3.5mm}
+\vspace{-13.5mm}\hspace{95mm}\includegraphics[scale=0.32]{fig/comment-haxl-applicative.pdf}
+\vspace{3mm}
 \begin{minted}[fontsize=\small]{haskell}
 instance Selective Haxl where
   select (Haxl iox) (Haxl iof) = Haxl $ do
     rx <- iox
     rf <- iof
     return $ case (rx, rf) of
-      (Done (Right b), _           ) -> Done b -- abandon the second computation
+      (Done (Right b), _           ) -> Done b
       (Done (Left  a), _           ) -> ($a) <$> rf
       (_             , Done       f) -> either f id <$> rx
-      (Blocked bx x  , Blocked bf f) -> Blocked (bx <> bf) (select x f) -- speculative
-                                                                        -- execution
+      (Blocked bx x  , Blocked bf f) -> Blocked (bx <> bf) (select x f)
 \end{minted}
-\vspace{-3.5mm}
+\vspace{-26mm}\hspace{31.5mm}\includegraphics[scale=0.32]{fig/comment-haxl-selective-1.pdf}
+\vspace{11.5mm}\hspace{110.5mm}\includegraphics[scale=0.32]{fig/comment-haxl-selective-2.pdf}
+\vspace{-7.5mm}
 \begin{minted}[fontsize=\small]{haskell}
 instance Monad Haxl where
   return = Haxl . return . Done
   Haxl iox >>= f = Haxl $ do
     rx <- iox
-    case rx of Done       x -> runHaxl (f x) -- dynamic dependency on runtime value 'x'
+    case rx of Done       x -> runHaxl (f x)
                Blocked bx x -> return (Blocked bx (x >>= f))
 \end{minted}
-\vspace{-2mm}
+\vspace{-19mm}\hspace{31mm}\includegraphics[scale=0.32]{fig/comment-haxl-monad.pdf}
+\vspace{5mm}
 \caption{An implementation of \hs{Applicative}, \hs{Selective} and \hs{Monad}
 instances for the \Haxl monad.}
 \label{fig-haxl}

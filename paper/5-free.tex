@@ -78,8 +78,8 @@ getEffects :: Functor f => Select f a -> [f ()]
 getEffects = getOver . runSelect (Over . pure . void)
 \end{minted}
 \vspace{-3mm}
-\caption{Free rigid selective functors (various performance improvements
-omitted for clarity).}\label{fig-free}
+\caption{A basic implementation of free rigid selective functors; various
+improvements are omitted for clarity.}\label{fig-free}
 \vspace{-3mm}
 \end{figure}
 
@@ -103,28 +103,38 @@ pure x <*? fa <*? fb <*? ... <*? fy
 
 \noindent
 In words, any rigid selective computation can be rewritten as a left-associated
-sequence of select operators, where the initial pure value~\hs{x} comes from a
-large sum type (comprising alternatives~\hs{a} to~\hs{z} in the above snippet),
-and each effect in the sequence of select operators eliminates one of the
-alternatives, in order, until only one remains (namely, \hs{z}). Interestingly,
-there is no right-associative version of the normal form, because the
-associativity law can only be used to re-associate a given expression to the
-left (\S\ref{sec-laws}). To apply it in reverse, we would need to ``factor out''
-the reshaping functions \hs{f}, \hs{g} and \hs{h} from the base functor, which
-is not always possble. This is different from applicative functors that have two
-normal forms corresponding to left and right
-re-association~\citep{free-applicatives}.
+sequence of select operators, where the initial pure value~\hs{x} belongs to a
+large sum type (comprising alternatives~\hs{a}~to~\hs{z} in the above snippet),
+and each of the subsequent effects eliminates one of the alternatives, in order,
+until only one remains (namely, \hs{z}).
+
+Interestingly, there is no right-associated version of the normal form because
+the associativity law~(\S\ref{sec-laws}) can only be used to re-associate an
+expression to the left, which is a consequence of the asymmetry of the select
+operator. It is worth noting that this is different from applicative functors
+that have two normal forms corresponding to left and right
+re-association of the apply operator~\citep{free-applicatives}. A symmetric
+version of the select operator, which can be re-associated in either direction,
+is discussed in~\S\ref{sec-alt-symmetric}.
+
+% To apply it in reverse, we would need to ``factor out'' the reshaping functions
+% \hs{f}, \hs{g} and \hs{h} from the base functor, which is not always possible.
+
+% To see why, consider the expression
+% \hs{pure}~\hs{(Right}~\hs{(Left}~\hs{1))}~\hs{<*?}~\hs{p}~\hs{<*?}~\hs{q}, where
+% the effect \hs{p} is unnecessary due to the leading selector \hs{Right}. It is
+% not possible to re-associate this expression into
+% \hs{pure}~\hs{(Right}~\hs{(Left}~\hs{1))}~\hs{<*?}~\hs{(@@p'}~\hs{<*?}~\hs{q')}
+% because in the sub-expression \hs{(@@p'}~\hs{<*?}~\hs{q')} the first effect
+% \hs{p'} cannot be skipped.
 
 Fig.~\ref{fig-free} gives an encoding of this normal form in Haskell. The free
-data type \hs{Select} has two constructors: \hs{Pure}, to embed pure values in
-a selective computation, and \hs{Select} to build type-aligned sequences of
-base functor effects, by appending new effects to the right end of the sequence.
-The sequence can only be started with the \hs{Pure} constructor, thus enforcing
-the normal form. Implementation of instances relies on the laws presented
-in~\S\ref{sec-laws}: generalised identity, associativity, as well as one of the
-free theorems. We do not need the distributivity law, since it is subsumed by
-the law of rigid selective functors \hs{(<*>)}~\hs{=}~\hs{apS}, which is used
-directly in the \hs{Applicative} instance.
+data type \hs{Select} represents a selective computation as a type-aligned
+sequence of base functor effects, with the \hs{Pure} constructor at the head.
+Instance definitions rely on the selective laws from~\S\ref{sec-laws},
+specifically: generalised identity, associativity, and one of the free theorems.
+We do not use distributivity as it is subsumed by the law of rigid selective
+functors \hs{(<*>)}~\hs{=}~\hs{apS}, used in the \hs{Applicative} instance.
 
 Effects from the base functor can be embedded in the free construction using
 the helper function \hs{liftSelect}. To interpret a free selective computation
@@ -140,9 +150,13 @@ but turns any subsequent effect into \hs{Nothing}. Similarly, \hs{getEffects}
 records all effects by stashing them in the selective functor \hs{Over}, which
 are subsequently extracted from it by \hs{getOver}.
 
-We do not present a free construction for non-rigid selective functors here but
-it can be found in the module \cmd{Control.Selective.Free} of the
-library~\citep{selective2019haskell} and in the supplementary material.
+We can improve the encoding in~Fig.~\ref{fig-free} in several ways: (i)~make it
+``freer'' by not requiring~\hs{f}~to be a~\hs{Functor}; (ii)~make \hs{fmap} and
+\hs{select} asymptotically faster using the ideas
+of~\citet{menendez2013free}; and (iii)~drop the rigidity requirement,
+obtaining a general free construction for selective functors~---~see an
+implementation in the library~\citep{selective2019haskell} and the supplementary
+material.
 
 \subsection{Ping-pong, freely}\label{sec-free-ping-pong}
 
