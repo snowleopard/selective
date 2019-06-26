@@ -10,14 +10,28 @@ arrows}~\citep{megacz2011hardware}, which we discuss in~\S\ref{sec-arrows}.
 
 The idea of extending the \hs{Applicative} interface to gain more expressive
 power is of course not new, and has been particularly popular in
-the area of \emph{applicative parser combinators}. In particular,
+the area of \emph{applicative parser combinators}. For example,
 \citet{swierstra1996parsers} used an extended version of applicative functors
 that was later abstracted into the \hs{Alternative} type class, which is
-discussed in~\S\ref{sec-alternative-functors}. Other extensions include
-combinators for \emph{observable recursion}, e.g.
-see~\citep{devriese2012finally,devriese2013fixing}. Combining the latter with
-selective functors would give us the ability to statically analyse effectful
-computations with cycles.
+discussed in~\S\ref{sec-alternative-functors}. \citet{yallop2010phd} proposed
+to extend \hs{Applicative} with a method of type
+\hs{f}~\hs{Bool}~\hs{->}~\hs{f}~\hs{a}~\hs{->}~\hs{f}~\hs{a}~\hs{->}~\hs{f}~\hs{a}
+``for capturing computations where control flow is dynamic, but dataflow is
+static''; similar ideas were studied by the hardware design community in the
+context of synchronous~\citep{dennis1975preliminary} and
+asynchronous~\citep{mokhov2009cpog,sokolov2018reconfigurable} circuits.
+We have also found early online discussions by~\citet{yorgey2009irc}
+and~\citet{permyakov2012irc}, which explored type classes similar to
+\hs{Selective} but did not progress further. Finally, applicative combinators
+for \emph{observable recursion} by~\citet{devriese2012finally} and
+\citet{devriese2013fixing} can be combined with selective functors, which would
+allow us to statically analyse effectful computations with cycles.
+
+Many selective combinators appeared earlier as custom functions, e.g.
+\Haxl's~\citep{marlow2014haxl} speculative execution functions \hs{pAnd} and
+\hs{pOr} (\S\ref{sec-haxl}). Very similarly, so-called ``parallel conjunction''
+operator \hs{*&*} is used in Lazy SmallCheck for parallel predicate
+evaluation~\citep{runciman2008smallcheck}.
 
 Our free construction for rigid selective functors~(\S\ref{sec-free}) is
 inspired by the works on free applicative functors~\citep{free-applicatives},

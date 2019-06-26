@@ -1,18 +1,20 @@
 \section{Alternative formulations for selective functors}
 \label{sec-alternatives}
 
-This section discusses alternative versions of the \hs{Selective} type class,
-which are based on multi-way generalisations of the \hs{select} operator
-(\S\ref{sec-alt-multi}), as well as on making it more
-symmetric~(\S\ref{sec-alt-symmetric}). Both of these ideas can be readily
-integrated into the presented definition of the \hs{Selective} type class by
-extending it with new methods and adding new laws that ensure that the
-new methods interact with \hs{select} in an appropriate manner. This is common
-in standard Haskell libraries, where type classes \hs{Applicative} and
-\hs{Monad} include methods like \hs{*>} and \hs{>>} for performance reasons.
+This section discusses alternative versions of the \hs{Selective} type class
+that are based on different \hs{select} operators: specifically, the
+multi-way~(\S\ref{sec-alt-multi}) and symmetric~(\S\ref{sec-alt-symmetric})
+generalisations of \hs{select}, as well as operators that are equivalent to
+\hs{select} but may be more convenient to use~(\S\ref{sec-alt-equivalent}). All
+of these ideas can be readily integrated into the presented definition of the
+\hs{Selective} type class by extending it with new methods and adding new laws
+that ensure that the new methods interact with \hs{select} in an appropriate
+manner. This is common in standard Haskell libraries, where type classes
+\hs{Applicative} and \hs{Monad} include methods like \hs{*>} and \hs{>>} for
+performance reasons.
 
-Another alternative, which is worth a remark, is to simply move \hs{select}
-to the \hs{Applicative} type class, with the default implementation
+Another alternative, which is worth a remark, is to simply add \hs{select} to
+the \hs{Applicative} type class, with the default implementation
 \hs{select}~\hs{=}~\hs{selectA}. While this works for the purposes discussed in
 this paper, it would make it harder to reason about code with the
 \hs{Applicative}~\hs{f} constraint, since the \hs{select} method makes it
@@ -25,7 +27,7 @@ As mentioned in~\S\ref{sec-selective}, \hs{branch} is a strong contender to be
 the main method of the \hs{Selective} type class: it is parametric and all
 selective combinators, including \hs{select} itself, can be derived from it:
 
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
 \end{minted}
@@ -34,7 +36,7 @@ branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
 selectB :: Selective f => f (Either a b) -> f (a -> b) -> f b
 selectB x y = branch x y (pure id)
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
 While we prefer \hs{select} for its simplicity, \hs{branch} does provide an
@@ -69,28 +71,30 @@ static analysis instances to record all possible cases, without incurring
 the $O(N)$ slowdown during the execution of an $N$-way branch.
 
 Interestingly, adding the ability to branch on infinite number of cases makes
-selective functors equivalent to monads, although it is worth pointing out that
-static analysis of such infinitely-branching selective functors might take
-infinite time too.
+selective functors equivalent to monads~\citep{peebles2013sigma}, although it is
+worth pointing out that static analysis of such infinitely-branching selective
+functors might take infinite time too.
 
-Investigation of the design space for ``multiway selective functors'', and
-exploiting them for efficient translation of Haskell's \cmd{do}-notation into
-selective combinators in the spirit of the \cmd{ApplicativeDo}
-extension~\citep{marlow2016applicativedo} is left for future work. For now, we
-believe that adding \hs{branch} and/or an equivalent of \hs{bindS} to the
+Exploring the design space for ``multiway selective functors'', and using them
+for efficient translation of Haskell's \cmd{do}-notation into selective
+combinators in the spirit of the \cmd{ApplicativeDo}
+extension~\citep{marlow2016applicativedo} is left for future research. For now,
+we believe that adding \hs{branch} and/or an equivalent of \hs{bindS} to the
 \hs{Selective} type class would be beneficial for performance-sensitive
 applications.
 
 \subsection{Symmetric select operators}\label{sec-alt-symmetric}
 
-In this section we address the asymmetry of \hs{select} that we remarked on
-in~\S\ref{sec-haxl}. The asymmetry can be seen in the fact that the first
-argument of \hs{select} must always be executed, while the second argument may
-sometimes be skipped. Consider the following more symmetric alternative:
+In this section we address the asymmetry of \hs{select}, which we remarked on
+in~\S\ref{sec-haxl} and~\S\ref{sec-free}. The asymmetry can be seen in the fact
+that the first argument of \hs{select} must always be executed, while the second
+argument may sometimes be skipped. Consider a more symmetric alternative:
 
+\vspace{1mm}
 \begin{minted}[xleftmargin=5pt]{haskell}
 biselect :: Selective f => f@\,@(Either a b) -> f@\,@(Either a c) -> f@\,@(Either a (b,c))
 \end{minted}
+\vspace{1mm}
 
 \noindent
 This definition is pleasantly symmetric: if either of the arguments yields a
@@ -102,13 +106,13 @@ the resulting pair. As an added bonus, the rather obscure associativity law
 from~\S\ref{sec-laws} looks much more natural for
 \hs{(?*?)}~\hs{=}~\hs{biselect}:
 
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 @\blk{x}@ ?*? (y ?*? z) = fmap assoc <$> ((x ?*? y) ?*? z)
   where
     assoc ((a, b), c) = (a, (b, c))
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
 While beautiful, we found \hs{biselect} to be a bit more awkward to work with
@@ -119,14 +123,14 @@ and AND combinators --- see the \Haxl case study~\S\ref{sec-haxl}. To support
 such use-cases it is possible to add \hs{biselect} to the \hs{Selective} type
 class with the following default implementation:
 
-\vspace{0.5mm}
+\vspace{1mm}
 \begin{minted}[xleftmargin=5pt]{haskell}
 biselect :: Selective f => f@\,@(Either a b) -> f@\,@(Either a c) -> f@\,@(Either a (b,c))
 biselect x y = select ((fmap Left . swap) <$> x) ((\e a -> fmap (a,) e) <$> y)
   where
     swap = either Right Left -- Swap Left and Right
 \end{minted}
-\vspace{0.5mm}
+\vspace{1mm}
 
 \noindent
 This implementation breaks the symmetry, which may be acceptable for most
@@ -138,6 +142,55 @@ to take advantage of the symmetry.
 From the theoretical viewpoint, the type signature of \hs{biselect} makes it
 more apparent that a selective functor \hs{f} is a composition of an applicative
 functor \hs{f} and the \hs{Either} monad.
+
+\subsection{Equivalent operators}\label{sec-alt-equivalent}
+
+In this section we briefly mention three equivalent operators that can be used
+instead of \hs{select}.
+
+\begin{itemize}
+    \item Lennox S. Leary and Edward Kmett suggested to move the function to the
+          first argument:
+
+\vspace{1mm}
+\begin{minted}{haskell}
+select :: Selective f => f (Either (a -> b) b) -> f a -> f b
+\end{minted}
+\vspace{1mm}
+
+          This operator is similar to \hs{Applicative}'s \hs{<*>} but with a
+          twist: the first argument might turn out to be a constant function
+          \hs{const}~\hs{b}, in which case the effect \hs{f}~\hs{a} may be
+          skipped.
+
+    \item One can take one step further and extract the selection logic into a
+          separate function:
+
+\vspace{1mm}
+\begin{minted}{haskell}
+selectBy :: Selective f => (a -> Either (b -> c) c) -> f a -> f b -> f c
+\end{minted}
+\vspace{1mm}
+
+         This operator is very convenient for implementing selective
+         combinators, and also provides more opportunities for optimisation by
+         fusing construction and deconstruction of \hs{Either}'s.
+
+    \item Finally, it is possible to get rid of functions altogether:
+
+\vspace{1mm}
+\begin{minted}{haskell}
+select :: Selective f => f (Either a b) -> f c -> f (Either a (b, c))
+\end{minted}
+\vspace{1mm}
+
+          While this formulation requires an extra tuple allocation, it uses
+          only sums and products, and may therefore be useful in a context,
+          where functions are unavailable.
+\end{itemize}
+
+
+
 
 % Arseniy's raise/catch
 

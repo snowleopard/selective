@@ -307,8 +307,8 @@ free construction with an unusual base functor, we will be able to build
 tools both for static data flow analysis and simulation of programs with
 branching.
 
+\vspace{-1mm}
 \subsubsection{ISA semantics}
-
 To work around some of the aforementioned limitations of the selective
 interface (namely, the lack of the bind operator), we represent the semantics of
 instructions thus:
@@ -317,7 +317,7 @@ instructions thus:
 \begin{minted}[xleftmargin=10pt]{haskell}
 type Program a = Select RW a
 \end{minted}
-\vspace{0mm}
+\vspace{-0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 data RW a = Read  Key                 (Value -> a)
           | Write Key (Program Value) (Value -> a) deriving Functor
@@ -355,21 +355,22 @@ in the definitions of instruction semantics:
 read :: Key -> Program Value
 read k = liftSelect (Read k id)
 \end{minted}
-\vspace{0mm}
+\vspace{-0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 write :: Key -> Program Value -> Program Value
 write k fv = liftSelect (Write k fv id)
 \end{minted}
 \vspace{1mm}
 
+\vspace{-1mm}
 \subsubsection{Example 1. Addition}
-
 To get acquainted with the introduced vocabulary, we start by describing the
 semantics for the addition instruction, which reads the summands from a
 register and a memory cell, adds them, writes the result back into the same
 register, and also updates the state of the \hs{Zero} flag to indicate whether
 the resulting value is zero.
 
+\vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 add :: Register -> Address -> Program Value
 add reg addr = let arg1     = read (Reg reg)
@@ -397,7 +398,6 @@ rectangles, instructions as rounded rectangles, and reads/writes as arcs.
 % these graph was hand-crafted, but it is possible to get similar results
 % automatically with Graphviz~\cite{ellson2001graphviz}.}
 
-\vspace{-1mm}
 \begin{figure}[!h]
 \begin{minipage}{0.53\textwidth}
 \raggedleft
@@ -411,7 +411,6 @@ rectangles, instructions as rounded rectangles, and reads/writes as arcs.
   \includegraphics[scale=0.3]{fig/add.pdf}
  \end{minipage}
 \end{figure}
-\vspace{-1mm}
 
 \noindent
 To implement \hs{getProgramEffects}, we apply the natural transformation
@@ -461,6 +460,7 @@ the \hs{Zero} flag is set. By implementing \hs{jumpZero} in terms of the
 selective interface, we achieve both the ability to implement an adequate
 simulator for branching programs and perform their static analysis:
 
+\vspace{1mm}
 \begin{figure}[!h]
  \begin{minipage}{0.45\textwidth}
 \raggedleft
@@ -474,6 +474,7 @@ simulator for branching programs and perform their static analysis:
   \includegraphics[scale=0.3]{fig/jumpZero.pdf}
  \end{minipage}
 \end{figure}
+\vspace{1mm}
 
 \noindent
 Since the analysis is static, the resulting list of effects and the
@@ -484,7 +485,7 @@ can possibly happen in the computation.
 % it will never get forced, e.g. the analysis will succeed and give us the same
 % result even if we supply \hs{undefined}.
 
-\subsubsection{Blocks of instructions}
+\subsubsection{Example 3. Blocks of instructions}
 
 Once we have implemented the semantics for a desired subset of an ISA, we can
 describe the semantics of sequences, or \emph{blocks}, of instructions by
@@ -573,7 +574,7 @@ runProgram :: Program a -> ISAState -> (a, ISAState)
 runProgram p = runState (runSelect toState p)
 \end{minted}
 
-\subsubsection{Restrictions}
+\subsubsection{Limitations}
 
 The free selective construction in combination with the base functor \hs{RW}
 provides an abstraction capable of expressing the semantics of arithmetic,
