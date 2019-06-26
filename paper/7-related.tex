@@ -19,17 +19,17 @@ to extend \hs{Applicative} with a method of type
 ``for capturing computations where control flow is dynamic, but dataflow is
 static''; similar ideas were studied by the hardware design community in the
 context of synchronous~\citep{dennis1975preliminary} and
-asynchronous~\citep{mokhov2009cpog,sokolov2018reconfigurable} circuits.
-We have also found early online discussions by~\citet{yorgey2009irc}
-and~\citet{permyakov2012irc}, which considered type classes similar to
+asynchronous~\citep{mokhov2009cpog,sokolov2018reconfigurable} data flow
+circuits. We have also found early online discussions by~\citet{yorgey2009irc}
+and~\citet{permyakov2012irc}, which sought for type classes similar to
 \hs{Selective} but did not progress further. Finally, applicative combinators
-for \emph{observable recursion} by~\citet{devriese2012finally} and
-\citet{devriese2013fixing} can be combined with selective functors, which would
-allow us to statically analyse effectful computations with cycles.
+for \emph{observable recursion}~\citep{devriese2012finally,devriese2013fixing}
+can be combined with selective functors, which would allow us to statically
+analyse effectful computations with cycles.
 
 Many selective combinators appeared earlier as custom functions, e.g.
-\Haxl's~\citep{marlow2014haxl} speculative execution functions \hs{pAnd} and
-\hs{pOr} (\S\ref{sec-haxl}). Very similarly, so-called ``parallel conjunction''
+\Haxl's speculative execution functions \hs{pOr} and
+\hs{pAnd}~(\S\ref{sec-haxl}). Very similarly, so-called ``parallel conjunction''
 operator \hs{*&*} is used by Lazy SmallCheck for parallel predicate
 evaluation~\citep{runciman2008smallcheck}.
 
@@ -44,8 +44,8 @@ functors uncover new opportunities in this area.
 
 \subsection{Arrows and profunctors}\label{sec-arrows}
 
-Arrows, introduced by~\citet{hughes2000arrows}, generalise monads by making the
-\emph{input} of a computation explicit. Rather than giving the type
+Arrows, introduced by~\citet{hughes2000arrows}, generalise functors by making
+the \emph{input} of a computation explicit. Rather than giving the type
 \hs{f}~\hs{a} to an effectful computation that yields a value of type~\hs{a}, as
 we have done in this paper so far, arrows give the type \hs{a}~\hs{i}~\hs{o} to
 an effectful computation that takes values of type \hs{i} as input and yields
@@ -114,10 +114,10 @@ applicative functors and monads, such as \Haxl, would require pervasive changes
 to the whole abstraction stack, as well as rewriting all existing \Haxl user
 code in the arrow notation~\citep{paterson2001new}. Needless to say,
 introduction of selective functors to \Haxl is a much easier task, which we have
-accomplished by adding 13 lines of new code (the definition of the
-\hs{Selective}~\hs{Haxl} instance in Fig.~\ref{fig-haxl}), and removing
-26 lines of code corresponding to similarly-sized definitions of \hs{pOr} and
-\hs{pAnd}, reusing the selective combinators \hs{<||>} and \hs{<&&>} instead.
+accomplished by adding 13 lines of new code for the definition of the
+\hs{Selective}~\hs{Haxl} instance, and removing 26 lines of code corresponding
+to similarly-sized definitions of \hs{pOr} and \hs{pAnd}, reusing the selective
+combinators \hs{<||>} and \hs{<&&>} instead.
 
 \emph{Profunctors} is an abstraction closely related to arrows;
 see~\citep{pickering2017profunctor} for a good overview of profunctors in the

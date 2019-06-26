@@ -29,12 +29,13 @@ computations is inherently sequential: until we execute the effects in
 \hs{f}~\hs{a}, there is no way of obtaining the computation \hs{f}~\hs{b}, i.e.
 these computations must be performed in sequence. The ability to enforce
 a \emph{sequential execution} order is crucial for non-commutative effects, such
-as printing to the terminal; furthermore, the dependence between subsequent
-effects can be used for \emph{conditional execution} of effects, as shown below.
+as printing to the terminal. Furthermore, the dependence between subsequent
+effects can be used for \emph{conditional effect execution}, as demonstrated
+below.
 
 Consider a simple example, where we use the monad \hs{f}~\hs{=}~\hs{IO} to
-describe an effectful program that prints \hs{"pong"} if the user enters
-\hs{"ping"}:
+describe an effectful program that prints \hs{"pong"} to the terminal if the
+user enters \hs{"ping"}:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -92,14 +93,14 @@ pingPongA = fmap (\s -> id) getLine <*> putStrLn "pong"
 \vspace{0.5mm}
 
 \noindent
-We use \hs{fmap}~\hs{(\s}~\hs{->}~\hs{id)} to replace the input string \hs{s},
-which we now have no need for, with the identity function
-\hs{id}~\hs{::}~\hs{()}~\hs{->}~\hs{()}, thus matching the return type of
+Here we use \hs{fmap}~\hs{(\s}~\hs{->}~\hs{id)} to replace the input string
+\hs{s}, which we now have no need for, with the identity function
+\hs{id}~\hs{::}~\hs{()}~\hs{->}~\hs{()}, thus matching the type of
 \hs{putStrLn}~\hs{"pong"}~\hs{::}~\hs{IO}~\hs{()}. We cannot execute the
-\hs{putStrLn} effect conditionally but, on the positive side, the effects are no
-longer hidden behind opaque effect-generating functions, which makes it possible
-for the applicative functor \hs{f}~\hs{=}~\hs{IO} to statically know the two
-effects embedded in \hs{pingPongA}.
+\hs{putStrLn}~\hs{"pong"} effect conditionally but, on the positive side, the
+effects are no longer hidden behind opaque effect-generating functions, which
+makes it possible for the applicative functor \hs{f}~\hs{=}~\hs{IO} to
+statically know the two effects embedded in \hs{pingPongA}.
 
 At this point the reader is hopefully wondering: can we combine the advantages
 of applicative functors and monads, i.e. allow for conditional execution of some
@@ -133,8 +134,8 @@ effectful computation. This approach gives us both conditional execution of
 \hs{putStrLn}~\hs{"pong"}, and static visibility of both effects
 (see~\S\ref{sec-free-ping-pong}). Crucially, \hs{whenS} must be an \hs{IO}
 primitive instead of being implemented in terms of the monadic bind (\hs{>>=}),
-because the latter would result in wrapping \hs{putStrLn} into an opaque
-function, as in \hs{pingPongM}.
+because the latter would result in wrapping \hs{putStrLn}~\hs{"pong"} into an
+opaque function, as in \hs{pingPongM}.
 
 The main idea of this paper is that \hs{whenS}, as well as many other similar
 combinators, can be seen as special cases of a new intermediate abstraction,

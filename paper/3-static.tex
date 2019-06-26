@@ -74,7 +74,7 @@ selective functors. In this section, however, we choose to continue using
 Haskell to avoid confusion.
 
 We follow the approach by~\citet{mokhov2018build} for modelling \emph{build
-tasks}, where a single task is represented as a higher-order effectful function
+tasks}, where a single task is represented as a higher-order function
 parameterised by the type of \emph{keys} \hs{k}, e.g. file names, and the type
 of \emph{values} \hs{v}, e.g. file contents. A task takes a \emph{callback} of
 type \hs{k}~\hs{->}~\hs{f}~\hs{v}, that the task can use to find values of its
@@ -91,8 +91,9 @@ The task needs to be polymorphic over \hs{f} so that it can be run both in
 \emph{build mode}, by actually executing build commands, and in the \emph{mock
 mode}, where build commands are skipped but dependencies are recorded, as
 explained in \S\ref{sec-dune-intro}. For example, to compute over- and
-under-approximation of build dependencies we can run the task in selective
-functors \hs{f}~\hs{=}~\hs{Over} and \hs{f}~\hs{=}~\hs{Under}, respectively:
+under-approximation of build dependencies we run the task in selective functors
+\hs{f}~\hs{=}~\hs{Over}~\hs{[}\hs{k]} and
+\hs{f}~\hs{=}~\hs{Under}~\hs{[}\hs{k]}, respectively:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}

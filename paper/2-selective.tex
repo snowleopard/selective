@@ -15,10 +15,9 @@ provide a way to embed pure values into an effectful context \hs{f} using the
 function \hs{pure}, and give meaning to composition of two \emph{independent}
 effectful computations using the operator \hs{<*>}. See Fig.~\ref{fig-types} for
 the standard definition of the corresponding type class \hs{Applicative}.
-Selective functors enrich the applicative interface with the \hs{select}
-function, which gives meaning to the composition of two effectful computations,
-where, in contrast to \hs{<*>}, the second computation \emph{depends} on the
-first one:
+Selective functors enrich the applicative interface with the \hs{select} method,
+which gives meaning to the composition of two effectful computations, where, in
+contrast to \hs{<*>}, the second computation \emph{depends} on the first one:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -41,9 +40,9 @@ variable}~\cite{leijen2000domain}, then the effects in
 selective functor \hs{Under} is a good example (see~\S\ref{sec-instances}).}.
 
 Following the notational convention for applicative operators, we also define
-the infix operator alias \hs{<*?} for \hs{select}: the angle bracket pointing to
-the left means we always use the corresponding value; the value on the right,
-however, may be skipped, hence the question mark.
+the  left-associative infix operator alias \hs{<*?} for \hs{select}: the angle
+bracket pointing to the left means we always use the corresponding value; the
+value on the right, however, may be skipped, hence the question mark.
 
 \begin{figure}
 \begin{minted}[fontsize=\small]{haskell}
@@ -379,8 +378,8 @@ class. Our choice of \hs{select} follows the Occam's razor principle:
 simpler free construction (\S\ref{sec-free-construction}).
 
 By instantiating \hs{select} with \hs{a}~\hs{=}~\hs{b}~\hs{=}~\hs{()} we have
-earlier obtained \hs{whenS}. Below we repeat the same trick but with
-\hs{branch}, obtaining another familiar conditional combinator \hs{ifS}:
+earlier obtained \hs{whenS}. Below we repeat the exercise with \hs{branch},
+obtaining another familiar conditional combinator \hs{ifS}:
 
 \vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -443,10 +442,10 @@ In~\S\ref{sec-free-ping-pong} we will see how to statically analyse
 execution}, which can be done by interpreting \hs{pingPongS} in the selective
 functor \hs{Over}, introduced below.
 
-The \hs{Const}~\hs{m}~\hs{a} functor is an interesting and surprisingly useful
-instance of the \hs{Applicative} type class, which stores no values of type
-\hs{a}, but keeps track of the applicative structure in the monoid value of type
-\hs{m}:
+We first recall the functor \hs{Const}~\hs{m}~\hs{a}, which is an interesting
+and surprisingly useful instance of the \hs{Applicative} type class. It stores
+no values of type \hs{a}, but keeps track of the applicative computation
+structure in the monoid value of type \hs{m}:
 
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
@@ -492,10 +491,10 @@ instance Monoid m => Selective (Under m) where
 \vspace{1mm}
 
 \noindent
-The selective functor \hs{Over} can be used for computing a list of all possible
-effects embedded in a computation, i.e. an \emph{over-approximation} of the
-effects that will actually occur. This is achieved by keeping track of effects
-in both arguments of \hs{select}. The selective functor \hs{Under}, on the other
+The selective functor \hs{Over} can be used for computing a list of all effects
+embedded in a computation, i.e. an \emph{over-approximation} of the effects that
+will actually occur. This is achieved by keeping track of effects in both
+arguments of the select operator. The selective functor \hs{Under}, on the other
 hand, discards the second argument of \hs{select}, and therefore computes an
 \emph{under-approximation}, i.e. a list of effects that are guaranteed to occur.
 Let us give these two instances a try:
@@ -710,7 +709,7 @@ parametricity.
 \vspace{-2mm}
 \caption{Laws (top) and theorems (bottom) of selective functors. Coq proofs that
 the selective instances from~\S\ref{sec-instances} are lawful are available in
-supplementary material.}
+the supplementary material.}
 \label{fig-laws}
 \vspace{-3mm}
 \end{figure}
@@ -797,13 +796,13 @@ p :: f (Either a (Either (c,a) b))   @\blu{q}@ :: f (a -> Either (c,a) b)   @\bl
 \end{minted}
 
 \noindent
-To adjust \hs{x}, we inject it in a larger sum type, \hs{y} is turned into a
-function accepting a value of type \hs{a} from \hs{p}, and \hs{z} is simply
+To adjust \hs{x}, we inject it in a larger sum type; \hs{y} is turned into a
+function accepting a value of type \hs{a} from \hs{p}; and \hs{z} is simply
 \hs{uncurry}ed. As we will see in~\S\ref{sec-alt-symmetric}, the associativity
 law can be expressed much more naturally if we switch to a more symmetric select
-operator (a similar phenomenon occurs with the \emph{composition} law of
+operator. A similar phenomenon occurs with the \emph{composition} law of
 the \hs{Applicative} type class when the latter is expressed using an equivalent
-but more symmetric \hs{Monoidal} interface~\citep{mcbride2008applicative}).
+but more symmetric \hs{Monoidal} interface~\citep{mcbride2008applicative}.
 
 The final law links selective functors to monads: in the spirit of the
 conventional applicative-monad law \hs{(<*>)}~\hs{=}~\hs{ap}, we require that

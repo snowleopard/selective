@@ -71,9 +71,9 @@ static analysis instances to record all possible cases, without incurring
 the $O(N)$ slowdown during the execution of an $N$-way branch.
 
 Interestingly, adding the ability to branch on infinite number of cases makes
-selective functors equivalent to monads~\citep{peebles2013sigma}, although it is
-worth pointing out that static analysis of such infinitely-branching selective
-functors might take infinite time too.
+selective functors equivalent to monads, e.g. see~\citet{peebles2013sigma}.
+However, it is worth pointing out that static analysis of such
+infinitely-branching selective functors might take infinite time too.
 
 Exploring the design space for ``multiway selective functors'', and using them
 for efficient translation of Haskell's \cmd{do}-notation into selective

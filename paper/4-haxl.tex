@@ -10,11 +10,10 @@ and batching together multiple fetches from the same data source.
 a system that proactively detects and remediates various forms of
 abuse. \Haxl allows the engineers working on the anti-abuse code to
 write clear and concise application logic, because the framework
-abstracts away from the details of concurrency and efficient
-data-fetching.
+abstracts away from the details of concurrency and efficient data fetching.
 
 To illustrate the idea using a fragment of the example code
-from~\citep{marlow2014haxl}, suppose we are writing the code to render a blog
+by~\citet{marlow2014haxl}, suppose we are writing the code to render a blog
 into HTML. The blog consists of a set of posts, where each post is identified by
 a \hs{PostId}. The data for the blog is stored in a remote database, and the API
 for fetching the data from the database is as follows:
@@ -97,10 +96,10 @@ instances for the \Haxl monad.}
 These optimisations are performed automatically by \Haxl, using a
 special \hs{Applicative} instance that exploits the lack of
 dependency between the two computations to explore the computations
-and collect the data fetch requests that can be performed in
-parallel or batched together. Fig.~\ref{fig-haxl} shows an implementation
-by~\citet{marlow2014haxl}; for the purposes of the presentation here
-we have renamed \hs{Fetch} to \hs{Haxl} and omitted the exception-handling code.
+and collect the data fetch requests that can be performed in parallel or batched
+together. Fig.~\ref{fig-haxl} shows an implementation adapted from the code
+by~\citet{marlow2014haxl}. For the purposes of the presentation here we have
+renamed \hs{Fetch} to \hs{Haxl} and omitted the exception-handling code.
 The key piece of \Haxl's design is the \hs{Blocked}/\hs{Blocked} case, where
 two independent sets of \hs{BlockedRequests} are combined together (the
 semigroup operator \hs{<>} is just a customised set union). \Haxl also has a
@@ -181,7 +180,7 @@ related to \hs{select} that allows this kind of symmetry to be expressed.
 We have prototyped an implementation of \Haxl with the \hs{Selective}~\hs{Haxl}
 instance, which allowed us to reuse generic selective combinators
 \hs{<||>}, \hs{<&&>}, \hs{anyS} and \hs{allS} instead of providing custom
-implementations for conditional operators operators \hs{pOr} and \hs{pAnd} and
+implementations for conditional operators \hs{pOr} and \hs{pAnd} and
 their generalisations on lists. This case study highlights the fact that
 selective functors are useful not only in the static context, but in the dynamic
 context too, by allowing us to benefit from speculative execution.
@@ -199,7 +198,7 @@ sequence a set of ten or more conditions, and then repeating the
 exercise every time the set changes.
 
 For this reason, in \Haxl we found that list operations built on top
-of \hs{pOr} and \hs{pAnd}, which in this paper we call \hs{andS} and
+of \hs{pOr} and \hs{pAnd}, which in this paper we call \hs{anyS} and
 \hs{allS} (see Fig.~\ref{fig-library}), offer an important balance
 between performance and maintainability that is not provided by the
 \hs{Applicative} or \hs{Monad}-based combinators.
@@ -208,7 +207,7 @@ One could construct examples to demonstrate arbitrarily large
 performance gains from using \hs{pOr} and \hs{pAnd}, however that
 would not be particularly useful. Perhaps more useful would be a
 real-world measurement showing how much performance was improved in an
-actual application --- but again, the value of that would depend to a
+actual application but again, the value of that would depend to a
 large extent on how the application uses \hs{pOr} and \hs{pAnd}, and
 unfortunately the application code in our case is
 proprietary. Therefore instead we offer this anecdote: we first
