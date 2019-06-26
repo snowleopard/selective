@@ -21,7 +21,7 @@ static''; similar ideas were studied by the hardware design community in the
 context of synchronous~\citep{dennis1975preliminary} and
 asynchronous~\citep{mokhov2009cpog,sokolov2018reconfigurable} circuits.
 We have also found early online discussions by~\citet{yorgey2009irc}
-and~\citet{permyakov2012irc}, which explored type classes similar to
+and~\citet{permyakov2012irc}, which considered type classes similar to
 \hs{Selective} but did not progress further. Finally, applicative combinators
 for \emph{observable recursion} by~\citet{devriese2012finally} and
 \citet{devriese2013fixing} can be combined with selective functors, which would
@@ -30,7 +30,7 @@ allow us to statically analyse effectful computations with cycles.
 Many selective combinators appeared earlier as custom functions, e.g.
 \Haxl's~\citep{marlow2014haxl} speculative execution functions \hs{pAnd} and
 \hs{pOr} (\S\ref{sec-haxl}). Very similarly, so-called ``parallel conjunction''
-operator \hs{*&*} is used in Lazy SmallCheck for parallel predicate
+operator \hs{*&*} is used by Lazy SmallCheck for parallel predicate
 evaluation~\citep{runciman2008smallcheck}.
 
 Our free construction for rigid selective functors~(\S\ref{sec-free}) is
