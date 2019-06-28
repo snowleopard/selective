@@ -26,8 +26,9 @@ RUN cd selective-ocaml-0.1.0 && eval $(opam env) && make test
 RUN mv selective-ocaml-0.1.0 selective-ocaml
 
 # Pull the Coq sources from GitHub
-RUN wget -O selective-coq.zip https://github.com/tuura/selective-theory-coq/archive/v0.1.zip
-RUN unzip selective-coq.zip && rm selective-coq.zip && mv selective-theory-coq-0.1 selective-coq
+RUN wget -O selective-coq.zip https://github.com/tuura/selective-theory-coq/archive/v0.1.1.zip
+RUN unzip selective-coq.zip && rm selective-coq.zip && mv selective-theory-coq-0.1.1 selective-coq
+RUN cd selective-coq && eval $(opam env) && make && make clean && cd ..
 
 # Pull the Haskell sources from GitHub
 RUN wget -O selective.zip https://github.com/snowleopard/selective/archive/v0.2.zip
