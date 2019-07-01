@@ -183,15 +183,15 @@ apS f x = select (Left <$> f) ((&) <$> x)
 \vspace{1mm}
 
 \noindent
-Here we tag a given function \hs{a}~\hs{->}~\hs{b} with \hs{Left} and turn a
-value of type \hs{a} into the reverse function application
-\hs{\}\hs{f}~\hs{->}~\hs{f}~\hs{a} that yields \hs{b} when given
-\hs{a}~\hs{->}~\hs{b}, as desired. Since the \hs{Right} case is impossible, the
-effect \hs{f}~\hs{a} is executed unconditionally. Note however, that the
-equality \hs{(<*>)}~\hs{=}~\hs{apS} does not always hold. Selective functors
-that satisfy the law \hs{(<*>)}~\hs{=}~\hs{apS} will be called \emph{rigid};
-they will turn out to have a very simple normal form, which we will exploit in
-the free construction in~\S\ref{sec-free}.
+Here we tag the given function \hs{f}~\hs{::}~\hs{a}~\hs{->}~\hs{b} with
+\hs{Left} and apply the reverse function application~(see Fig.~\ref{fig-std}) to
+the value \hs{x}~\hs{::}~\hs{a}, thus matching the type signature
+of \hs{select}. Since the \hs{Right} case is impossible, the effect
+\hs{f}~\hs{a} is executed unconditionally. Note however, that the equality
+\hs{(<*>)}~\hs{=}~\hs{apS} does not always hold. Selective functors that satisfy
+the law \hs{(<*>)}~\hs{=}~\hs{apS} will be called \emph{rigid}; they will turn
+out to have a simple normal form, which we will exploit in the free construction
+in~\S\ref{sec-free}.
 
 It is worth emphasising that the subclass relationships
 \hs{Applicative}~\hs{f}~\hs{=>}~\hs{Selective}~\hs{f} and
