@@ -2,7 +2,7 @@
 module Build where
 
 import Control.Selective
-import Control.Selective.Free.Rigid
+import Control.Selective.Rigid.Free
 
 -- See Section 3 of the paper:
 -- https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf

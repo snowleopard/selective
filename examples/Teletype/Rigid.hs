@@ -4,7 +4,7 @@ module Teletype.Rigid where
 import Prelude hiding (getLine, putStrLn)
 import qualified Prelude as IO
 import Control.Selective
-import Control.Selective.Free.Rigid
+import Control.Selective.Rigid.Free
 
 -- See Section 5.2 of the paper:
 -- https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf

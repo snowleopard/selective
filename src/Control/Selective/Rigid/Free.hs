@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs, RankNTypes, TupleSections #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Control.Selective.Free.Rigid
+-- Module     : Control.Selective.Rigid.Free
 -- Copyright  : (c) Andrey Mokhov 2018-2019
 -- License    : MIT (see the file LICENSE)
 -- Maintainer : andrey.mokhov@gmail.com
@@ -12,11 +12,11 @@
 -- and monads, introduced in this paper:
 -- https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf.
 --
--- This module defines /free rigid selective functors/, i.e. for selective
--- functors satisfying the property @\<*\> = apS@.
+-- This module defines /free rigid selective functors/. Rigid selective functors
+-- are those that satisfy the property @\<*\> = apS@.
 --
 -----------------------------------------------------------------------------
-module Control.Selective.Free.Rigid (
+module Control.Selective.Rigid.Free (
     -- * Free rigid selective functors
     Select (..), liftSelect,
 

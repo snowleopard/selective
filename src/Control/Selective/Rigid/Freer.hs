@@ -1,5 +1,24 @@
 {-# LANGUAGE DeriveFunctor, GADTs, RankNTypes #-}
-module FreerRigid (
+-----------------------------------------------------------------------------
+-- |
+-- Module     : Control.Selective.Rigid.Freer
+-- Copyright  : (c) Andrey Mokhov 2018-2019
+-- License    : MIT (see the file LICENSE)
+-- Maintainer : andrey.mokhov@gmail.com
+-- Stability  : experimental
+--
+-- This is a library for /selective applicative functors/, or just
+-- /selective functors/ for short, an abstraction between applicative functors
+-- and monads, introduced in this paper:
+-- https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf.
+--
+-- This module defines /freer rigid selective functors/. Rigid selective
+-- functors are those that satisfy the property @\<*\> = apS@. Compared to the
+-- "free" construction from "Control.Selective.Rigid.Free", this "freer"
+-- construction does not require the underlying base data type to be a functor.
+--
+-----------------------------------------------------------------------------
+module Control.Selective.Rigid.Freer (
     -- * Free rigid selective functors
     Select (..), liftSelect,
 

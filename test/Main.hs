@@ -14,7 +14,7 @@ import Laws
 import Validation
 
 import qualified Control.Selective.Free       as F
-import qualified Control.Selective.Free.Rigid as FR
+import qualified Control.Selective.Rigid.Free as FR
 import qualified Teletype                     as F
 import qualified Teletype.Rigid               as FR
 

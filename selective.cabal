@@ -36,7 +36,8 @@ library
     hs-source-dirs:     src
     exposed-modules:    Control.Selective,
                         Control.Selective.Free,
-                        Control.Selective.Free.Rigid
+                        Control.Selective.Rigid.Free,
+                        Control.Selective.Rigid.Freer
     build-depends:      base         >= 4.7     && < 5,
                         containers   >= 0.5.5.1 && < 0.7,
                         transformers >= 0.4.2.0 && < 0.6
@@ -59,8 +60,6 @@ library
 test-suite test
     hs-source-dirs:     test, examples
     other-modules:      Build,
-                        FreerRigid,
-                        FasterFreerRigid,
                         Laws,
                         Parser,
                         Processor,

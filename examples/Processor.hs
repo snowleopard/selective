@@ -1,9 +1,8 @@
-{-# LANGUAGE ConstraintKinds, DeriveFunctor
-             , LambdaCase, FlexibleContexts, FlexibleInstances, GADTs #-}
+{-# LANGUAGE ConstraintKinds, DeriveFunctor, GADTs, FlexibleContexts, LambdaCase #-}
 module Processor where
 
 import Control.Selective
-import Control.Selective.Free.Rigid
+import Control.Selective.Rigid.Free
 import Data.Functor
 import Data.Int (Int16)
 import Data.Word (Word8)
