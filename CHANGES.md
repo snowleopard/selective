@@ -2,6 +2,9 @@
 
 ## 0.3
 
+* Add freer rigid selective functors: `Control.Selective.Rigid.Freer`.
+* Rename `Control.Selective.Free.Rigid` to `Control.Selective.Rigid.Free`.
+* Add free selective functors: `Control.Selective.Free`.
 * Switch to more conventional field names in `SelectA` and `SelectM`.
 
 ## 0.2
