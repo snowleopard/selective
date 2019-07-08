@@ -4,6 +4,7 @@ module Processor where
 import Control.Selective
 import Control.Selective.Rigid.Free
 import Data.Functor
+import Data.Bool
 import Data.Int (Int16)
 import Data.Word (Word8)
 import Data.Map.Strict (Map)
@@ -32,16 +33,10 @@ fromBool False = 0
 type Value = Int16
 
 -- | The processor has four registers.
-data Reg = R0 | R1 | R2 | R3 deriving (Show, Eq, Ord)
-
-r0, r1, r2, r3 :: Key
-r0 = Reg R0
-r1 = Reg R1
-r2 = Reg R2
-r3 = Reg R3
+data Register = R0 | R1 | R2 | R3 deriving (Show, Eq, Ord)
 
 -- | The register bank maps registers to values.
-type RegisterBank = Map Reg Value
+type RegisterBank = Map Register Value
 
 -- | The address space is indexed by one byte.
 type Address = Word8
@@ -55,7 +50,7 @@ data Flag = Zero     -- ^ tracks if the result of the last arithmetical operatio
     deriving (Show, Eq, Ord)
 
 -- | A flag assignment.
-type Flags = Map.Map Flag Value
+type Flags = Map Flag Value
 
 -- | Address in the program memory.
 type InstructionAddress = Value
@@ -77,7 +72,7 @@ data State = State { registers :: RegisterBank
                    , log       :: Log Key Value}
 
 -- | Various elements of the processor state.
-data Key = Reg Reg | Cell Address | Flag Flag | PC deriving Eq
+data Key = Reg Register | Cell Address | Flag Flag | PC deriving Eq
 
 instance Show Key where
     show (Reg r)  = show r
@@ -99,8 +94,7 @@ instance Show (RW a) where
     show (Write k _        _) = "Write " ++ show k
 
 logEntry :: MonadState State m => LogEntry Key Value -> m ()
-logEntry item = S.modify $ \s ->
-    s {log = log s ++ [item] }
+logEntry item = S.modify $ \s -> s { log = log s ++ [item] }
 
 -- | Interpret the base functor in a 'MonadState'.
 toState :: MonadState State m => RW a -> m a
@@ -146,51 +140,31 @@ read k = liftSelect (Read k id)
 write :: Key -> Program Value -> Program Value
 write k fv = liftSelect (Write k fv id)
 
--- --------------------------------------------------------------------------------
--- -------- Instructions ----------------------------------------------------------
--- --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+-------- Instructions ----------------------------------------------------------
+--------------------------------------------------------------------------------
 
-------------
--- Add -----
-------------
+-- | The addition instruction, which reads the summands from a 'Register' and a
+-- memory 'Address', adds them, writes the result back into the same register,
+-- and also updates the state of the 'Zero' flag to indicate whether the
+-- resulting 'Value' is zero.
+add :: Register -> Address -> Program Value
+add reg addr = let arg1   = read (Reg reg)
+                   arg2   = read (Cell addr)
+                   result = (+)   <$> arg1 <*> arg2
+                   isZero = (==0) <$> write (Reg reg) result
+               in write (Flag Zero) (bool 0 1 <$> isZero)
 
--- | Read the values @x@ and @y@ and write the sum into @z@. If the sum is zero,
--- set the 'Zero' flag, otherwise reset it.
---
--- This implementation looks intuitive, but is incorrect, since the two write
--- operations are independent and the effects required for computing the sum,
--- i.e. @read x <*> read y@ will be executed twice. Consequently:
---   * the value written into @z@ is not guaranteed to be the same as the one
---     which was compared to zero,
---   * the static analysis of the computations would report more dependencies
---     than one might expect.
-addNaive :: Key -> Key -> Key -> Program Value
-addNaive x y z =
-    let sum    = (+)   <$> read x <*> read y
-        isZero = (==0) <$> sum
-    in write (Flag Zero) (ifS isZero (pure 1) (pure 0)) *> write z sum
-
--- | This implementation of addition executes the effects associated with 'sum'
--- only once and then reuses it without triggering the effects again.
-add :: Key -> Key -> Key -> Program Value
-add x y z =
-    let sum    = (+)   <$> read x <*> read y
-        isZero = (==0) <$> write z sum
-    in write (Flag Zero) (fromBool <$> isZero)
-
------------------
--- jumpZero -----
------------------
+-- | A conditional branching instruction that performs a jump if the result of
+-- the previous operation was zero.
 jumpZero :: Value -> Program ()
-jumpZero offset =
-    let pc       = read PC
-        zeroSet  = (==1) <$> read (Flag Zero)
-        modifyPC = void $ write PC ((+offset) <$> pc)
-    in whenS zeroSet modifyPC
+jumpZero offset = let zeroSet  = (==1) <$> read (Flag Zero)
+                      modifyPC = void $ write PC ((+offset) <$> read PC)
+                  in whenS zeroSet modifyPC
 
--- A block of instructions.
+-- | A simple block of instructions.
 addAndJump :: Program ()
-addAndJump = add (Reg R1) (Reg R2) (Reg R3) *> jumpZero 42
+addAndJump = add R0 1 *> jumpZero 42
 
 -----------------------------------
 -- Add with overflow tracking -----
@@ -241,9 +215,6 @@ willOverflowPure x y =
 -- overflow detection, lift all the pure operations into 'Applicative'. This
 -- forces the semantics to read the input variables more times than
 -- 'addOverflow' does (@x@ is read 3x times, and @y@ is read 5x times).
---
--- It is not clear at the moment what to do with this. Should we just avoid this
--- style? Or could it sometimes be useful?
 addOverflowNaive :: Key -> Key -> Key -> Program Value
 addOverflowNaive x y z =
     let arg1   = read x
@@ -293,13 +264,10 @@ boot mem = State { registers = emptyRegisters
                  , pc = 0
                  , flags = emptyFlags
                  , memory = mem
-                 , log   = []
-                 }
+                 , log   = [] }
 
 twoAdds :: Program Value
-twoAdds = add r0 (Cell 0) r0
-          *>
-          add r0 (Cell 0) r0
+twoAdds = add R0 0 *> add R0 0
 
 addExample :: IO ()
 addExample = do

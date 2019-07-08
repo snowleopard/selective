@@ -38,7 +38,9 @@ getLine = liftSelect (Read id)
 putStrLn :: String -> Teletype ()
 putStrLn s = liftSelect (Write s ())
 
--- | The example from the paper's intro implemented using the free selective.
+-- | The ping-pong example from the introduction section of the paper
+-- implemented using free selective functors.
+--
 -- It can be statically analysed for effects:
 --
 -- @
@@ -64,11 +66,13 @@ pingPongS :: Teletype ()
 pingPongS = whenS (fmap ("ping"==) getLine) (putStrLn "pong")
 
 ------------------------------- Ping-pong example ------------------------------
--- | Monadic ping-pong. Can be executed, but cannot be statically analysed.
+-- | Monadic ping-pong, which has the desired behaviour, but cannot be
+-- statically analysed.
 pingPongM :: IO ()
 pingPongM = IO.getLine >>= \s -> if s == "ping" then IO.putStrLn "pong" else pure ()
 
--- | Applicative ping-pong. Cannot be executed, but can be statically analysed.
+-- | Applicative ping-pong, which always executes both effect, but can be
+-- statically analysed.
 pingPongA :: IO ()
 pingPongA = fmap (\_ -> id) IO.getLine <*> IO.putStrLn "pong"
 

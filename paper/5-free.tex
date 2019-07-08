@@ -374,10 +374,10 @@ the resulting value is zero.
 \vspace{1mm}
 \begin{minted}[xleftmargin=10pt]{haskell}
 add :: Register -> Address -> Program Value
-add reg addr = let arg1     = read (Reg reg)
-                   arg2     = read (Cell addr)
-                   result   = (+)   <$> arg1 <*> arg2
-                   isZero   = (==0) <$> write (Reg reg) result
+add reg addr = let arg1   = read (Reg reg)
+                   arg2   = read (Cell addr)
+                   result = (+)   <$> arg1 <*> arg2
+                   isZero = (==0) <$> write (Reg reg) result
                in write (Flag Zero) (bool 0 1 <$> isZero)
 \end{minted}
 \vspace{1mm}

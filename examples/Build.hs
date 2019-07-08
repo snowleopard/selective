@@ -105,7 +105,9 @@ fetch key = liftSelect $ Fetch key id
 -- | Analyse a build task via free selective functors.
 --
 -- @
--- runBuild (fromJust $ cyclic "B1") == [Fetch "C1" (const ()),Fetch "B2",Fetch "A2"]
+-- runBuild (fromJust $ cyclic "B1") == [ Fetch "C1" (const ())
+--                                      , Fetch "B2" (const ())
+--                                      , Fetch "A2" (const ()) ]
 -- @
 runBuild :: Task k v -> [Fetch k v ()]
 runBuild task = getEffects (run task fetch)
