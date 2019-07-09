@@ -2,26 +2,9 @@
 
 [![Hackage version](https://img.shields.io/hackage/v/selective.svg?label=Hackage)](https://hackage.haskell.org/package/selective) [![Linux & OS X status](https://img.shields.io/travis/snowleopard/selective/master.svg?label=Linux%20%26%20OS%20X)](https://travis-ci.org/snowleopard/selective) [![Windows status](https://img.shields.io/appveyor/ci/snowleopard/selective/master.svg?label=Windows)](https://ci.appveyor.com/project/snowleopard/selective)
 
-
 This is a library for *selective applicative functors*, or just *selective functors*
 for short, an abstraction between applicative functors and monads, introduced in
 [this paper](https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf).
-
-Abstract of the paper:
-
-Applicative functors and monads have conquered the world of functional programming by
-providing general and powerful ways of describing effectful computations using pure
-functions. Applicative functors provide a way to compose *independent effects* that
-cannot depend on values produced by earlier computations, and all of which are declared
-statically. Monads extend the applicative interface by making it possible to compose
-*dependent effects*, where the value computed by one effect determines all subsequent
-effects, dynamically.
-
-This paper introduces an intermediate abstraction called *selective applicative functors*
-that requires all effects to be declared statically, but provides a way to select which
-of the effects to execute dynamically. We demonstrate applications of the new
-abstraction on several examples, including two real-life case studies.
-
 
 ## What are selective functors?
 
