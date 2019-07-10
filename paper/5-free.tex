@@ -1,4 +1,4 @@
-\section{Free selective functors}\label{sec-free}
+\section{Free Selective Functors}\label{sec-free}
 
 The idea of describing effectful computations using \emph{free constructions},
 such as \emph{free}~\cite{swierstra2008data} and \emph{freer
@@ -14,7 +14,7 @@ construction for \emph{rigid} selective functors
 (\S\ref{sec-free-construction}), and demonstrate it on two examples
 in~\S\ref{sec-free-ping-pong} and~\S\ref{sec-free-isa}.
 
-\subsection{Free construction}\label{sec-free-construction}
+\subsection{Free Construction}\label{sec-free-construction}
 
 In the free structures methodology, the essence of an effect is captured by a
 data type that encodes the ``commands'' which the effect provides, acting as a
@@ -158,7 +158,7 @@ obtaining a general free construction for selective functors~---~see an
 implementation in the library~\citep{selective2019haskell} and the supplementary
 material.
 
-\subsection{Ping-pong, freely}\label{sec-free-ping-pong}
+\subsection{Ping-pong, Freely}\label{sec-free-ping-pong}
 
 To illustrate the usage of free selective functors on a simple example, we
 implement the classic \cmd{Teletype} DSL~\cite{swierstra2008data} comprising
@@ -294,7 +294,7 @@ functors, as we show in~\S\ref{sec-free-isa}.
 % fetch key = liftSelect $ Fetch key id
 % \end{minted}
 
-\subsection{Analysis and simulation of processor instructions}\label{sec-free-isa}
+\subsection{Analysis and Simulation of Processor Instructions}\label{sec-free-isa}
 
 To demonstrate the free construction on a more interesting example, we apply it
 to analysis and simulation of a hypothetical instruction set architecture
@@ -309,7 +309,7 @@ tools both for static data flow analysis and simulation of programs with
 branching.
 
 \vspace{-1mm}
-\subsubsection{ISA semantics}
+\subsubsection{ISA Semantics}
 To work around some of the aforementioned limitations of the selective
 interface (namely, the lack of the bind operator), we represent the semantics of
 instructions thus:
@@ -439,7 +439,7 @@ However, there are important instructions whose semantics cannot be expressed
 in terms of the \hs{Applicative} interface, and this is where the presented
 free selective construction becomes irreplaceable.
 
-\subsubsection{Example 2. Conditional jump}
+\subsubsection{Example 2. Conditional Jump}
 
 Selective functors introduce limited dependencies between effectful
 computations, giving us enough power to express the semantics of branching
@@ -487,7 +487,7 @@ can possibly happen during the execution.
 % it will never get forced, e.g. the analysis will succeed and give us the same
 % result even if we supply \hs{undefined}.
 
-\subsubsection{Example 3. Blocks of instructions}
+\subsubsection{Example 3. Blocks of Instructions}
 
 Once we have implemented the semantics for a desired subset of an ISA, we can
 describe the semantics of sequences, or \emph{blocks}, of instructions by

@@ -1,4 +1,4 @@
-\section{Related work}\label{sec-related}
+\section{Related Work}\label{sec-related}
 
 Composing effectful computations is a rich research area and there is a vast
 body of related work. We build on the fundamental notions of applicative
@@ -9,29 +9,31 @@ isolated: the space between them is inhabited by
 arrows}~\citep{megacz2011hardware}, which we discuss in~\S\ref{sec-arrows}.
 
 The idea of extending the \hs{Applicative} interface to gain more expressive
-power is of course not new, and has been particularly popular in
-the area of \emph{applicative parser combinators}. For example,
-\citet{swierstra1996parsers} used an extended version of applicative functors
-that was later abstracted into the \hs{Alternative} type class, which is
-discussed in~\S\ref{sec-alternative-functors}. \citet{yallop2010phd} proposed
-to extend \hs{Applicative} with a method of type
+power is not new.~Parser combinators by \citet{swierstra1996parsers} paved the
+way to the \hs{Alternative} type class~(\S\ref{sec-alternative-functors}).
+\citet{yallop2010phd} proposed to extend \hs{Applicative} with a method of type
 \hs{f}~\hs{Bool}~\hs{->}~\hs{f}~\hs{a}~\hs{->}~\hs{f}~\hs{a}~\hs{->}~\hs{f}~\hs{a}
 ``for capturing computations where control flow is dynamic, but dataflow is
-static''; similar ideas were studied by the hardware design community in the
-context of synchronous~\citep{dennis1975preliminary} and
-asynchronous~\citep{mokhov2009cpog,sokolov2018reconfigurable} data flow
-circuits. We have also found early online discussions by~\citet{yorgey2009irc}
-and~\citet{permyakov2012irc}, which sought for type classes similar to
-\hs{Selective} but did not progress further. Finally, applicative combinators
-for \emph{observable recursion}~\citep{devriese2012finally,devriese2013fixing}
-can be combined with selective functors, which would allow us to statically
-analyse effectful computations with cycles.
+static''; similar ideas were studied by hardware designers in the context of
+synchronous~\citep{dennis1975preliminary} and
+asynchronous~\citep{mokhov2009cpog,sokolov2018reconfigurable} control circuits.
+We have also found early online
+discussions~\citep{yorgey2009irc,permyakov2012irc} that searched for type
+classes like \hs{Selective} but did not progress further. \hs{ApplicativeFix}
+proposed by~\citet{devriese2013fixing} can be combined with selective functors
+to allow for static analysis of effectful computations with cycles.
 
-Many selective combinators appeared earlier as custom functions, e.g.
+Many selective combinators appeared earlier on an ad hoc basis, including
 \Haxl's speculative execution functions \hs{pOr} and
-\hs{pAnd}~(\S\ref{sec-haxl}). Very similarly, so-called ``parallel conjunction''
-operator \hs{*&*} is used by Lazy SmallCheck for parallel predicate
-evaluation~\citep{runciman2008smallcheck}.
+\hs{pAnd}~(\S\ref{sec-haxl}), the ``parallel conjunction'' operator (\hs{*&*})
+in Lazy SmallCheck~\citep{runciman2008smallcheck}, and various examples
+of the \cmd{if} statement using special optimisations instead of relying on the
+monadic interface~\citep{incremental_bind}. Finally, the type signature of
+\hs{select} resembles an \emph{exception handler}~\cite{benton2001exceptional}
+where the first argument may raise an exception to be handled by the second
+argument~---~this explains why the initial blog post exploring selective
+functors used \hs{handle} as the operator name instead of
+\hs{select}~\cite{mokhov2019selective}.
 
 Our free construction for rigid selective functors~(\S\ref{sec-free}) is
 inspired by the works on free applicative functors~\citep{free-applicatives},
@@ -42,7 +44,7 @@ simplified by using free applicative functors, as
 demonstrated by~\citet{gibbons2016free}, and we believe that free selective
 functors uncover new opportunities in this area.
 
-\subsection{Arrows and profunctors}\label{sec-arrows}
+\subsection{Arrows and Profunctors}\label{sec-arrows}
 
 Arrows, introduced by~\citet{hughes2000arrows}, generalise functors by making
 the \emph{input} of a computation explicit. Rather than giving the type
@@ -53,7 +55,7 @@ values of type \hs{o} as output. There is a rich \emph{arrow hierarchy} of type
 classes, each providing a new ability, where \hs{ArrowChoice} is particularly
 relevant for us:
 
-\vspace{1mm}
+\vspace{0.5mm}
 \begin{minted}[xleftmargin=10pt,fontsize=\small]{haskell}
 class Category a                  -- Identity arrow, sequential arrow composition
 class Category a => Arrow       a -- Pure arrows, parallel arrow composition
@@ -61,7 +63,7 @@ class Arrow    a => ArrowChoice a -- Arrows with choice
 class Arrow    a => ArrowApply  a -- Arrows that take arrows as input
 class Arrow    a => ArrowLoop   a -- Arrows with loops
 \end{minted}
-\vspace{1mm}
+\vspace{0.5mm}
 
 \noindent
 The relationships between applicative functors, monads and arrows have been
@@ -72,18 +74,18 @@ and~\citet{rivas2017notions}, that applicative functors correspond to so called
 standard module \cmd{Control.Arrow} therefore provides the following
 definitions:
 
-\vspace{1mm}
-\begin{minted}[xleftmargin=10pt]{haskell}
+\vspace{0.5mm}
+\begin{minted}[xleftmargin=10pt,fontsize=\small]{haskell}
 newtype ArrowMonad a o = ArrowMonad (a () o) -- See Control.Arrow
 \end{minted}
-\vspace{1mm}
-\begin{minted}[xleftmargin=10pt]{haskell}
+\vspace{0mm}
+\begin{minted}[xleftmargin=10pt,fontsize=\small]{haskell}
 instance Arrow       a => Functor     (ArrowMonad a)
 instance Arrow       a => Applicative (ArrowMonad a)
 instance ArrowChoice a => ...                           -- Missing?!
 instance ArrowApply  a => Monad       (ArrowMonad a)
 \end{minted}
-\vspace{1mm}
+\vspace{0.5mm}
 
 \noindent
 Selective functors provide the missing counterpart for \hs{ArrowChoice} in the
@@ -129,7 +131,7 @@ Establishing a formal correspondence between \hs{ArrowChoice}, Cocartesian
 profunctors, and selective functors is beyond the scope of this paper and is
 left for future research.
 
-\subsection{Parsers and \hs{Alternative} type class}\label{sec-alternative-functors}
+\subsection{Parser Combinators}\label{sec-alternative-functors}
 
 \hs{Alternative} is a type class originally motivated by non-monadic parsers;
 see, for example,~\citet{swierstra1996parsers}, where the methods of the

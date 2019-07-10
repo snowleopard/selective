@@ -1,4 +1,4 @@
-\section{Static analysis}\label{sec-static}
+\section{Static Analysis}\label{sec-static}
 
 In this section we discuss a real-life application that benefits from static
 analysis of effectful computations -- the \Dune build system~\citep{dune}. We
@@ -7,7 +7,7 @@ over-approximation~(\S\ref{sec-dune-intro}), and then show how one can implement
 static analysis of build system dependencies using selective
 functors~(\S\ref{sec-static-example}).
 
-\subsection{Dune build system}\label{sec-dune-intro}
+\subsection{\Dune Build System}\label{sec-dune-intro}
 
 \Dune was originally developed at Jane Street and has by now become a standard
 build system for OCaml packages~\citep{dune}. At the time of writing, more than
@@ -67,7 +67,7 @@ suitability of selective functors for this task, we have successfully prototyped
 an alternative core for \Dune, which uses applicative and selective functors
 instead of arrows.
 
-\subsection{Static analysis of build dependencies}\label{sec-static-example}
+\subsection{Static Analysis of Build Dependencies}\label{sec-static-example}
 
 \Dune is written in OCaml, and we therefore developed an OCaml library for
 selective functors. In this section, however, we choose to continue using

@@ -1,4 +1,4 @@
-\section{Selective functors}\label{sec-selective}
+\section{Selective Functors}\label{sec-selective}
 
 In this section we introduce selective applicative functors, which we will
 subsequently refer to as simply \emph{selective functors}, for brevity. We start
@@ -149,6 +149,15 @@ hence they directly use \hs{select}~\hs{=}~\hs{selectA} in their \hs{Selective}
 instance definitions.
 
 \begin{table*}[t]
+\caption{Comparison of apply, select and bind operators in terms of their
+expressive power. We discuss static analysis in~\S\ref{sec-instances}
+and~\S\ref{sec-static}; parallelism and speculative execution
+in~\S\ref{sec-haxl}; conditional and arbitrary dynamic effects
+in~\S\ref{sec-combinators}~(\hs{whenS}) and~\S\ref{sec-free-ping-pong}
+(\hs{greeting}). Note that each operator has one unique ability that the two
+others lack.
+\label{tab-operators}}
+\vspace{-2mm}
 \smaller
 \centering
 \begin{tabular}{l||c|c|c}
@@ -159,16 +168,6 @@ Speculative execution of effects                & ~                & \checkmark 
 Static visibility and analysis of effects       & \checkmark       & \checkmark        & ~               \\
 Independent effects and parallelism             & \checkmark       & ~                 & ~               \\
 \end{tabular}
-\vspace{2mm}
-\caption{Comparison of apply, select and bind operators in terms of their
-expressive power. We discuss static analysis in~\S\ref{sec-instances}
-and~\S\ref{sec-static}; parallelism and speculative execution
-in~\S\ref{sec-haxl}; conditional and arbitrary dynamic effects
-in~\S\ref{sec-combinators}~(\hs{whenS}) and~\S\ref{sec-free-ping-pong}
-(\hs{greeting}). Note that each operator has one unique ability that the two
-others lack.
-\label{tab-operators}}
-\vspace{-5mm}
 \end{table*}
 
 Any \hs{Applicative} instance can thus be given a \hs{Selective} instance. The
@@ -183,15 +182,14 @@ apS f x = select (Left <$> f) ((&) <$> x)
 \vspace{1mm}
 
 \noindent
-Here we tag the given function \hs{f}~\hs{::}~\hs{a}~\hs{->}~\hs{b} with
-\hs{Left} and apply the reverse function application~(see Fig.~\ref{fig-std}) to
-the value \hs{x}~\hs{::}~\hs{a}, thus matching the type signature
-of \hs{select}. Since the \hs{Right} case is impossible, the effect
-\hs{f}~\hs{a} is executed unconditionally. Note however, that the equality
-\hs{(<*>)}~\hs{=}~\hs{apS} does not always hold. Selective functors that satisfy
-the law \hs{(<*>)}~\hs{=}~\hs{apS} will be called \emph{rigid}; they will turn
-out to have a simple normal form, which we will exploit in the free construction
-in~\S\ref{sec-free}.
+Here we tag the function \hs{a}~\hs{->}~\hs{b} with \hs{Left} and apply the
+reverse function application~(see Fig.~\ref{fig-std}) to~the~value \hs{a}, thus
+matching the type signature of \hs{select}. Since the \hs{Right} case is
+impossible, the effect \hs{x}~\hs{::}~\hs{f}~\hs{a} is executed unconditionally.
+Note, however, that in general \hs{<*>} and \hs{apS} are not equivalent.
+Selective functors that satisfy the property \hs{(<*>)}~\hs{=}~\hs{apS} will be
+called \emph{rigid}; they will turn out to have a simple normal form, which we
+will exploit in the free construction in~\S\ref{sec-free}.
 
 It is worth emphasising that the subclass relationships
 \hs{Applicative}~\hs{f}~\hs{=>}~\hs{Selective}~\hs{f} and
@@ -241,7 +239,7 @@ used throughout the paper.}\label{fig-std}
 \vspace{-3mm}
 \end{figure}
 
-\subsection{Selective combinators}\label{sec-combinators}
+\subsection{Selective Combinators}\label{sec-combinators}
 
 As a first use-case of the interface provided by selective functors, let us
 revisit our ping-pong example from~\S\ref{sec-intro} and implement the
@@ -289,8 +287,9 @@ not.
 
 A strong contender for playing the leading role in selective functors is the
 function \hs{branch} that, given an effectful computation
-\hs{x}~\hs{::}~\hs{f}~\hs{(Either}~\hs{a}~\hs{b)}, selects which subsequent
-computation, namely \hs{l}~\hs{::}~\hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{c)} or
+\hs{x}~\hs{::}~\hs{f}~\hs{(Either}~\hs{a}~\hs{b)}, selects which of the two
+subsequent computations, namely
+\hs{l}~\hs{::}~\hs{f}~\hs{(}\hs{a}~\hs{->}~\hs{c)} or
 \hs{r}~\hs{::}~\hs{f}~\hs{(}\hs{b}~\hs{->}~\hs{c)}, to execute:
 
 \vspace{1mm}
@@ -410,7 +409,7 @@ bindBool x f = ifS x (f False) (f True)
 This can be achieved not only for \hs{Bool}, but for any \emph{enumerable}
 type, as we will discuss in~\S\ref{sec-alt-multi}.
 
-\subsection{Examples of selective functors}\label{sec-instances}
+\subsection{Examples of Selective Functors}\label{sec-instances}
 
 Having explored various useful combinators that can be implemented on top of the
 minimalistic selective interface, in this section we look at several examples of

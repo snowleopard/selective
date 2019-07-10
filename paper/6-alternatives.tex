@@ -1,4 +1,4 @@
-\section{Alternative formulations for selective functors}
+\section{Alternative Formulations for Selective Functors}
 \label{sec-alternatives}
 
 This section discusses alternative versions of the \hs{Selective} type class
@@ -21,10 +21,10 @@ this paper, it would make it harder to reason about code with the
 possible for effects to depend on values; declaring such a significant ability
 by the \hs{Selective}~\hs{f} constraint is arguably a more prudent approach.
 
-\subsection{Multiway select operators}\label{sec-alt-multi}
+\subsection{Multiway Selective Functors}\label{sec-alt-multi}
 
 As mentioned in~\S\ref{sec-selective}, \hs{branch} is a strong contender to be
-the main method of the \hs{Selective} type class: it is parametric and all
+the main method of the \hs{Selective} type class; it is parametric and all
 selective combinators, including \hs{select} itself, can be derived from it:
 
 \vspace{1mm}
@@ -71,7 +71,7 @@ static analysis instances to record all possible cases, without incurring
 the $O(N)$ slowdown during the execution of an $N$-way branch.
 
 Interestingly, adding the ability to branch on infinite number of cases makes
-selective functors equivalent to monads, e.g. see~\citet{peebles2013sigma}.
+selective functors equivalent to monads, e.g. see~\citet{peebles2019sigma}.
 However, it is worth pointing out that static analysis of such
 infinitely-branching selective functors might take infinite time too.
 
@@ -83,7 +83,7 @@ we believe that adding \hs{branch} and/or an equivalent of \hs{bindS} to the
 \hs{Selective} type class would be beneficial for performance-sensitive
 applications.
 
-\subsection{Symmetric select operators}\label{sec-alt-symmetric}
+\subsection{Symmetric Selective Functors}\label{sec-alt-symmetric}
 
 In this section we address the asymmetry of \hs{select}, which we remarked on
 in~\S\ref{sec-haxl} and~\S\ref{sec-free}. The asymmetry can be seen in the fact
@@ -143,7 +143,7 @@ From the theoretical viewpoint, the type signature of \hs{biselect} makes it
 more apparent that a selective functor \hs{f} is a composition of an applicative
 functor \hs{f} and the \hs{Either} monad.
 
-\subsection{Equivalent operators}\label{sec-alt-equivalent}
+\subsection{Equivalent Formulations}\label{sec-alt-equivalent}
 
 In this section we briefly mention three equivalent operators that can be used
 instead of \hs{select}.
@@ -185,7 +185,7 @@ select :: Selective f => f (Either a b) -> f c -> f (Either a (b, c))
 \vspace{1mm}
 
           While this formulation requires an extra tuple allocation, it uses
-          only sums and products, and may therefore be useful in a context,
+          only sum and product types, and may therefore be useful in contexts
           where functions are unavailable.
 \end{itemize}
 
