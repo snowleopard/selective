@@ -1,5 +1,5 @@
-{-# LANGUAGE DeriveFunctor, EmptyCase, GADTs, RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables, TupleSections #-}
+{-# LANGUAGE DeriveFunctor, EmptyCase, FlexibleInstances, GADTs, RankNTypes #-}
+{-# LANGUAGE MultiParamTypeClasses, ScopedTypeVariables, TupleSections #-}
 module Sketch where
 
 import Control.Arrow hiding (first, second)
@@ -330,11 +330,7 @@ fromM :: SelectiveM f => f (Either a b) -> f (a -> b) -> f b
 fromM x f = either id (\(a, f) -> f a) <$> (fmap swapEither x |**| fmap Right f)
 
 toM :: Selective f => f (Either e a) -> f (Either e b) -> f (Either e (a, b))
-toM a b = select ((fmap Left . swapEither) <$> a) ((\e a -> fmap (a,) e) <$> b)
-
--- | Swap @Left@ and @Right@.
-swapEither :: Either a b -> Either b a
-swapEither = either Right Left
+toM = biselect
 
 -- Proof that if select = selectM, and <*> = ap, then <*> = apS.
 apSEqualsApply :: (Selective f, Monad f) => f (a -> b) -> f a -> f b
@@ -469,6 +465,28 @@ branchC x l r = choose x $ Choice $ \c -> case c of { CLeft -> l; CRight -> r }
 chooseS :: Selective f => f (Either a b) -> Choice (f (a -> c)) (f (b -> c)) -> f c
 chooseS x (Choice c) = branch x (c CLeft) (c CRight)
 
+------------------------------- ApplicativeError -------------------------------
+-- See https://twitter.com/LukaJacobowitz/status/1148756733243940864.
+
+class Applicative f => ApplicativeEither f e where
+    raise  :: e -> f a
+    handle :: f a -> f (e -> a) -> f a -- Note that the handler may fail too
+
+-- If the first computation succeeds with an @a@, this function just returns it.
+-- Otherwise, it attempts to handle the error @e@ by running the second
+-- computation. If the latter fails too, we return the very first error @e@,
+-- otherwise we handle the error with the obtained function @e -> a@ and return
+-- the resulting value @a@.
+handleS :: Selective f => f (Either e a) -> f (Either e (e -> a)) -> f (Either e a)
+handleS x y = select (second Right <$> x) (handlePure <$> y)
+  where
+    handlePure :: Either e (e -> a) -> e -> Either e a
+    handlePure (Left  _) e = Left e
+    handlePure (Right f) e = Right (f e)
+
+instance Selective f => ApplicativeEither (ComposeEither f e) e where
+    raise                                      = ComposeEither . pure . Left
+    handle (ComposeEither x) (ComposeEither y) = ComposeEither (handleS x y)
 ------------------------------- Free ArrowChoice -------------------------------
 
 -- A free 'ArrowChoice' built on top of base components @f i o@.

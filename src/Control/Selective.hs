@@ -22,7 +22,10 @@ module Control.Selective (
     foldS, anyS, allS, bindS, Cases, casesEnum, cases, matchS, matchM,
 
     -- * Selective functors
-    SelectA (..), SelectM (..), Over (..), Under (..), Validation (..)
+    SelectA (..), SelectM (..), Over (..), Under (..), Validation (..),
+
+    -- * Miscellaneous
+    swapEither, ComposeEither (..)
     ) where
 
 import Control.Applicative
@@ -473,6 +476,7 @@ toArrow :: Arrow a => ArrowMonad a (i -> o) -> a i o
 toArrow (ArrowMonad f) = arr (\x -> ((), x)) >>> first f >>> arr (uncurry ($))
 
 ---------------------------------- Alternative ---------------------------------
+-- | Composition of a functor @f@ with the 'Either' monad.
 newtype ComposeEither f e a = ComposeEither (f (Either e a))
     deriving Functor
 
