@@ -4,7 +4,7 @@
 
 This is a library for *selective applicative functors*, or just *selective functors*
 for short, an abstraction between applicative functors and monads, introduced in
-[this paper](https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf).
+[this paper](https://dl.acm.org/ft_gateway.cfm?id=3341694).
 
 ## What are selective functors?
 
