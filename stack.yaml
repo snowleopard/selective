@@ -1,3 +1,5 @@
 packages:
 - '.'
 resolver: lts-13.21
+extra-deps:
+- some-1.0.0.3

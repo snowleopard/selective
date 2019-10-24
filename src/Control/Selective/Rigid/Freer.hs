@@ -23,14 +23,104 @@ module Control.Selective.Rigid.Freer (
     Select (..), liftSelect,
 
     -- * Static analysis
-    getPure, getEffects, getNecessaryEffect, runSelect, foldSelect
+    getPure, getEffects, getNecessaryEffect, runSelect, foldSelect,
+
+    -- ** Analysis using 'Some'
+    
+    -- | Freer formulation is useful with GADTs, which aren't 'Functor's.
+    --
+    -- === __Examples__
+    --
+    -- >>> :set -XGADTs -XStandaloneDeriving
+    -- 
+    -- An interpreter of 'CMD's.
+    -- We can flip different coins,
+    -- and display strings.
+    --
+    -- >>> data CMD a where FlipCoin :: Int -> CMD Bool; Display :: String -> CMD ()
+    -- 
+    -- 'Show' instance:
+    --
+    -- >>> deriving instance Show (CMD a)
+    -- >>> instance GShow CMD where gshowsPrec = showsPrec
+    --
+    -- Lifted commands
+    --
+    -- >>> let flipCoin n = liftSelect (FlipCoin n)
+    -- >>> let display s  = liftSelect (Display s)
+    --
+    -- Next we can define a small program:
+    --
+    -- >>> let program = ifS (flipCoin 0) (display "Heads") (display "Tails")
+    --
+    -- This is program is clearly not pure:
+    --
+    -- >>> getPure program
+    -- Nothing
+    --
+    -- The blocked action is unsurpringly a coin toss:
+    --
+    -- >>> getSomeNecessaryEffect program
+    -- Just (Some (FlipCoin 0))
+    --
+    -- But we can also see all the effects the program may perform
+    --
+    -- >>> getEffectsSome program
+    -- [Some (FlipCoin 0),Some (Display "Heads"),Some (Display "Tails")]
+    --
+    -- We can also flip two coins:
+    --
+    -- >>> let program2 = ifS (liftA2 xor (flipCoin 1) (flipCoin 2)) (display "Different") (display "Same")
+    --
+    -- This is an example where strict normal form trashes the analysys:
+    -- @'FlipCoin' 2@ is also necessary, as we use (cleverly picked) 'xor'
+    -- operation which cannot short-circuit.
+    -- The 'getSomeNecessaryEffect' (and 'getNecessaryEffect')
+    -- return at most one effect.
+    --
+    -- >>> getSomeNecessaryEffect program2
+    -- Just (Some (FlipCoin 1))
+    --
+    -- We can also interpret the program, first we need to define a function
+    -- for interpretting individual effects:
+    --
+    -- >>> :{
+    -- cmd :: CMD a -> IO a
+    -- cmd (FlipCoin n) = do
+    --     x <- randomIO
+    --     putStrLn $ "flip coin " ++ show n ++ ": " ++ show x
+    --     return x
+    -- cmd (Display s)  = putStrLn s
+    -- :}
+    --
+    -- Then we can interpret complete program:
+    --
+    -- >>> runSelect cmd program2
+    -- flip coin 1: True
+    -- flip coin 2: False
+    -- Different
+    --
+    getEffectsSome,
+    getSomeNecessaryEffect,
     ) where
 
-import Control.Monad.Trans.Except
 import Control.Selective
 import Data.Bifunctor
 import Data.Function
 import Data.Functor
+import Data.Some (Some, mkSome)
+import Data.Monoid (First (..))
+
+-- $setup
+-- >>> import Data.GADT.Show
+-- >>> import Control.Applicative (liftA2)
+-- >>> import Data.Bits (xor)
+--
+-- deterministic "random" generator
+--
+-- >>> import Data.IORef
+-- >>> ref <- newIORef True
+-- >>> randomIO = atomicModifyIORef' ref (\x -> (not x, x))
 
 -- Inspired by free applicative functors by Capriotti and Kaposi.
 -- See: https://arxiv.org/pdf/1403.0749.pdf
@@ -91,11 +181,15 @@ getPure = runSelect (const Nothing)
 getEffects :: Functor f => Select f a -> [f ()]
 getEffects = foldSelect (pure . void)
 
+-- | Like 'getEffects' but not requiring @'Functor' f@.
+getEffectsSome :: Select f a -> [Some f]
+getEffectsSome = foldSelect (pure . mkSome)
+
 -- | Extract the necessary effect from a free selective computation. Note: there
 -- can be at most one effect that is statically guaranteed to be necessary.
 getNecessaryEffect :: Functor f => Select f a -> Maybe (f ())
-getNecessaryEffect = leftToMaybe . runExcept . runSelect (throwE . void)
+getNecessaryEffect = getFirst . foldSelect (First . Just . void)
 
-leftToMaybe :: Either a b -> Maybe a
-leftToMaybe (Left a) = Just a
-leftToMaybe _        = Nothing
+-- | Like 'getNecessaryEffect' but not requiring @'Functor' f@.
+getSomeNecessaryEffect :: Select f a -> Maybe (Some f)
+getSomeNecessaryEffect = getFirst . foldSelect (First . Just . mkSome)
