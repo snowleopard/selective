@@ -18,7 +18,7 @@ module Control.Selective (
     Selective (..), (<*?), branch, selectA, apS, selectM,
 
     -- * Conditional combinators
-    ifS, whenS, fromMaybeS, orElse, andAlso, untilRight, whileS, (<||>), (<&&>),
+    ifS, grdS, condS, whenS, fromMaybeS, orElse, andAlso, untilRight, whileS, (<||>), (<&&>),
     foldS, anyS, allS, bindS, Cases, casesEnum, cases, matchS, matchM,
 
     -- * Selective functors
@@ -217,6 +217,23 @@ eliminate x fb fa = select (match x <$> fa) (const . Right <$> fb)
   where
     match _ (Right y) = Right (Right y)
     match x (Left  y) = if x == y then Left () else Right (Left y)
+
+-- Guard function used in McCarthy's conditional
+-- | It provides information about the outcome of testing @p@ on some input @a@,
+-- encoded in terms of the coproduct injections without losing the input
+-- @a@ itself.
+grdS :: Selective f => f (a -> Bool) -> f a -> f (Either a a)
+grdS f a = (selector <$> (f <*> a)) <*> a
+  where
+      selector = bool Right Left 
+
+-- | McCarthy's conditional, denoted p -> f,g is a well-known functional
+-- combinator, which suggests that, to reason about conditionals, one may 
+-- seek helpin the algebra of coproducts.
+-- This combinator is very similar to the very nature of the 'select'
+-- operator and benefits from a series of properties and laws.
+condS :: Selective f => f (b -> Bool) -> f (b -> c) -> f (b -> c) -> f b -> f c 
+condS p f g = (\r -> branch r f g) . grdS p
 
 -- | A list of values, equipped with a fast membership test.
 data Cases a = Cases [a] (a -> Bool)
