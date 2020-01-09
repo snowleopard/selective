@@ -229,7 +229,8 @@ grdS f a = (selector <$> (f <*> a)) <*> a
 
 -- | McCarthy's conditional, denoted p -> f,g is a well-known functional
 -- combinator, which suggests that, to reason about conditionals, one may 
--- seek helpin the algebra of coproducts.
+-- seek help in the algebra of coproducts.
+--
 -- This combinator is very similar to the very nature of the 'select'
 -- operator and benefits from a series of properties and laws.
 condS :: Selective f => f (b -> Bool) -> f (b -> c) -> f (b -> c) -> f b -> f c 
