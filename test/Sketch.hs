@@ -452,7 +452,7 @@ t7 x y z =
 -- | It provides information about the outcome of testing @p@ on some input @a@,
 -- encoded in terms of the coproduct injections without losing the input
 -- @a@ itself.
-grdS :: Selective f => f (a -> Bool) -> f a -> f (Either a a)
+grdS :: Applicative f => f (a -> Bool) -> f a -> f (Either a a)
 grdS f a = (selector <$> (f <*> a)) <*> a
   where
       selector = bool Right Left 
