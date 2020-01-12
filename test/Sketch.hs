@@ -444,6 +444,28 @@ t7 x y z =
         ((\mbc cd -> maybe (Right Nothing) (\bc -> Left $ fmap ((cd . bc) .)) mbc) <$> y))
         ((&) <$> z)
 
+------------------------ McCarthy's Conditional combinator -------------------------
+-- See: http://www4.di.uminho.pt/~jno/ps/pdbc.pdf
+-- And also: https://themattchan.com/docs/algprog.pdf
+
+-- Guard function used in McCarthy's conditional
+-- | It provides information about the outcome of testing @p@ on some input @a@,
+-- encoded in terms of the coproduct injections without losing the input
+-- @a@ itself.
+grdS :: Applicative f => f (a -> Bool) -> f a -> f (Either a a)
+grdS f a = (selector <$> (f <*> a)) <*> a
+  where
+      selector = bool Right Left 
+
+-- | McCarthy's conditional, denoted p -> f,g is a well-known functional
+-- combinator, which suggests that, to reason about conditionals, one may 
+-- seek help in the algebra of coproducts.
+--
+-- This combinator is very similar to the very nature of the 'select'
+-- operator and benefits from a series of properties and laws.
+condS :: Selective f => f (b -> Bool) -> f (b -> c) -> f (b -> c) -> f b -> f c 
+condS p f g = (\r -> branch r f g) . grdS p
+
 ------------------------ Carter Schonwald's copatterns -------------------------
 -- See: https://github.com/cartazio/symmetric-monoidal/blob/15b209953b7d4a47651f615b02dbb0171de8af40/src/Control/Monoidal.hs#L93
 -- And also: https://twitter.com/andreymokhov/status/1102648479841701888
