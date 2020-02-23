@@ -36,6 +36,7 @@ library
     hs-source-dirs:     src
     exposed-modules:    Control.Selective,
                         Control.Selective.Free,
+                        Control.Selective.Multi,
                         Control.Selective.Rigid.Free,
                         Control.Selective.Rigid.Freer
     build-depends:      base         >= 4.7     && < 5,
