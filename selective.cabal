@@ -1,11 +1,11 @@
 name:          selective
-version:       0.3
+version:       0.4
 synopsis:      Selective applicative functors
 license:       MIT
 license-file:  LICENSE
 author:        Andrey Mokhov <andrey.mokhov@gmail.com>, github: @snowleopard
 maintainer:    Andrey Mokhov <andrey.mokhov@gmail.com>, github: @snowleopard
-copyright:     Andrey Mokhov, 2018-2019
+copyright:     Andrey Mokhov, 2018-2020
 homepage:      https://github.com/snowleopard/selective
 category:      Control
 build-type:    Simple
@@ -36,6 +36,7 @@ library
     hs-source-dirs:     src
     exposed-modules:    Control.Selective,
                         Control.Selective.Free,
+                        Control.Selective.Multi,
                         Control.Selective.Rigid.Free,
                         Control.Selective.Rigid.Freer
     build-depends:      base         >= 4.7     && < 5,
