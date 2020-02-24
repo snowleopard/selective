@@ -167,8 +167,7 @@ branch x f g = match (eitherToSigma <$> x) $ \case
 apS :: Selective f => f a -> f (a -> b) -> f b
 apS x f = match (inject One <$> x) (\One -> f)
 
--- | A restricted version of monadic bind. Fails with an error if the 'Bounded'
--- and 'Enum' instances for @a@ do not cover all values of @a@.
+-- | A restricted version of monadic bind.
 bindS :: (Enum a, Selective f) => f a -> (a -> f b) -> f b
 bindS x f = match (many <$> x) (\(Many x) -> const <$> f x)
 
