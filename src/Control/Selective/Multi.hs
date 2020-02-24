@@ -232,7 +232,7 @@ matchM sigma pi = sigma >>= \case Sigma t x -> ($x) <$> pi t
 -- Note that this looks different than the standard formulation of Pi types.
 -- Maybe it's just all wrong!
 --
--- See 'AB', 'pairToPi' and 'piToPair' for an example.
+-- See 'Two', 'pairToPi' and 'piToPair' for an example.
 type (~>) t u = forall x. t x -> u x
 infixl 4 ~>
 
