@@ -1,5 +1,9 @@
 # Change log
 
+## 0.4
+
+* Add multi-way selective functors: `Control.Selective.Multi`.
+
 ## 0.3
 
 * Add freer rigid selective functors: `Control.Selective.Rigid.Freer`.
