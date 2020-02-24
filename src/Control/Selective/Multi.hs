@@ -181,7 +181,7 @@ instance Monoid m => Applicative (Over m) where
     Over x <*> Over y = Over (mappend x y)
 
 instance Monoid m => Selective (Over m) where
-    match (Over m) pi = Over (m <> mconcat ms)
+    match (Over m) pi = Over (mconcat (m : ms))
       where
         ms = [ getOver (pi t) | Some t <- enumerate ]
 
