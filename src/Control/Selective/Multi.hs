@@ -45,7 +45,6 @@ module Control.Selective.Multi (
 
 import Control.Applicative ((<**>))
 import Data.Functor.Identity
-import Data.Semigroup ((<>))
 
 ------------------------ Meet two friends: Sigma and Pi ------------------------
 -- | A generalised sum type where @t@ stands for the type of constructor "tags".
