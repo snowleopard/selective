@@ -1,5 +1,5 @@
 name:          selective
-version:       0.4
+version:       0.4.1
 synopsis:      Selective applicative functors
 license:       MIT
 license-file:  LICENSE
@@ -74,7 +74,7 @@ test-suite test
     build-depends:      base                   >= 4.7     && < 5,
                         containers             >= 0.5.5.1 && < 0.7,
                         mtl                    >= 2.2.1   && < 2.3,
-                        QuickCheck             >= 2.8     && < 2.14,
+                        QuickCheck             >= 2.8     && < 2.15,
                         selective,
                         tasty                  >= 0.11,
                         tasty-expected-failure >= 0.11,
