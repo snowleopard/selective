@@ -453,9 +453,11 @@ t7 x y z =
 -- encoded in terms of the coproduct injections without losing the input
 -- @a@ itself.
 grdS :: Applicative f => f (a -> Bool) -> f a -> f (Either a a)
-grdS f a = (selector <$> (f <*> a)) <*> a
+grdS f a = selector <$> applyF f (dup <$> a)
   where
-      selector = bool Right Left 
+      dup x = (x, x)
+      applyF fab faa = bimap <$> fab <*> pure id <*> faa
+      selector (b, x) = bool (Right x) (Left x) b
 
 -- | McCarthy's conditional, denoted p -> f,g is a well-known functional
 -- combinator, which suggests that, to reason about conditionals, one may 
