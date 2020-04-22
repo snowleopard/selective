@@ -455,17 +455,17 @@ t7 x y z =
 grdS :: Applicative f => f (a -> Bool) -> f a -> f (Either a a)
 grdS f a = selector <$> applyF f (dup <$> a)
   where
-      dup x = (x, x)
-      applyF fab faa = bimap <$> fab <*> pure id <*> faa
-      selector (b, x) = bool (Right x) (Left x) b
+    dup x = (x, x)
+    applyF fab faa = bimap <$> fab <*> pure id <*> faa
+    selector (b, x) = bool (Right x) (Left x) b
 
 -- | McCarthy's conditional, denoted p -> f,g is a well-known functional
--- combinator, which suggests that, to reason about conditionals, one may 
+-- combinator, which suggests that, to reason about conditionals, one may
 -- seek help in the algebra of coproducts.
 --
 -- This combinator is very similar to the very nature of the 'select'
 -- operator and benefits from a series of properties and laws.
-condS :: Selective f => f (b -> Bool) -> f (b -> c) -> f (b -> c) -> f b -> f c 
+condS :: Selective f => f (b -> Bool) -> f (b -> c) -> f (b -> c) -> f b -> f c
 condS p f g = (\r -> branch r f g) . grdS p
 
 ------------------------ Carter Schonwald's copatterns -------------------------
