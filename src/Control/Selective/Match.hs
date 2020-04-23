@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DeriveFunctor, FunctionalDependencies, GADTs, RankNTypes #-}
 {-# LANGUAGE MultiParamTypeClasses, ScopedTypeVariables, LambdaCase #-}
 -----------------------------------------------------------------------------
@@ -18,6 +19,7 @@
 -----------------------------------------------------------------------------
 module Control.Selective.Match where
 
+import Data.Kind
 import Prelude hiding (pure)
 
 -- | A generalised sum type where @t@ stands for the type of constructor "tags".
@@ -64,23 +66,82 @@ data Many a b where
 many :: a -> Sigma (Many a)
 many a = Sigma (Many a) ()
 
+-- | Hide the type of the payload a tag.
+--
+-- There is a whole library dedicated to this nice little GADT:
+-- http://hackage.haskell.org/package/some.
+data Some t where
+    Some :: t a -> Some t
+
+class Unconstrained (t :: * -> *) where
+
+instance Unconstrained Zero where
+instance Unconstrained (One a) where
+instance Unconstrained (Two a b) where
+instance Unconstrained (Many a) where
+
+-- | A class of tags that can be enumerated.
+--
+-- An valid instance must list every tag in the resulting list exactly once.
+class Unconstrained t => Countable t where
+    enumerate :: [Some t]
+
+instance Countable Zero where
+    enumerate = []
+
+instance Countable (One a) where
+    enumerate = [single]
+
+instance Countable (Two a b) where
+    enumerate = [Some A, Some B]
+
+-- | Like 'Countable' but the list has finite length.
+class Countable t => Finite t where
+
+instance Finite Zero where
+instance Finite (One a) where
+instance Finite (Two a b) where
+
+-- | Like 'Finite' but the list has length equal to one, so @enumerate@ must be
+-- equal to @[single]@.
+class Finite t => Single t where
+    single :: Some t
+
+instance Single (One a) where
+    single = Some One
+
 -- | Generalised pattern matching on a Sigma type using a Pi type to describe
 -- how to handle each case.
 matchPure :: Sigma t -> (forall x. t x -> x -> a) -> a
 matchPure (Sigma t x) pi = pi t x
 
 -- | A type class that allows lifting 'matchPure' into an effect 'f'.
-class Functor f => Match t f | f -> t where
+class Functor f => Match f where
+    type Tag f :: (* -> *) -> Constraint
     pure  :: a -> f a
-    match :: f (Sigma t) -> (forall x. t x -> f (x -> a)) -> f a
+    match :: Tag f t => f (Sigma t) -> (forall x. t x -> f (x -> a)) -> f a
 
-apply :: (t ~ One a, Match t f) => f (a -> b) -> f a -> f b
+matchA :: (Applicative f, t ~ One x) => f (Sigma t) -> (forall x. t x -> f (x -> a)) -> f a
+matchA sigma pi = (\(Sigma One x) -> ($x)) <$> sigma <*> pi One
+
+matchM :: Monad f => f (Sigma t) -> (forall x. t x -> f (x -> a)) -> f a
+matchM sigma pi = sigma >>= \(Sigma t x) -> ($x) <$> pi t
+
+fmapLike :: (Tag f (One a), Match f) => a -> f (a -> b) -> f b
+fmapLike a f = match (pure (Sigma One a)) (\One -> f)
+
+apply :: (Tag f (One a), Match f) => f (a -> b) -> f a -> f b
 apply f x = match (Sigma One <$> x) (\One -> f)
 
-select :: (t ~ Two a b, Match t f) => f (Either a b) -> f (a -> b) -> f b
+select :: (Tag f (Two a b), Match f) => f (Either a b) -> f (a -> b) -> f b
 select x f = match (eitherToSigma <$> x) $ \case
     A -> f
     B -> pure id
 
-bind :: (t ~ Many a, Match t f) => f a -> (a -> f b) -> f b
+bind :: (Tag f (Many a), Match f) => f a -> (a -> f b) -> f b
 bind x f = match (many <$> x) (\(Many x) -> const <$> f x)
+
+instance Match Maybe where
+    type Tag Maybe = Unconstrained
+    pure = Just
+    match = matchM

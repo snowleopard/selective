@@ -203,11 +203,11 @@ class Functor f => ApplicativeS f where
 
 -- | Recover the application operator '<*>' from 'matchOne'.
 ap :: ApplicativeS f => f a -> f (a -> b) -> f b
-ap x f = matchOne (inject One <$> x) (\One -> f)
+ap x f = matchOne (Sigma One <$> x) (\One -> f)
 
 -- | Every 'Applicative' is also an 'ApplicativeS'.
 matchA :: (Applicative f, t ~ One x) => f (Sigma t) -> (forall x. t x -> f (x -> a)) -> f a
-matchA x pi = (\case (Sigma One x) -> x) <$> x <**> pi One
+matchA x pi = (\(Sigma One x) -> x) <$> x <**> pi One
 
 -- | An alternative definition of monads, as witnessed by 'bind' and 'matchM'.
 -- This class is almost like 'Selective' but has no the constraint on @t@.
