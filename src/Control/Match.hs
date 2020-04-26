@@ -2,21 +2,16 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, ScopedTypeVariables, LambdaCase #-}
 -----------------------------------------------------------------------------
 -- |
--- Module     : Control.Selective.Match
+-- Module     : Control.Match
 -- Copyright  : (c) Andrey Mokhov 2018-2020
 -- License    : MIT (see the file LICENSE)
 -- Maintainer : andrey.mokhov@gmail.com
 -- Stability  : experimental
 --
--- This is a library for /selective applicative functors/, or just
--- /selective functors/ for short, an abstraction between applicative functors
--- and monads, introduced in this paper:
--- https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf.
---
 -- An experiment in expressing Applicative, Selective and Monad using the Match
 -- type class.
 -----------------------------------------------------------------------------
-module Control.Selective.Match where
+module Control.Match where
 
 import Control.Applicative ((<**>))
 import Data.Functor.Const

@@ -34,9 +34,9 @@ source-repository head
 
 library
     hs-source-dirs:     src
-    exposed-modules:    Control.Selective,
+    exposed-modules:    Control.Match,
+                        Control.Selective,
                         Control.Selective.Free,
-                        Control.Selective.Match,
                         Control.Selective.Multi,
                         Control.Selective.Rigid.Free,
                         Control.Selective.Rigid.Freer
