@@ -174,5 +174,5 @@ matchM sigma pi = sigma >>= \(Sigma t x) -> ($x) <$> pi t
 
 instance Match Maybe where
     type Tag Maybe = Unconstrained
-    pure  = pure
+    pure  = Just
     match = matchM
