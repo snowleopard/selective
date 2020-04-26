@@ -1,6 +1,5 @@
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE DeriveFunctor, FunctionalDependencies, GADTs, RankNTypes #-}
-{-# LANGUAGE MultiParamTypeClasses, ScopedTypeVariables, LambdaCase #-}
+{-# LANGUAGE DeriveFunctor, TypeFamilies, GADTs, RankNTypes #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, ScopedTypeVariables, LambdaCase #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Control.Selective.Match
@@ -19,6 +18,8 @@
 -----------------------------------------------------------------------------
 module Control.Selective.Match where
 
+import Control.Applicative ((<**>))
+import Data.Functor.Const
 import Data.Kind
 import Prelude hiding (pure)
 
@@ -73,6 +74,7 @@ many a = Sigma (Many a) ()
 data Some t where
     Some :: t a -> Some t
 
+-- | A class of tags with no constraint.
 class Unconstrained (t :: * -> *) where
 
 instance Unconstrained Zero where
@@ -82,7 +84,7 @@ instance Unconstrained (Many a) where
 
 -- | A class of tags that can be enumerated.
 --
--- An valid instance must list every tag in the resulting list exactly once.
+-- A valid instance must list every tag in the resulting list exactly once.
 class Unconstrained t => Countable t where
     enumerate :: [Some t]
 
@@ -90,7 +92,7 @@ instance Countable Zero where
     enumerate = []
 
 instance Countable (One a) where
-    enumerate = [single]
+    enumerate = [Some single]
 
 instance Countable (Two a b) where
     enumerate = [Some A, Some B]
@@ -103,12 +105,16 @@ instance Finite (One a) where
 instance Finite (Two a b) where
 
 -- | Like 'Finite' but the list has length equal to one, so @enumerate@ must be
--- equal to @[single]@.
+-- equal to @[Some single]@.
 class Finite t => Single t where
-    single :: Some t
+    type Payload t
+    single :: t (Payload t)
+    matchSingle :: Sigma t -> Payload t
 
 instance Single (One a) where
-    single = Some One
+    type Payload (One a) = a
+    single = One
+    matchSingle (Sigma One x) = x
 
 -- | Generalised pattern matching on a Sigma type using a Pi type to describe
 -- how to handle each case.
@@ -121,27 +127,52 @@ class Functor f => Match f where
     pure  :: a -> f a
     match :: Tag f t => f (Sigma t) -> (forall x. t x -> f (x -> a)) -> f a
 
-matchA :: (Applicative f, t ~ One x) => f (Sigma t) -> (forall x. t x -> f (x -> a)) -> f a
-matchA sigma pi = (\(Sigma One x) -> ($x)) <$> sigma <*> pi One
-
-matchM :: Monad f => f (Sigma t) -> (forall x. t x -> f (x -> a)) -> f a
-matchM sigma pi = sigma >>= \(Sigma t x) -> ($x) <$> pi t
-
-fmapLike :: (Tag f (One a), Match f) => a -> f (a -> b) -> f b
+fmapLike :: (Match f, Tag f (One a)) => a -> f (a -> b) -> f b
 fmapLike a f = match (pure (Sigma One a)) (\One -> f)
 
-apply :: (Tag f (One a), Match f) => f (a -> b) -> f a -> f b
+apply :: (Match f, Tag f (One a)) => f (a -> b) -> f a -> f b
 apply f x = match (Sigma One <$> x) (\One -> f)
 
-select :: (Tag f (Two a b), Match f) => f (Either a b) -> f (a -> b) -> f b
+select :: (Match f, Tag f (Two a b)) => f (Either a b) -> f (a -> b) -> f b
 select x f = match (eitherToSigma <$> x) $ \case
     A -> f
     B -> pure id
 
-bind :: (Tag f (Many a), Match f) => f a -> (a -> f b) -> f b
+bind :: (Match f, Tag f (Many a)) => f a -> (a -> f b) -> f b
 bind x f = match (many <$> x) (\(Many x) -> const <$> f x)
+
+-- | Any applicative can be given a 'Match' instance.
+newtype MatchA f a = MatchA { getMatchA :: f a }
+    deriving (Functor, Applicative)
+
+instance Applicative f => Match (MatchA f) where
+    type Tag (MatchA f) = Single
+    pure = pure
+    match = matchA
+
+-- | Any monad can be given a 'Match' instance.
+newtype MatchM f a = MatchM { getMatchM :: f a }
+    deriving (Functor, Applicative, Monad)
+
+instance Monad f => Match (MatchM f) where
+    type Tag (MatchM f) = Unconstrained
+    pure = return
+    match = matchM
+
+matchA :: (Applicative f, Single t) => f (Sigma t) -> (forall x. t x -> f (x -> a)) -> f a
+matchA sigma pi = matchSingle <$> sigma <**> pi single
+
+instance Monoid m => Match (Const m) where
+    type Tag (Const m) = Single
+    pure _ = Const mempty
+    match (Const x) pi = Const (mappend x y)
+      where
+        y = getConst (pi single)
+
+matchM :: Monad f => f (Sigma t) -> (forall x. t x -> f (x -> a)) -> f a
+matchM sigma pi = sigma >>= \(Sigma t x) -> ($x) <$> pi t
 
 instance Match Maybe where
     type Tag Maybe = Unconstrained
-    pure = Just
+    pure  = pure
     match = matchM

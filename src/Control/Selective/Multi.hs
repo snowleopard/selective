@@ -119,7 +119,7 @@ data Some t where
 
 -- | A class of tags that can be enumerated.
 --
--- An valid instance must list every tag in the resulting list exactly once.
+-- A valid instance must list every tag in the resulting list exactly once.
 class Enumerable t where
     enumerate :: [Some t]
 
