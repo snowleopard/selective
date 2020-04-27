@@ -14,6 +14,7 @@ module Control.Match.Profunctor where
 
 import Data.Kind
 import Prelude hiding (id, (.))
+import qualified Prelude
 
 -- | A generalised sum type where @t@ stands for the type of constructor "tags".
 -- Each tag has a type parameter @x@ which determines the type of the payload.
