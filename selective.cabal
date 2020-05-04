@@ -42,7 +42,8 @@ library
                         Control.Selective.Free,
                         Control.Selective.Multi,
                         Control.Selective.Rigid.Free,
-                        Control.Selective.Rigid.Freer
+                        Control.Selective.Rigid.Freer,
+                        Control.United
     build-depends:      base         >= 4.7     && < 5,
                         containers   >= 0.5.5.1 && < 0.7,
                         transformers >= 0.4.2.0 && < 0.6
