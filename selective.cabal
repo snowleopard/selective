@@ -34,7 +34,8 @@ source-repository head
 
 library
     hs-source-dirs:     src
-    exposed-modules:    Control.Match,
+    exposed-modules:    Control.Batch,
+                        Control.Match,
                         Control.Match.Arrow,
                         Control.Match.Profunctor,
                         Control.Selective,
