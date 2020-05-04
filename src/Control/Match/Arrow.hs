@@ -120,6 +120,8 @@ class Category a => Match a where
     arr   :: (i -> o) -> a i o
     match :: Tag a t => a i (Sigma t) -> (forall x. t x -> a x o) -> a i o
 
+-- Interestingly, this matches the type Mono from this blog post:
+-- https://elvishjerricco.github.io/2017/03/23/applicative-sorting.html
 data ManyT a b c where
     ManyT :: a -> ManyT a b b
 
