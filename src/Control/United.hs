@@ -38,6 +38,8 @@ data Two a b c where
     A :: Two a b a
     B :: Two a b b
 
+-- Interestingly, this matches the type Mono from this blog post:
+-- https://elvishjerricco.github.io/2017/03/23/applicative-sorting.html
 -- | A potentially uncountable collection of tags.
 data Many a b c where
     Many :: a -> Many a b b

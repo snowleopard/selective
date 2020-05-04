@@ -137,6 +137,8 @@ arr f = rmap f id
 (.) :: (Match p, Tag p (One b)) => p b c -> p a b -> p a c
 (.) x y = match (rmap (Sigma One) y) $ \case One -> x
 
+-- Interestingly, this matches the type Mono from this blog post:
+-- https://elvishjerricco.github.io/2017/03/23/applicative-sorting.html
 data ManyT a b c where
     ManyT :: a -> ManyT a b b
 
