@@ -15,6 +15,7 @@
 -----------------------------------------------------------------------------
 module Control.United where
 
+import Data.Function
 import Prelude hiding (fmap, pure)
 
 -- | A generalised sum type where @t@ stands for the type of constructor "tags".
@@ -57,6 +58,9 @@ fmap f x = batch (\lookup -> f (lookup One)) (\One -> x)
 
 mult :: (United p q f, p (Two a b)) => f a -> f b -> f (a, b)
 mult x y = batch (\lookup -> (lookup A, lookup B)) $ \case { A -> x; B -> y }
+
+mfix :: (United p q f, p (Many a a)) => (a -> f a) -> f a
+mfix f = batch (\lookup -> fix (lookup . Many)) (\(Many a) -> f a)
 
 branch :: (United p q f, p (One (Either a b)), q (Two (a -> c) (b -> c))) => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
 branch x f g = match (fmap toSigma x) $ \case
