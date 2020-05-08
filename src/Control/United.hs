@@ -45,16 +45,23 @@ data Two a b c where
 data Many a b c where
     Many :: a -> Many a b b
 
+type Aggregator t a = ((forall x. t x -> x) -> a)
+
+data Selector f t a where
+    Z :: Selector f Zero a
+    O :: (x -> a) -> Selector f (One x) a
+    S :: (x -> Sigma t a) -> f x -> Selector f t a
+
 class United p q f | f -> p q where
-    batch :: p t => ((forall x. t x -> x) -> a) -> (forall x. t x -> f x) -> f a
-    match :: q t => f (Sigma t a) -> (forall x. t x -> f x) -> f a
+    batch :: p t => Aggregator t a -> (forall x. t x -> f x) -> f a
+    match :: q t => Selector f t a -> (forall x. t x -> f x) -> f a
 
 -- | This is the unit of both 'batch' and 'match'.
 pure :: (United p q f, p Zero) => a -> f a
 pure a = batch (const a) (\(x :: Zero a) -> case x of {})
 
-fmap :: (United p q f, p (One a)) => (a -> b) -> f a -> f b
-fmap f x = batch (\lookup -> f (lookup One)) (\One -> x)
+mapBatch :: (United p q f, p (One a)) => (a -> b) -> f a -> f b
+mapBatch f x = batch (\lookup -> f (lookup One)) (\One -> x)
 
 mult :: (United p q f, p (Two a b)) => f a -> f b -> f (a, b)
 mult x y = batch (\lookup -> (lookup A, lookup B)) $ \case { A -> x; B -> y }
@@ -62,15 +69,24 @@ mult x y = batch (\lookup -> (lookup A, lookup B)) $ \case { A -> x; B -> y }
 mfix :: (United p q f, p (Many a a)) => (a -> f a) -> f a
 mfix f = batch (\lookup -> fix (lookup . Many)) (\(Many a) -> f a)
 
-branch :: (United p q f, p (One (Either a b)), q (Two (a -> c) (b -> c))) => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
-branch x f g = match (fmap toSigma x) $ \case
+-- United monoids have the same zero:
+--   0 * x = 0 => 0 + x = 0 * x + x = 0 * x = 0
+--   0 + x = 0 => 0 * x = 0 * x + 0 = 0
+empty :: (United p q f, q Zero) => f a
+empty = match Z (\(x :: Zero a) -> case x of {})
+
+mapMatch :: (United p q f, q (One a)) => (a -> b) -> f a -> f b
+mapMatch f x = match (O f) (\One -> x)
+
+branch :: (United p q f, q (Two (a -> c) (b -> c))) => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
+branch x f g = match (S toSigma x) $ \case
     A -> f
     B -> g
   where
     toSigma (Left  a) = Sigma A ($a)
     toSigma (Right b) = Sigma B ($b)
 
-bind :: (United p q f, p (One a), q (Many a b)) => f a -> (a -> f b) -> f b
-bind x f = match (fmap toSigma x) (\(Many x) -> f x)
+bind :: (United p q f, q (Many a b)) => f a -> (a -> f b) -> f b
+bind x f = match (S toSigma x) (\(Many x) -> f x)
   where
     toSigma a = Sigma (Many a) id
