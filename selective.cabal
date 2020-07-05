@@ -49,8 +49,7 @@ library
                         GeneralizedNewtypeDeriving,
                         RankNTypes,
                         StandaloneDeriving,
-                        TupleSections,
-                        TypeApplications
+                        TupleSections
     GHC-options:        -Wall
                         -fno-warn-name-shadowing
                         -Wcompat
