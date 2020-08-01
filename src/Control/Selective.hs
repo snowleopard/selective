@@ -47,7 +47,6 @@ import Data.Functor.Identity
 import Data.Functor.Product
 import Data.List.NonEmpty
 import Data.Proxy
-import Data.Semigroup (Semigroup (..))
 import GHC.Conc (STM)
 
 import qualified Control.Monad.Trans.RWS.Strict    as S
