@@ -1,5 +1,5 @@
 name:          selective
-version:       0.4.1.1
+version:       0.5
 synopsis:      Selective applicative functors
 license:       MIT
 license-file:  LICENSE
@@ -14,7 +14,8 @@ tested-with:   GHC == 8.0.2,
                GHC == 8.2.2,
                GHC == 8.4.3,
                GHC == 8.6.5,
-               GHC == 8.8.1
+               GHC == 8.8.1,
+               GHC == 8.10.1
 stability:     experimental
 description:   Selective applicative functors: declare your effects statically,
                select which to execute dynamically.
