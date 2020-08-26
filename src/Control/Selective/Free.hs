@@ -43,7 +43,7 @@ instance Selective (Select f) where
 
 -- | Lift a functor into a free selective computation.
 liftSelect :: f a -> Select f a
-liftSelect x = Select ($x)
+liftSelect x = Select (\f -> f x)
 
 -- | Given a natural transformation from @f@ to @g@, this gives a canonical
 -- natural transformation from @Select f@ to @g@. Note that here we rely on the
