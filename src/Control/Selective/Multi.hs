@@ -251,7 +251,7 @@ identity = id
 -- a tag, get the payload of the first product and then pass it as input to the
 -- second. This feels too trivial to be useful but is still somewhat cute.
 compose :: (u ~> v) -> (t ~> u) -> (t ~> v)
-compose = (.)
+compose f g = f . g
 
 -- | Update a generalised sum given a generalised product that takes care of all
 -- possible cases.
