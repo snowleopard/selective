@@ -15,6 +15,12 @@
 -- This module defines /free rigid selective functors/. Rigid selective functors
 -- are those that satisfy the property @\<*\> = apS@.
 --
+-- Intuitively, a selective functor @f@ is "rigid" if any expression @f a@ is
+-- equivalent to a list of effects chained with @select@ operators (the normal
+-- form given by the free construction). In contrast, "non-rigid" selective
+-- functors can have non-linear, tree-like shapes, because @<*>@ nodes can't be
+-- straightened using the @\<*\> = apS@ equation.
+--
 -----------------------------------------------------------------------------
 module Control.Selective.Rigid.Free (
     -- * Free rigid selective functors
