@@ -31,6 +31,8 @@ import Data.Functor
 -- | Free selective functors.
 newtype Select f a = Select (forall g. Selective g => (forall x. f x -> g x) -> g a)
 
+-- Ignoring the hint, since GHC can't type check the suggested code.
+{-# ANN module "HLint: ignore Use fmap" #-}
 instance Functor (Select f) where
     fmap f (Select x) = Select $ \k -> f <$> x k
 

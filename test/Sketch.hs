@@ -16,7 +16,10 @@ import qualified Control.Arrow    as A
 import qualified Control.Category as C
 
 -- This file contains various examples and proof sketches and we keep it here to
--- make sure it still compiles.
+-- make sure it still compiles. We ignore HLINT suggestions because they often
+-- get in the way of readable "proofs" that use equational reasoning.
+
+{-# ANN module "HLint: ignore" #-}
 
 ------------------------------- Various examples -------------------------------
 
