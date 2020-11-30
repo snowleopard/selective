@@ -100,11 +100,10 @@ logEntry item = S.modify $ \s -> s { log = log s ++ [item] }
 toState :: MonadState State m => RW a -> m a
 toState = \case
     (Read k t) -> do
-        v <- case k of
-                   Reg  r    -> (Map.! r   ) <$> S.gets registers
-                   Cell addr -> (Map.! addr) <$> S.gets memory
-                   Flag f    -> (Map.! f   ) <$> S.gets flags
-                   PC        -> pc <$> S.get
+        v <- case k of Reg  r    -> S.gets ((Map.! r) . registers)
+                       Cell addr -> S.gets ((Map.! addr) . memory)
+                       Flag f    -> S.gets ((Map.! f) . flags)
+                       PC        -> S.gets pc
         logEntry (ReadEntry k v)
         pure (t v)
     (Write k p t) -> do
@@ -229,9 +228,9 @@ addOverflowNaive x y z =
 willOverflow :: Program Value -> Program Value -> Program Bool
 willOverflow arg1 arg2 =
     let o1 = (>) <$> arg2 <*> pure 0
-        o2 = (>) <$> arg1 <*> ((-) <$> pure maxBound <*> arg2)
+        o2 = (>) <$> arg1 <*> ((-) maxBound <$> arg2)
         o3 = (<) <$> arg2 <*> pure 0
-        o4 = (<) <$> arg1 <*> ((-) <$> pure minBound <*> arg2)
+        o4 = (<) <$> arg1 <*> ((-) minBound <$> arg2)
     in  (||) <$> ((&&) <$> o1 <*> o2)
              <*> ((&&) <$> o3 <*> o4)
 

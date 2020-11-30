@@ -1,4 +1,4 @@
-{-# LANGUAGE ConstraintKinds, DeriveFunctor, GADTs, RankNTypes #-}
+{-# LANGUAGE ConstraintKinds, GADTs, LambdaCase, RankNTypes #-}
 module Parser where
 
 import Control.Applicative
@@ -18,7 +18,7 @@ instance Applicative Parser where
     (<*>)  = ap
 
 instance Alternative Parser where
-    empty   = Parser $ \_ -> []
+    empty   = Parser (const [])
     p <|> q = Parser $ \s -> parse p s ++ parse q s
 
 instance Selective Parser where
@@ -32,10 +32,10 @@ class MonadZero f where
     zero :: f a
 
 instance MonadZero Parser where
-    zero = Parser (\_ -> [])
+    zero = Parser (const [])
 
 item :: Parser Char
-item = Parser $ \s -> case s of
+item = Parser $ \case
     ""    -> []
     (c:cs) -> [(c,cs)]
 

@@ -2,7 +2,7 @@
 module Query where
 
 import Control.Selective
-import Data.List
+import Data.List (isInfixOf, stripPrefix)
 
 type Prompt = String
 
@@ -24,7 +24,7 @@ instance Selective Query where
     select = Select
 
 pureQuery :: Query String
-pureQuery = (++) <$> pure "Hello " <*> pure "World!"
+pureQuery = (++) <$> Pure "Hello " <*> Pure "World!"
 
 replace :: String -> String -> String -> String
 replace [] _ xs = xs

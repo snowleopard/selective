@@ -93,7 +93,7 @@ script _ = Nothing
 data Fetch k v a = Fetch k (v -> a) deriving Functor
 
 instance Eq k => Eq (Fetch k v ()) where
-    Fetch x _ == Fetch y _ = (x == y)
+    Fetch x _ == Fetch y _ = x == y
 
 instance Show k => Show (Fetch k v a) where
     show (Fetch k _) = "Fetch " ++ show k

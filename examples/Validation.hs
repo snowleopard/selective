@@ -1,4 +1,4 @@
-{-# LANGUAGE ConstraintKinds, DeriveFunctor, GADTs, RankNTypes #-}
+{-# LANGUAGE ConstraintKinds, GADTs, RankNTypes #-}
 module Validation where
 
 import Control.Selective

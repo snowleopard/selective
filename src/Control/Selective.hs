@@ -1,4 +1,5 @@
-{-# LANGUAGE CPP, TupleSections, DeriveFunctor, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP, LambdaCase, TupleSections, DeriveFunctor #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Control.Selective
@@ -196,8 +197,8 @@ apS f x = select (Left <$> f) ((&) <$> x)
 -- | One can easily implement a monadic 'selectM' that satisfies the laws,
 -- hence any 'Monad' is 'Selective'.
 selectM :: Monad f => f (Either a b) -> f (a -> b) -> f b
-selectM x y = x >>= \e -> case e of Left  a -> ($a) <$> y -- execute y
-                                    Right b -> pure b     -- skip y
+selectM x y = x >>= \case Left  a -> ($a) <$> y -- execute y
+                          Right b -> pure b     -- skip y
 
 -- Many useful 'Monad' combinators can be implemented with 'Selective'
 
@@ -240,7 +241,7 @@ matchS (Cases cs _) x f = foldr (\c -> eliminate c (f c)) (Left <$> x) cs
 matchM :: Monad m => Cases a -> m a -> (a -> m b) -> m (Either a b)
 matchM (Cases _ p) mx f = do
     x <- mx
-    if p x then Right <$> (f x) else return (Left x)
+    if p x then Right <$> f x else return (Left x)
 
 -- TODO: Add a type-safe version based on @KnownNat@.
 -- | A restricted version of monadic bind. Fails with an error if the 'Bounded'
@@ -473,7 +474,7 @@ instance ArrowChoice a => Selective (ArrowMonad a) where
     select (ArrowMonad x) y = ArrowMonad $ x >>> (toArrow y ||| returnA)
 
 toArrow :: Arrow a => ArrowMonad a (i -> o) -> a i o
-toArrow (ArrowMonad f) = arr (\x -> ((), x)) >>> first f >>> arr (uncurry ($))
+toArrow (ArrowMonad f) = arr ((),) >>> first f >>> arr (uncurry ($))
 
 ---------------------------------- Alternative ---------------------------------
 -- | Composition of a functor @f@ with the 'Either' monad.

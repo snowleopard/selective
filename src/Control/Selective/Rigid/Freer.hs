@@ -70,7 +70,7 @@ instance Selective (Select f) where
 
 -- | Lift a functor into a free selective computation.
 liftSelect :: f a -> Select f a
-liftSelect f = Select (Pure (Left id)) f
+liftSelect = Select (Pure (Left id))
 
 -- | Given a natural transformation from @f@ to @g@, this gives a canonical
 -- natural transformation from @Select f@ to @g@.

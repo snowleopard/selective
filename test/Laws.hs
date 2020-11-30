@@ -55,17 +55,17 @@ selectALaw x f = select x f == selectA x f
 -- | Apply a pure function to the result:
 theorem1 :: (Selective f, Eq (f c)) =>
             (a -> c) -> f (Either b a) -> f (b -> a) -> Bool
-theorem1 f x y = (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))
+theorem1 f x y = (f <$> select x y) == select (second f <$> x) ((f .) <$> y)
 
 -- | Apply a pure function to the Left case of the first argument:
 theorem2 :: (Selective f, Eq (f c)) =>
             (a -> b) -> f (Either a c) -> f (b -> c) -> Bool
-theorem2 f x y = (select (first f <$> x) y) == (select x ((. f) <$> y))
+theorem2 f x y = select (first f <$> x) y == select x ((. f) <$> y)
 
 -- | Apply a pure function to the second argument:
 theorem3 :: (Selective f, Eq (f c)) =>
             (a -> b -> c) -> f (Either b c) -> f a -> Bool
-theorem3 f x y = (select x (f <$> y)) == (select (first (flip f) <$> x) ((&) <$> y))
+theorem3 f x y = select x (f <$> y) == select (first (flip f) <$> x) ((&) <$> y)
 
 -- | Generalised identity:
 theorem4 :: (Selective f, Eq (f b)) => f (Either a b) -> (a -> b) -> Bool
@@ -123,7 +123,7 @@ propertyPureRightUnder = quickCheck (propertyPureRight @(Under String) @Int)
 deriving instance (Eq e, Eq a) => Eq (Validation e a)
 
 instance (Arbitrary e, Arbitrary a) => Arbitrary (Validation e a) where
-  arbitrary = oneof [liftM Failure arbitrary, liftM Success arbitrary]
+  arbitrary = oneof [Failure <$> arbitrary, Success <$> arbitrary]
   shrink (Failure x) = [ Failure x' | x' <- shrink x ]
   shrink (Success y) = [ Success y' | y' <- shrink y ]
 

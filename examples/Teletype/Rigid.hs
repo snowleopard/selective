@@ -14,7 +14,7 @@ data TeletypeF a = Read (String -> a) | Write String a deriving Functor
 
 instance Eq (TeletypeF ()) where
     Read  _    == Read  _    = True
-    Write x () == Write y () = (x == y)
+    Write x () == Write y () = x == y
     _ == _ = False
 
 instance Show (TeletypeF a) where
@@ -67,7 +67,7 @@ pingPongM = IO.getLine >>= \s -> if s == "ping" then IO.putStrLn "pong" else pur
 -- | Applicative ping-pong, which always executes both effect, but can be
 -- statically analysed.
 pingPongA :: IO ()
-pingPongA = fmap (\_ -> id) IO.getLine <*> IO.putStrLn "pong"
+pingPongA = IO.getLine *> IO.putStrLn "pong"
 
 -- | A monadic greeting. Cannot be implemented using selective functors.
 greeting :: IO ()
