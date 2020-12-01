@@ -9,7 +9,6 @@ import Control.Arrow hiding (first, second)
 import Control.Selective
 import Data.Function
 import Data.Functor.Identity
-import Control.Monad.State
 import Text.Show.Functions()
 
 -- | TODO:
