@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveFunctor, EmptyCase, FlexibleInstances, GADTs, RankNTypes #-}
 {-# LANGUAGE MultiParamTypeClasses, ScopedTypeVariables, TupleSections #-}
+{-# OPTIONS_GHC -fno-warn-unused-imports #-}
 module Sketch where
 
 import Control.Arrow hiding (first, second)
