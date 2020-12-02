@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP, LambdaCase, TupleSections, DeriveFunctor #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# OPTIONS_GHC -fno-warn-unused-imports #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Control.Selective
