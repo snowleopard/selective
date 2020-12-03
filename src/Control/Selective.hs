@@ -141,6 +141,31 @@ import qualified Control.Monad.Trans.Writer.Strict as S
 class Applicative f => Selective f where
     select :: f (Either a b) -> f (a -> b) -> f b
 
+{- Why do we have skew associativity, where we can reassociate effects to the
+   left but not to the right?
+
+   The following two tables, which list all possible combinations of effect
+   execution and skipping, might give you some intuition on why this happens.
+
+     ---------------
+     (x <*? y) <*? z
+     ---------------
+      1     0      0
+      1     1      0
+      1     0      1
+      1     1      1
+
+     ---------------
+     x <*? (y <*? z)
+     ---------------
+     1      0     0
+     1      1     0
+     1      1     1
+
+   A key observation is that when effects are associated to the right, we can't
+   skip the effect y and execute the effect z: combination 101 is impossible.
+-}
+
 -- | An operator alias for 'select', which is sometimes convenient. It tries to
 -- follow the notational convention for 'Applicative' operators. The angle
 -- bracket pointing to the left means we always use the corresponding value.
