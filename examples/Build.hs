@@ -14,11 +14,11 @@ newtype Task k v = Task { run :: forall f. Selective f => (k -> f v) -> f v }
 -- | Selective build scripts.
 type Script k v = k -> Maybe (Task k v)
 
--- | Build dependencies with over-appriximation.
+-- | Build dependencies with over-approximation.
 dependenciesOver :: Task k v -> [k]
 dependenciesOver task = getOver $ run task (\k -> Over [k])
 
--- | Build dependencies with under-appriximation.
+-- | Build dependencies with under-approximation.
 dependenciesUnder :: Task k v -> [k]
 dependenciesUnder task = getUnder $ run task (\k -> Under [k])
 
