@@ -436,6 +436,12 @@ instance Semigroup e => Selective (Validation e) where
 instance (Selective f, Selective g) => Selective (Product f g) where
     select (Pair fx gx) (Pair fy gy) = Pair (select fx fy) (select gx gy)
 
+instance Selective f => Selective (IdentityT f) where
+    select (IdentityT x) (IdentityT y) = IdentityT (select x y)
+
+instance Selective f => Selective (ReaderT env f) where
+    select (ReaderT x) (ReaderT y) = ReaderT $ \env -> select (x env) (y env)
+
 -- TODO: Is this a useful instance? Note that composition of 'Alternative'
 -- requires @f@ to be 'Alternative', and @g@ to be 'Applicative', which is
 -- opposite to what we have here:
@@ -480,9 +486,7 @@ instance             Selective STM        where select = selectM
 
 instance                        Selective (ContT      r m) where select = selectM
 instance            Monad m  => Selective (ExceptT    e m) where select = selectM
-instance            Monad m  => Selective (IdentityT    m) where select = selectM
 instance            Monad m  => Selective (MaybeT       m) where select = selectM
-instance            Monad m  => Selective (ReaderT    r m) where select = selectM
 instance (Monoid w, Monad m) => Selective (RWST   r w s m) where select = selectM
 instance (Monoid w, Monad m) => Selective (S.RWST r w s m) where select = selectM
 instance            Monad m  => Selective (StateT     s m) where select = selectM
