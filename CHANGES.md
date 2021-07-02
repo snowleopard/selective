@@ -1,5 +1,10 @@
 # Change log
 
+## 0.5
+
+* Add more general instances for `IdentityT` and `ReaderT`. This is technically
+  a breaking change because `Selective` is not a superclass of `Monad`. See #38.
+
 ## 0.4.1
 
 * Allow newer QuickCheck.
