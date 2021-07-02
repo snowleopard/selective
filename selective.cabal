@@ -1,5 +1,5 @@
 name:          selective
-version:       0.4.2
+version:       0.5
 synopsis:      Selective applicative functors
 license:       MIT
 license-file:  LICENSE
