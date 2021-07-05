@@ -35,7 +35,6 @@ import Control.Applicative.Lift
 import Control.Arrow
 import Control.Monad.ST
 import Control.Monad.Trans.Cont
-import Control.Monad.Trans.Except
 import Control.Monad.Trans.Identity
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Reader
@@ -510,7 +509,6 @@ instance             Selective (ST s)     where select = selectM
 instance             Selective STM        where select = selectM
 
 instance                        Selective (ContT      r m) where select = selectM
-instance            Monad m  => Selective (ExceptT    e m) where select = selectM
 instance            Monad m  => Selective (MaybeT       m) where select = selectM
 instance (Monoid w, Monad m) => Selective (RWST   r w s m) where select = selectM
 instance (Monoid w, Monad m) => Selective (S.RWST r w s m) where select = selectM
