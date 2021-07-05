@@ -17,7 +17,7 @@
 -----------------------------------------------------------------------------
 module Control.Selective (
     -- * Type class
-    Selective (..), (<*?), branch, selectA, apS, selectM,
+    Selective (..), (<*?), selectA, apS, selectM,
 
     -- * Conditional combinators
     ifS, whenS, fromMaybeS, orElse, andAlso, untilRight, whileS, (<||>), (<&&>),
@@ -49,8 +49,11 @@ import Data.Functor.Identity
 import Data.Functor.Product
 import Data.List.NonEmpty
 import Data.Proxy
-import Data.Semigroup (Semigroup (..))
 import GHC.Conc (STM)
+
+#if !MIN_VERSION_base(4,11,0)
+import Data.Semigroup (Semigroup (..))
+#endif
 
 import qualified Control.Monad.Trans.RWS.Strict    as S
 import qualified Control.Monad.Trans.State.Strict  as S
@@ -138,8 +141,19 @@ import qualified Control.Monad.Trans.Writer.Strict as S
 --
 -- If f is also a 'Monad', we require that 'select' = 'selectM', from which one
 -- can prove '<*>' @=@ 'apS'.
+--
+-- The 'branch' method is a natural generalisation of 'select': instead of
+-- skipping an unnecessary effect, it chooses which of the two given effectful
+-- functions to apply to a given argument; the other effect is unnecessary. It
+-- is possible to implement 'branch' in terms of 'select', which is a good
+-- puzzle (give it a try!), and 'select' via 'branch' (which is much easier).
 class Applicative f => Selective f where
+    {-# MINIMAL select | branch #-}
     select :: f (Either a b) -> f (a -> b) -> f b
+    select x y = branch x y (pure id)
+
+    branch :: f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
+    branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 
 {- Why do we have skew associativity, where we can reassociate effects to the
    left but not to the right?
@@ -174,22 +188,6 @@ class Applicative f => Selective f where
 (<*?) = select
 
 infixl 4 <*?
-
--- | The 'branch' function is a natural generalisation of 'select': instead of
--- skipping an unnecessary effect, it chooses which of the two given effectful
--- functions to apply to a given argument; the other effect is unnecessary. It
--- is possible to implement 'branch' in terms of 'select', which is a good
--- puzzle (give it a try!).
---
--- We can also implement 'select' via 'branch':
---
--- @
--- selectB :: Selective f => f (Either a b) -> f (a -> b) -> f b
--- selectB x y = branch x y (pure id)
--- @
---
-branch :: Selective f => f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
-branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 
 -- | We can write a function with the type signature of 'select' using the
 -- 'Applicative' type class, but it will always execute the effects associated
