@@ -442,6 +442,19 @@ instance Selective f => Selective (IdentityT f) where
 instance Selective f => Selective (ReaderT env f) where
     select (ReaderT x) (ReaderT y) = ReaderT $ \env -> select (x env) (y env)
 
+instance (Monoid w, Selective f) => Selective (WriterT w f) where
+    select (WriterT eab) (WriterT f) = WriterT $ distributeTuple <$> eab <*? (distributeFunction <$> f)
+
+instance (Monoid w, Selective f) => Selective (S.WriterT w f) where
+    select (S.WriterT eab) (S.WriterT f) = S.WriterT $ distributeTuple <$> eab <*? (distributeFunction <$> f)
+
+distributeFunction :: Monoid w => (a -> b, w) -> (a, w) -> (b, w)
+distributeFunction (fab, w) (a, w') = (fab a, w' <> w)
+
+distributeTuple :: (Either a b, w) -> Either (a, w) (b, w)
+distributeTuple (Left a, w) = Left (a, w)
+distributeTuple (Right b, w) = Right (b, w)
+
 -- TODO: Is this a useful instance? Note that composition of 'Alternative'
 -- requires @f@ to be 'Alternative', and @g@ to be 'Applicative', which is
 -- opposite to what we have here:
@@ -491,8 +504,6 @@ instance (Monoid w, Monad m) => Selective (RWST   r w s m) where select = select
 instance (Monoid w, Monad m) => Selective (S.RWST r w s m) where select = selectM
 instance            Monad m  => Selective (StateT     s m) where select = selectM
 instance            Monad m  => Selective (S.StateT   s m) where select = selectM
-instance (Monoid w, Monad m) => Selective (WriterT    w m) where select = selectM
-instance (Monoid w, Monad m) => Selective (S.WriterT  w m) where select = selectM
 
 ------------------------------------ Arrows ------------------------------------
 -- See the following standard definitions in "Control.Arrow".
