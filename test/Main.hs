@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeApplications #-}
 
 import Control.Arrow (ArrowMonad)
+import Control.Monad.Trans.Writer hiding (writer)
 import Control.Selective
 import Data.Functor.Identity
 import Data.Maybe hiding (maybe)
@@ -20,7 +21,7 @@ import qualified Teletype.Rigid               as FR
 
 main :: IO ()
 main = defaultMain $ testGroup "Tests"
-    [pingPong, build, over, under, validation, arrowMonad, maybe, identity]
+    [pingPong, build, over, under, validation, arrowMonad, maybe, identity, writer]
 
 --------------------------------------------------------------------------------
 ------------------------ Ping-pong----------------------------------------------
@@ -316,3 +317,46 @@ identityProperties = testGroup "Properties"
         \x -> propertyPureRight @Identity @Int @Int x
     , testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
         \x -> propertyPureLeft @Identity @Int @Int x ]
+
+--------------------------------------------------------------------------------
+------------------------ Writer ------------------------------------------------
+--------------------------------------------------------------------------------
+
+writer :: TestTree
+writer = testGroup "Writer"
+    [writerLaws, writerTheorems, writerProperties]
+
+type MyWriter = Writer [Int]
+
+writerLaws :: TestTree
+writerLaws = testGroup "Laws"
+    [ testProperty "Identity: (x <*? pure id) == (either id id <$> x)" $
+        \x -> lawIdentity @MyWriter @Int x
+    , testProperty "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
+        \x -> lawDistributivity @MyWriter @Int @Int x
+    , testProperty "Associativity: take a look at tests/Laws.hs" $
+        \x -> lawAssociativity @MyWriter @Int @Int @Int x
+    , testProperty "select == selectM" $
+        \x -> lawMonad @MyWriter @Int @Int x ]
+
+writerTheorems :: TestTree
+writerTheorems = testGroup "Theorems"
+    [ testProperty "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
+        \x -> theorem1 @MyWriter @Int @Int @Int x
+    , testProperty "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
+        \x -> theorem2 @MyWriter @Int @Int @Int x
+    , testProperty "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) ((&) <$> y))" $
+        \x -> theorem3 @MyWriter @Int @Int @Int x
+    , testProperty "Generalised Identity: (x <*? pure y) == (either y id <$> x)" $
+        \x -> theorem4 @MyWriter @Int @Int x
+    , testProperty "(f <*> g) == (f `apS` g)" $
+        \x -> theorem5 @MyWriter @Int @Int x
+    , testProperty "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
+        \x -> theorem6 @MyWriter @Int @Int @Int x ]
+
+writerProperties :: TestTree
+writerProperties = testGroup "Properties"
+    [ testProperty "pure-right: pure (Right x) <*? y = pure x" $
+        \x -> propertyPureRight @MyWriter @Int @Int x
+    , testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
+        \x -> propertyPureLeft @MyWriter @Int @Int x ]

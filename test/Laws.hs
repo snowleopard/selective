@@ -3,6 +3,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Laws where
 
+import Control.Monad.Trans.Writer
 import Test.QuickCheck hiding (Failure, Success)
 import Data.Bifunctor (bimap, first, second)
 import Control.Arrow hiding (first, second)
@@ -150,3 +151,11 @@ propertyPureRightMaybe = quickCheck (propertyPureRight @Maybe @Int @Int)
 
 propertyPureRightIdentity :: IO ()
 propertyPureRightIdentity = quickCheck (propertyPureRight @Identity @Int @Int)
+
+
+--------------------------------------------------------------------------------
+------------------------ Writer ------------------------------------------------
+--------------------------------------------------------------------------------
+
+instance (Arbitrary w, Arbitrary a) => Arbitrary (Writer w a) where
+  arbitrary = curry writer <$> arbitrary <*> arbitrary
