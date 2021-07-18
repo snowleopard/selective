@@ -449,7 +449,7 @@ instance (Monoid w, Selective f) => Selective (S.WriterT w f) where
     select (S.WriterT eab) (S.WriterT f) = S.WriterT $ distributeTuple <$> eab <*? (distributeFunction <$> f)
 
 distributeFunction :: Monoid w => (a -> b, w) -> (a, w) -> (b, w)
-distributeFunction (fab, w) (a, w') = (fab a, w' <> w)
+distributeFunction (fab, w) (a, w') = (fab a, mappend w' w)
 
 distributeTuple :: (Either a b, w) -> Either (a, w) (b, w)
 distributeTuple (Left a, w) = Left (a, w)
