@@ -442,18 +442,20 @@ instance Selective f => Selective (IdentityT f) where
 instance Selective f => Selective (ReaderT env f) where
     select (ReaderT x) (ReaderT y) = ReaderT $ \env -> select (x env) (y env)
 
-instance (Monoid w, Selective f) => Selective (WriterT w f) where
-    select (WriterT eab) (WriterT f) = WriterT $ distributeTuple <$> eab <*? (distributeFunction <$> f)
-
-instance (Monoid w, Selective f) => Selective (S.WriterT w f) where
-    select (S.WriterT eab) (S.WriterT f) = S.WriterT $ distributeTuple <$> eab <*? (distributeFunction <$> f)
+distributeEither :: (Either a b, w) -> Either (a, w) (b, w)
+distributeEither (Left  a, w) = Left  (a, w)
+distributeEither (Right b, w) = Right (b, w)
 
 distributeFunction :: Monoid w => (a -> b, w) -> (a, w) -> (b, w)
-distributeFunction (fab, w) (a, w') = (fab a, mappend w' w)
+distributeFunction (f, wf) (x, wx) = (f x, mappend wx wf)
 
-distributeTuple :: (Either a b, w) -> Either (a, w) (b, w)
-distributeTuple (Left a, w) = Left (a, w)
-distributeTuple (Right b, w) = Right (b, w)
+instance (Monoid w, Selective f) => Selective (WriterT w f) where
+    select (WriterT x) (WriterT f) =
+        WriterT $ select (distributeEither <$> x) (distributeFunction <$> f)
+
+instance (Monoid w, Selective f) => Selective (S.WriterT w f) where
+    select (S.WriterT x) (S.WriterT f) =
+        S.WriterT $ select (distributeEither <$> x) (distributeFunction <$> f)
 
 -- TODO: Is this a useful instance? Note that composition of 'Alternative'
 -- requires @f@ to be 'Alternative', and @g@ to be 'Applicative', which is
