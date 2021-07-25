@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, LambdaCase, TupleSections, DeriveFunctor, DeriveTraversable #-}
+{-# LANGUAGE CPP, LambdaCase, TupleSections, DeriveTraversable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 -----------------------------------------------------------------------------
