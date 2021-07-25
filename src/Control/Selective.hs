@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, LambdaCase, TupleSections, DeriveFunctor #-}
+{-# LANGUAGE CPP, LambdaCase, TupleSections, DeriveTraversable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 -----------------------------------------------------------------------------
@@ -17,7 +17,7 @@
 -----------------------------------------------------------------------------
 module Control.Selective (
     -- * Type class
-    Selective (..), (<*?), branch, selectA, apS, selectM,
+    Selective (..), (<*?), branch, selectA, selectT, apS, selectM,
 
     -- * Conditional combinators
     ifS, whenS, fromMaybeS, orElse, andAlso, untilRight, whileS, (<||>), (<&&>),
@@ -196,6 +196,14 @@ branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 -- with the second argument, hence being potentially less efficient.
 selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
 selectA x y = (\e f -> either f id e) <$> x <*> y
+
+-- | If a functor is both 'Applicative' and 'Traversable', we can implement
+-- 'select' in another interesting way: the effects associated with the second
+-- argument can be skipped as long as the first argument contains only 'Right's.
+selectT :: (Applicative f, Traversable f) => f (Either a b) -> f (a -> b) -> f b
+selectT x y = case sequenceA x of
+    Left  a  -> ($a) <$> y
+    Right fb -> fb
 
 {-| Recover the application operator '<*>' from 'select'. /Rigid/ selective
 functors satisfy the law '<*>' @=@ 'apS' and furthermore, the resulting
@@ -394,17 +402,19 @@ instance Monoid m => Applicative (Over m) where
     pure _            = Over mempty
     Over x <*> Over y = Over (mappend x y)
 
+-- select = selectA
 instance Monoid m => Selective (Over m) where
     select (Over x) (Over y) = Over (mappend x y)
 
 -- | Static analysis of selective functors with under-approximation.
 newtype Under m a = Under { getUnder :: m }
-    deriving (Eq, Functor, Ord, Show)
+    deriving (Eq, Functor, Ord, Show, Foldable, Traversable)
 
 instance Monoid m => Applicative (Under m) where
     pure _              = Under mempty
     Under x <*> Under y = Under (mappend x y)
 
+-- select = selectT
 instance Monoid m => Selective (Under m) where
     select (Under m) _ = Under m
 
