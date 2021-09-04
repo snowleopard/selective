@@ -2,6 +2,7 @@
 
 ## 0.5
 
+* Derive the stock `Eq` and `Ord` instances for `Validation`, see #43.
 * Add `selectT`, see #42.
 * Add more general instances for `IdentityT` and `ReaderT`. This is technically
   a breaking change because `Selective` is not a superclass of `Monad`. See #38.

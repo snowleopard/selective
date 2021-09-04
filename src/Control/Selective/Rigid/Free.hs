@@ -69,9 +69,9 @@ instance Functor f => Selective (Select f) where
     -- Associativity law
     select x (Select y z) = Select (select (f <$> x) (g <$> y)) (h <$> z)
       where
-        f x = Right <$> x
-        g y = \a -> bimap (,a) ($a) y
-        h z = uncurry z
+        f     = fmap Right
+        g y a = bimap (,a) ($a) y
+        h     = uncurry
 
 {- The following can be used in the above implementation as select = selectOpt.
 

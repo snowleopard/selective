@@ -7,8 +7,8 @@ import Data.Functor.Identity
 import Data.Maybe hiding (maybe)
 import Prelude hiding (maybe)
 import Test.Tasty
-import Test.Tasty.QuickCheck hiding (Success, Failure)
 import Test.Tasty.ExpectedFailure
+import Test.Tasty.QuickCheck hiding (Success, Failure)
 
 import Build
 import Laws
@@ -29,11 +29,11 @@ main = defaultMain $ testGroup "Tests"
 pingPong :: TestTree
 pingPong = testGroup "pingPong"
     [ testProperty "Free.getEffects pingPongS == [Read,Write \"pong\"]" $
-       F.getEffects F.pingPongS == [F.Read (const ()),F.Write "pong" ()]
+        F.getEffects F.pingPongS == [F.Read (const ()),F.Write "pong" ()]
     , testProperty "Free.getNecessaryEffects pingPongS == [Read]" $
-       F.getNecessaryEffects F.pingPongS == [F.Read (const ())]
+        F.getNecessaryEffects F.pingPongS == [F.Read (const ())]
     , testProperty "Free.Rigid.getEffects pingPongS == [Read,Write \"pong\"]" $
-       FR.getEffects FR.pingPongS == [FR.Read (const ()),FR.Write "pong" ()] ]
+        FR.getEffects FR.pingPongS == [FR.Read (const ()),FR.Write "pong" ()] ]
 
 --------------------------------------------------------------------------------
 ------------------------ Build -------------------------------------------------
@@ -44,25 +44,25 @@ build = testGroup "Build" [cyclicDeps, taskBindDeps, runBuildDeps]
 cyclicDeps :: TestTree
 cyclicDeps = testGroup "cyclicDeps"
     [ testProperty "dependenciesOver (fromJust $ cyclic \"B1\") == [\"C1\",\"B2\",\"A2\"]" $
-       dependenciesOver (fromJust $ cyclic "B1") == ["C1","B2","A2"]
+        dependenciesOver (fromJust $ cyclic "B1") == ["C1","B2","A2"]
     , testProperty "dependenciesOver cyclic \"B2\") == [\"C1\",\"A1\",\"B1\"]" $
         dependenciesOver (fromJust $ cyclic "B2") == ["C1","A1","B1"]
     , testProperty "dependenciesUnder (fromJust $ cyclic \"B1\") == [\"C1\"]" $
-       dependenciesUnder (fromJust $ cyclic "B1") == ["C1"]
+        dependenciesUnder (fromJust $ cyclic "B1") == ["C1"]
     , testProperty "dependenciesUnder cyclic \"B2\") == [\"C1\"]" $
         dependenciesUnder (fromJust $ cyclic "B2") == ["C1"] ]
 
 taskBindDeps :: TestTree
 taskBindDeps = testGroup "taskBindDeps"
     [ testProperty "dependenciesOver taskBind == [\"A1\",\"A2\",\"C5\",\"C6\",\"A2\",\"D5\",\"D6\"]" $
-       dependenciesOver taskBind == ["A1","A2","C5","C6","A2","D5","D6"]
+        dependenciesOver taskBind == ["A1","A2","C5","C6","A2","D5","D6"]
     , testProperty "dependenciesUnder taskBind == [\"A1\"]" $
-       dependenciesUnder taskBind == ["A1"] ]
+        dependenciesUnder taskBind == ["A1"] ]
 
 runBuildDeps :: TestTree
 runBuildDeps = testGroup "runBuildDeps"
     [ testProperty "runBuild (fromJust $ cyclic \"B1\") == [Fetch \"C1\",Fetch \"B2\",Fetch \"A2\"]" $
-       runBuild (fromJust $ cyclic "B1") == [Fetch "C1" (const ()),Fetch "B2" (const ()),Fetch "A2" (const ())] ]
+        runBuild (fromJust $ cyclic "B1") == [Fetch "C1" (const ()),Fetch "B2" (const ()),Fetch "A2" (const ())] ]
 
 --------------------------------------------------------------------------------
 ------------------------ Over --------------------------------------------------
@@ -96,8 +96,7 @@ overTheorems = testGroup "Theorems"
 
 overProperties :: TestTree
 overProperties = testGroup "Properties"
-    [ expectFail $
-      testProperty "pure-right: pure (Right x) <*? y = pure x" $
+    [ expectFail $ testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @(Over String) @Int @Int x
     , testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
         \x -> propertyPureLeft @(Over String) @Int @Int x ]
@@ -137,8 +136,7 @@ underProperties :: TestTree
 underProperties = testGroup "Properties"
     [ testProperty "pure-right: pure (Right x) <*? y = pure x" $
         \x -> propertyPureRight @(Under String) @Int @Int x
-    , expectFail $
-      testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
+    , expectFail $ testProperty "pure-left: pure (Left x) <*? y = ($x) <$> y" $
         \x -> propertyPureLeft @(Under String) @Int @Int x ]
 
 --------------------------------------------------------------------------------
@@ -282,8 +280,7 @@ maybeProperties = testGroup "Properties"
 ------------------------ Identity ----------------------------------------------
 --------------------------------------------------------------------------------
 identity :: TestTree
-identity = testGroup "Identity"
-    [identityLaws, identityTheorems, identityProperties]
+identity = testGroup "Identity" [identityLaws, identityTheorems, identityProperties]
 
 identityLaws :: TestTree
 identityLaws = testGroup "Laws"
@@ -323,8 +320,7 @@ identityProperties = testGroup "Properties"
 --------------------------------------------------------------------------------
 
 writer :: TestTree
-writer = testGroup "Writer"
-    [writerLaws, writerTheorems, writerProperties]
+writer = testGroup "Writer" [writerLaws, writerTheorems, writerProperties]
 
 type MyWriter = Writer [Int]
 
