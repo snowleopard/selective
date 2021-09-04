@@ -14,7 +14,7 @@ data Query a where
     Select   :: Query (Either a b) -> Query (a -> b) -> Query b
 
 instance Functor Query where
-    fmap f x = Apply (Pure f) x
+    fmap f = Apply (Pure f)
 
 instance Applicative Query where
     pure  = Pure
