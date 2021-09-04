@@ -23,8 +23,7 @@ lawIdentity x = (x <*? pure id) == (either id id <$> x)
 
 -- | Distributivity
 lawDistributivity :: (Selective f, Eq (f b)) => Either a b -> f (a -> b) -> f (a -> b) -> Bool
-lawDistributivity x y z =
-    (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))
+lawDistributivity x y z = (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))
 
 -- | Associativity
 lawAssociativity :: (Selective f, Eq (f c)) =>
