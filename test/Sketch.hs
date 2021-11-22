@@ -565,7 +565,7 @@ data Result a = Done a | Blocked BlockedRequests (Haxl a) deriving Functor
 newtype Haxl a = Haxl { runHaxl :: IO (Result a) } deriving Functor
 
 instance Applicative Haxl where
-    pure = return
+    pure = Haxl . return . Done
 
     Haxl iof <*> Haxl iox = Haxl $ do
         rf <- iof
@@ -586,7 +586,7 @@ instance Selective Haxl where
             (Blocked bx x  , Blocked bf f) -> Blocked (bx <> bf) (select x f) -- speculative
                                                                               -- execution
 instance Monad Haxl where
-    return = Haxl . return . Done
+    return = pure
 
     Haxl iox >>= f = Haxl $ do
         rx <- iox
