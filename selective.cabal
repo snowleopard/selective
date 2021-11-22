@@ -52,6 +52,8 @@ library
                         -Wincomplete-record-updates
                         -Wincomplete-uni-patterns
                         -Wredundant-constraints
+    if impl(ghc >= 9.2)
+        ghc-options:    -Wno-operator-whitespace-ext-conflict
 
 test-suite test
     hs-source-dirs:     test, examples
@@ -81,3 +83,5 @@ test-suite test
                         -Wincomplete-record-updates
                         -Wincomplete-uni-patterns
                         -Wredundant-constraints
+    if impl(ghc >= 9.2)
+        ghc-options:    -Wno-operator-whitespace-ext-conflict
