@@ -68,7 +68,6 @@ test-suite test
     main-is:            Main.hs
     build-depends:      base                   >= 4.7     && < 5,
                         containers             >= 0.5.5.1 && < 0.7,
-                        mtl                    >= 2.2.1   && < 2.3,
                         QuickCheck             >= 2.8     && < 2.15,
                         selective,
                         tasty                  >= 0.11,

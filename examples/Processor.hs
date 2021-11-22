@@ -1,29 +1,41 @@
-{-# LANGUAGE ConstraintKinds, DeriveFunctor, GADTs, FlexibleContexts, LambdaCase #-}
+{-# LANGUAGE ConstraintKinds, DeriveFunctor, GADTs, LambdaCase #-}
+{-# LANGUAGE FunctionalDependencies, FlexibleContexts, FlexibleInstances #-}
+
 module Processor where
 
 import Control.Selective
 import Control.Selective.Rigid.Free
-import Data.Functor
 import Data.Bool
+import Data.Functor
 import Data.Int (Int16)
-import Data.Word (Word8)
 import Data.Map.Strict (Map)
+import Data.Word (Word8)
+import Foreign.Marshal.Utils (fromBool)
 import Prelude hiding (read, log)
 
-import qualified Control.Monad.State as S
-import qualified Data.Map.Strict     as Map
+import qualified Control.Monad.Trans.State as S
+import qualified Data.Map.Strict as Map
 
 -- See Section 5.3 of the paper:
 -- https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf
 -- Note that we have changed the naming.
 
--- | Hijack @mtl@'s 'MonadState' constraint to include Selective.
-type MonadState s m = (Selective m, S.MonadState s m)
+-- | A standard @MonadState@ class extended with the 'Selective' interface.
+class (Selective m, Monad m) => MonadState s m | m -> s where
+    get   :: m s
+    put   :: s -> m ()
+    state :: (s -> (a, s)) -> m a
 
--- | Convert a 'Bool' to @0@ or @1@.
-fromBool :: Num a => Bool -> a
-fromBool True  = 1
-fromBool False = 0
+instance Monad m => MonadState s (S.StateT s m) where
+    get   = S.get
+    put   = S.put
+    state = S.state
+
+gets :: MonadState s m => (s -> a) -> m a
+gets f = f <$> get
+
+modify :: MonadState s m => (s -> s) -> m ()
+modify f = state (\s -> ((), f s))
 
 --------------------------------------------------------------------------------
 -------- Types -----------------------------------------------------------------
@@ -94,16 +106,16 @@ instance Show (RW a) where
     show (Write k _        _) = "Write " ++ show k
 
 logEntry :: MonadState State m => LogEntry Key Value -> m ()
-logEntry item = S.modify $ \s -> s { log = log s ++ [item] }
+logEntry item = modify $ \s -> s { log = log s ++ [item] }
 
 -- | Interpret the base functor in a 'MonadState'.
 toState :: MonadState State m => RW a -> m a
 toState = \case
     (Read k t) -> do
-        v <- case k of Reg  r    -> S.gets ((Map.! r) . registers)
-                       Cell addr -> S.gets ((Map.! addr) . memory)
-                       Flag f    -> S.gets ((Map.! f) . flags)
-                       PC        -> S.gets pc
+        v <- case k of Reg  r    -> gets ((Map.! r) . registers)
+                       Cell addr -> gets ((Map.! addr) . memory)
+                       Flag f    -> gets ((Map.! f) . flags)
+                       PC        -> gets pc
         logEntry (ReadEntry k v)
         pure (t v)
     (Write k p t) -> do
@@ -111,14 +123,14 @@ toState = \case
         logEntry (WriteEntry k v)
         case k of
             Reg r     -> let regs' s = Map.insert r v (registers s)
-                         in  S.state (\s -> (t v, s {registers = regs' s}))
+                         in  state (\s -> (t v, s {registers = regs' s}))
             Cell addr -> let mem' s = Map.insert addr v (memory s)
-                         in S.state (\s -> (t v, s {memory = mem' s}))
+                         in state (\s -> (t v, s {memory = mem' s}))
             Flag f    -> let flags' s = Map.insert f v (flags s)
-                         in S.state (\s -> (t v, s {flags = flags' s}))
-            PC        -> S.state (\s -> (t v, s {pc = v}))
+                         in state (\s -> (t v, s {flags = flags' s}))
+            PC        -> state (\s -> (t v, s {pc = v}))
 
--- | Interpret a program as a state trasformer.
+-- | Interpret a program as a state transformer.
 runProgramState :: Program a -> State -> (a, State)
 runProgramState f = S.runState (runSelect toState f)
 
