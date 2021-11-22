@@ -52,6 +52,8 @@ library
                         -Wincomplete-record-updates
                         -Wincomplete-uni-patterns
                         -Wredundant-constraints
+    if impl(ghc >= 9.2)
+        ghc-options:    -Wno-operator-whitespace-ext-conflict
 
 test-suite test
     hs-source-dirs:     test, examples
@@ -68,7 +70,6 @@ test-suite test
     main-is:            Main.hs
     build-depends:      base                   >= 4.7     && < 5,
                         containers             >= 0.5.5.1 && < 0.7,
-                        mtl                    >= 2.2.1   && < 2.3,
                         QuickCheck             >= 2.8     && < 2.15,
                         selective,
                         tasty                  >= 0.11,
@@ -82,3 +83,5 @@ test-suite test
                         -Wincomplete-record-updates
                         -Wincomplete-uni-patterns
                         -Wredundant-constraints
+    if impl(ghc >= 9.2)
+        ghc-options:    -Wno-operator-whitespace-ext-conflict
