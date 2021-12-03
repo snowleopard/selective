@@ -37,7 +37,7 @@ library
                         Control.Selective.Rigid.Freer
     build-depends:      base         >= 4.9     && < 5,
                         containers   >= 0.5.5.1 && < 0.7,
-                        transformers >= 0.4.2.0 && < 0.6
+                        transformers >= 0.4.2.0 && < 0.7
     default-language:   Haskell2010
     other-extensions:   DeriveFunctor,
                         FlexibleInstances,
@@ -73,7 +73,7 @@ test-suite test
                         containers             >= 0.5.5.1 && < 0.7,
                         QuickCheck             >= 2.8     && < 2.15,
                         selective,
-                        transformers           >= 0.4.2.0 && < 0.6
+                        transformers           >= 0.4.2.0 && < 0.7
     default-language:   Haskell2010
     ghc-options:        -Wall
                         -fno-warn-name-shadowing
