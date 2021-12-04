@@ -23,7 +23,7 @@ expectFailure name p = Leaf $ Test name ExpectFailure (property p)
 
 runTest :: [String] -> Test -> IO ()
 runTest labels (Test name expect property) = do
-    let label = intercalate "." (reverse (name : labels))
+    let label = "[" ++ intercalate "." (reverse labels) ++ "] " ++ name
     result <- quickCheckWithResult (stdArgs { chatty = False }) property
     case (expect, isSuccess result) of
         (ExpectSuccess, True)  -> putStrLn $ "OK: " ++ label
