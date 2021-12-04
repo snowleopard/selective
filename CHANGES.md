@@ -2,6 +2,8 @@
 
 ## 0.5
 
+* Allow `transformers-0.6`, see #47.
+* Drop dependencies on `mtl` and `tasty`. See #45, #46.
 * Derive the stock `Eq` and `Ord` instances for `Validation`, see #43.
 * Add `selectT`, see #42.
 * Add more general instances for `IdentityT` and `ReaderT`. This is technically
