@@ -1,6 +1,6 @@
 # Selective applicative functors
 
-[![Hackage version](https://img.shields.io/hackage/v/selective.svg?label=Hackage)](https://hackage.haskell.org/package/selective) [![Build status](https://img.shields.io/github/workflow/status/snowleopard/selective/ci.svg)](https://github.com/snowleopard/selective/actions)
+[![Hackage version](https://img.shields.io/hackage/v/selective.svg?label=Hackage)](https://hackage.haskell.org/package/selective) [![Build status](https://img.shields.io/github/workflow/status/snowleopard/selective/ci/master.svg)](https://github.com/snowleopard/selective/actions)
 
 This is a library for *selective applicative functors*, or just *selective functors*
 for short, an abstraction between applicative functors and monads, introduced in
