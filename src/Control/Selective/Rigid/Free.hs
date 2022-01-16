@@ -2,7 +2,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Control.Selective.Rigid.Free
--- Copyright  : (c) Andrey Mokhov 2018-2019
+-- Copyright  : (c) Andrey Mokhov 2018-2022
 -- License    : MIT (see the file LICENSE)
 -- Maintainer : andrey.mokhov@gmail.com
 -- Stability  : experimental

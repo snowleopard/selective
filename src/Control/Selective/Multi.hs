@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Control.Selective.Multi
--- Copyright  : (c) Andrey Mokhov 2018-2020
+-- Copyright  : (c) Andrey Mokhov 2018-2022
 -- License    : MIT (see the file LICENSE)
 -- Maintainer : andrey.mokhov@gmail.com
 -- Stability  : experimental
