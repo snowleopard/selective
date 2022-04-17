@@ -5,7 +5,6 @@ import Data.List (intercalate)
 import System.Exit (exitFailure)
 import Test.QuickCheck hiding (Success, Failure, expectFailure)
 
-
 data Expect = ExpectSuccess | ExpectFailure deriving Eq
 
 data Test = Test String Expect Property
@@ -26,14 +25,14 @@ runTest labels (Test name expect property) = do
     let label = "[" ++ intercalate "." (reverse labels) ++ "] " ++ name
     result <- quickCheckWithResult (stdArgs { chatty = False }) property
     case (expect, isSuccess result) of
-        (ExpectSuccess, True)  -> putStrLn $ "OK: " ++ label
-        (ExpectFailure, False) -> putStrLn $ "OK (expected failure): " ++ label
+        (ExpectSuccess, True) ->
+            putStrLn $ "[OK] " ++ label
+        (ExpectFailure, False) ->
+            putStrLn $ "[OK, expected failure] " ++ label
+        (ExpectFailure, True) ->
+            putStrLn $ "[Warning, unexpected success] " ++ label
         (ExpectSuccess, False) -> do
-            putStrLn $ "\nTest failure:\n    " ++ label ++ "\n"
-            putStrLn $ output result
-            exitFailure
-        (ExpectFailure, True) -> do
-            putStrLn $ "\nUnexpected test success:\n    " ++ label ++ "\n"
+            putStrLn $ "\n[Failure] " ++ label ++ "\n"
             putStrLn $ output result
             exitFailure
 
