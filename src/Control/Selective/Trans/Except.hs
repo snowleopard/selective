@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {- | A newtype around @transformers@ 'ExceptT' with less restrictive 'Applicative', 'Selective', and 'Alternative' implementations.
 
@@ -70,7 +71,11 @@ fromTransformers = ExceptT
 
 type Except e = ExceptT e Identity
 
+#if MIN_VERSION_transformers(0,5,6)
 except :: Monad m => Either e a -> ExceptT e m a
+#else
+except :: Either e a -> Except e a
+#endif
 except = ExceptT . Transformers.except
 
 runExcept :: Except e a -> Either e a
