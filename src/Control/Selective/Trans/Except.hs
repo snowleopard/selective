@@ -18,6 +18,10 @@ import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Zip (MonadZip)
 import Data.Functor.Classes
 import Data.Functor.Identity
+#if MIN_VERSION_base(4,9,0)
+import Control.Monad.Fail
+import Data.Functor.Contravariant (Contravariant)
+#endif
 
 import qualified Control.Monad.Trans.Except as Transformers
 import Control.Monad.Trans.Class
@@ -28,7 +32,12 @@ import Control.Monad.Signatures
 -- | A newtype around @transformers@' 'Transformers.ExceptT'.
 newtype ExceptT e m a = ExceptT
     { toTransformers :: Transformers.ExceptT e m a }
-    deriving (Functor, Monad, MonadTrans, MonadFix, Foldable, Eq1, Ord1, Read1, Show1, MonadZip, MonadIO, MonadPlus, Eq, Ord, Read, Show)
+    deriving
+        ( Functor, Monad, MonadTrans, MonadFix, Foldable, Eq1, Ord1, Read1, Show1, MonadZip, MonadIO, MonadPlus, Eq, Ord, Read, Show
+#if MIN_VERSION_base(4,9,0)
+        , MonadFail, Contravariant
+#endif
+        )
 
 instance Traversable f => Traversable (ExceptT e f) where
     traverse f (ExceptT efa)= ExceptT <$> traverse f efa
