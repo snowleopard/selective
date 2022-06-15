@@ -20,6 +20,8 @@ import Data.Functor.Classes
 import Data.Functor.Identity
 #if MIN_VERSION_base(4,9,0)
 import Control.Monad.Fail
+#endif
+#if MIN_VERSION_base(4,12,0)
 import Data.Functor.Contravariant (Contravariant)
 #endif
 
@@ -35,7 +37,10 @@ newtype ExceptT e m a = ExceptT
     deriving
         ( Functor, Monad, MonadTrans, MonadFix, Foldable, Eq1, Ord1, Read1, Show1, MonadZip, MonadIO, MonadPlus, Eq, Ord, Read, Show
 #if MIN_VERSION_base(4,9,0)
-        , MonadFail, Contravariant
+        , MonadFail
+#endif
+#if MIN_VERSION_base(4,12,0)
+        , Contravariant
 #endif
         )
 
