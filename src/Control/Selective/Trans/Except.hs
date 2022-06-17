@@ -18,8 +18,12 @@ import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Zip (MonadZip)
 import Data.Functor.Classes
 import Data.Functor.Identity
+#if MIN_VERSION_base(4,13,0)
+-- MonadFail is imported already
+#else
 #if MIN_VERSION_base(4,9,0)
 import Control.Monad.Fail
+#endif
 #endif
 #if MIN_VERSION_base(4,12,0)
 import Data.Functor.Contravariant (Contravariant)
