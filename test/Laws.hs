@@ -1,10 +1,14 @@
 {-# LANGUAGE FlexibleInstances, TupleSections, TypeApplications #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Laws where
 
 import Control.Arrow hiding (first, second)
+import qualified Control.Monad.Trans.Except as Transformers
 import Control.Monad.Trans.Writer
 import Control.Selective
+import Control.Selective.Trans.Except
 import Data.Bifunctor (bimap, first, second)
 import Data.Function
 import Data.Functor.Identity
@@ -146,3 +150,6 @@ propertyPureRightIdentity = quickCheck (propertyPureRight @Identity @Int @Int)
 
 instance (Arbitrary w, Arbitrary a) => Arbitrary (Writer w a) where
     arbitrary = curry writer <$> arbitrary <*> arbitrary
+
+deriving instance (Arbitrary e, Arbitrary a) => Arbitrary (Transformers.Except e a)
+deriving instance (Arbitrary e, Arbitrary a) => Arbitrary (Except e a)

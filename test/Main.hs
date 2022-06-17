@@ -2,6 +2,7 @@
 
 import Control.Arrow (ArrowMonad)
 import Control.Monad.Trans.Writer hiding (writer)
+import Control.Selective.Trans.Except hiding (except)
 import Control.Selective
 import Data.Functor.Identity
 import Data.Maybe hiding (maybe)
@@ -28,7 +29,9 @@ main = runTests $ testGroup "Tests"
     , arrowMonad
     , maybe
     , identity
-    , writer ]
+    , writer
+    , except
+    ]
 
 --------------------------------------------------------------------------------
 ------------------------ Ping-pong----------------------------------------------
@@ -386,3 +389,48 @@ writerProperties = testGroup "Properties"
         \x -> propertyPureRight @MyWriter @Int @Int x
     , expectSuccess "pure-left: pure (Left x) <*? y = ($x) <$> y" $
         \x -> propertyPureLeft @MyWriter @Int @Int x ]
+
+--------------------------------------------------------------------------------
+------------------------ Except ------------------------------------------------
+--------------------------------------------------------------------------------
+
+except :: Tests
+except = testGroup "Except"
+    [ exceptLaws
+    , exceptTheorems
+    , exceptProperties ]
+
+type MyExcept = Except [Int]
+
+exceptLaws :: Tests
+exceptLaws = testGroup "Laws"
+    [ expectSuccess "Identity: (x <*? pure id) == (either id id <$> x)" $
+        \x -> lawIdentity @MyExcept @Int x
+    , expectSuccess "Distributivity: (pure x <*? (y *> z)) == ((pure x <*? y) *> (pure x <*? z))" $
+        \x -> lawDistributivity @MyExcept @Int @Int x
+    , expectSuccess "Associativity: take a look at tests/Laws.hs" $
+        \x -> lawAssociativity @MyExcept @Int @Int @Int x
+    , expectSuccess "select == selectM" $
+        \x -> lawMonad @MyExcept @Int @Int x ]
+
+exceptTheorems :: Tests
+exceptTheorems = testGroup "Theorems"
+    [ expectSuccess "Apply a pure function to the result: (f <$> select x y) == (select (second f <$> x) ((f .) <$> y))" $
+        \x -> theorem1 @MyExcept @Int @Int @Int x
+    , expectSuccess "Apply a pure function to the Left case of the first argument: (select (first f <$> x) y) == (select x ((. f) <$> y))" $
+        \x -> theorem2 @MyExcept @Int @Int @Int x
+    , expectSuccess "Apply a pure function to the second argument: (select x (f <$> y)) == (select (first (flip f) <$> x) ((&) <$> y))" $
+        \x -> theorem3 @MyExcept @Int @Int @Int x
+    , expectSuccess "Generalised Identity: (x <*? pure y) == (either y id <$> x)" $
+        \x -> theorem4 @MyExcept @Int @Int x
+    , expectSuccess "(f <*> g) == (f `apS` g)" $
+        \x -> theorem5 @MyExcept @Int @Int x
+    , expectSuccess "Interchange: (x *> (y <*? z)) == ((x *> y) <*? z)" $
+        \x -> theorem6 @MyExcept @Int @Int @Int x ]
+
+exceptProperties :: Tests
+exceptProperties = testGroup "Properties"
+    [ expectSuccess "pure-right: pure (Right x) <*? y = pure x" $
+        \x -> propertyPureRight @MyExcept @Int @Int x
+    , expectSuccess "pure-left: pure (Left x) <*? y = ($x) <$> y" $
+        \x -> propertyPureLeft @MyExcept @Int @Int x ]

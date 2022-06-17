@@ -30,7 +30,7 @@ module Control.Selective.Rigid.Free (
     getPure, getEffects, getNecessaryEffect, runSelect, foldSelect
     ) where
 
-import Control.Monad.Trans.Except
+import Control.Selective.Trans.Except
 import Control.Selective
 import Data.Bifunctor
 import Data.Functor
