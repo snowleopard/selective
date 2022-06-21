@@ -1,5 +1,5 @@
 name:          selective
-version:       0.5
+version:       0.5.1
 synopsis:      Selective applicative functors
 license:       MIT
 license-file:  LICENSE
@@ -56,7 +56,7 @@ library
     if impl(ghc >= 9.2)
         ghc-options:    -Wno-operator-whitespace-ext-conflict
 
-test-suite test
+test-suite main
     hs-source-dirs:     test, examples
     other-modules:      Build,
                         Laws,

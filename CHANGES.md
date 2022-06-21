@@ -1,5 +1,9 @@
 # Change log
 
+## 0.5.1
+
+* Add `Control.Selective.Trans.Except` transformer. See #39.
+
 ## 0.5
 
 * Allow `transformers-0.6`, see #47.
