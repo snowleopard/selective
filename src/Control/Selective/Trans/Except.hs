@@ -1,5 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DerivingVia #-}
 {- | A newtype around @transformers@ 'ExceptT' with less restrictive 'Applicative', 'Selective', and 'Alternative' implementations.
 
 Supplies an @instance 'Selective' f => 'Selective' ('ExceptT' e f)@.
@@ -61,19 +63,7 @@ instance Selective f => Applicative (ExceptT e f) where
       <*? (flip fmap <$> m)
 
 -- | No @'Monad' f@ constraint is needed.
-instance Selective f => Selective (ExceptT e f) where
-    select (ExceptT (Transformers.ExceptT meab)) (ExceptT (Transformers.ExceptT mef)) = ExceptT $ Transformers.ExceptT
-        $ commute <$> meab
-        <*? (swapFunctionEither <$> mef)
-        where
-            commute :: Either e (Either a b) -> Either a (Either e b)
-            commute (Left e) = Right (Left e)
-            commute (Right (Left a)) = Left a
-            commute (Right (Right b)) = Right (Right b)
-
-            swapFunctionEither :: Either e (a -> b) -> a -> Either e b
-            swapFunctionEither (Left e) _ = Left e
-            swapFunctionEither (Right fab) a = Right (fab a)
+deriving via (ComposeTraversable f (Either e)) instance Selective f => Selective (ExceptT e f)
 
 -- | No @'Monad' f@ constraint is needed.
 instance (Selective f, Monoid e) => Alternative (ExceptT e f) where
