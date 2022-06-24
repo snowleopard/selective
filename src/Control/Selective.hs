@@ -430,7 +430,16 @@ instance Selective ZipList where select = selectA
 
 -- | Selective instance for the standard applicative functor Validation. This is
 -- a good example of a non-trivial selective functor which is not a monad.
-data Validation e a = Failure e | Success a deriving (Eq, Functor, Ord, Show)
+data Validation e a = Failure e | Success a
+    deriving (Eq, Functor, Ord, Show, Foldable, Traversable)
+
+-- instance Foldable (Validation e) where
+--     foldMap _ (Failure _) = mempty
+--     foldMap f (Success a) = f a
+
+-- instance Traversable (Validation e) where
+--     traverse _ (Failure e) = pure $ Failure e
+--     traverse f (Success a) = Success <$> f a
 
 instance Semigroup e => Applicative (Validation e) where
     pure = Success
