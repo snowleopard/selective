@@ -196,10 +196,10 @@ branch x l r = fmap (fmap Left) x <*? fmap (fmap Right) l <*? r
 selectA :: Applicative f => f (Either a b) -> f (a -> b) -> f b
 selectA x y = (\e f -> either f id e) <$> x <*> y
 
--- | If a functor is both 'Applicative' and 'Traversable', we can implement
--- 'select' in another interesting way: the effects associated with the second
--- argument can be skipped as long as the first argument contains only 'Right's.
-selectT :: (Applicative f, Traversable f) => f (Either a b) -> f (a -> b) -> f b
+-- | For traversable functors, we can implement 'select' in another interesting
+-- way: the effects associated with the second argument can be skipped as long
+-- as the first argument contains only 'Right' values.
+selectT :: Traversable f => f (Either a b) -> f (a -> b) -> f b
 selectT x y = case sequenceA x of
     Left  a  -> ($a) <$> y
     Right fb -> fb
