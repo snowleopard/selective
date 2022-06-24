@@ -54,6 +54,8 @@ import GHC.Conc (STM)
 import qualified Control.Monad.Trans.RWS.Strict    as S
 import qualified Control.Monad.Trans.State.Strict  as S
 import qualified Control.Monad.Trans.Writer.Strict as S
+import Control.Monad.Trans.Except (ExceptT)
+import qualified Control.Monad.Trans.Except
 
 -- | Selective applicative functors. You can think of 'select' as a selective
 -- function application: when given a value of type 'Left' @a@, you __must apply__
@@ -509,6 +511,9 @@ instance             Selective (ST s)     where select = selectM
 instance             Selective STM        where select = selectM
 
 instance                        Selective (ContT      r m) where select = selectM
+-- | Note that there is an instance for an isomorphic functor 'Control.Selective.Trans.Except'
+--   which does not need the 'Monad m' constraint.
+instance            Monad m  => Selective (ExceptT    e m) where select = selectM
 instance            Monad m  => Selective (MaybeT       m) where select = selectM
 instance (Monoid w, Monad m) => Selective (RWST   r w s m) where select = selectM
 instance (Monoid w, Monad m) => Selective (S.RWST r w s m) where select = selectM
