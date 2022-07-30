@@ -63,6 +63,7 @@ pingPongS = whenS (fmap ("ping"==) getLine) (putStrLn "pong")
 -- statically analysed.
 pingPongM :: IO ()
 pingPongM = IO.getLine >>= \s -> if s == "ping" then IO.putStrLn "pong" else pure ()
+{- HLINT ignore "Use when" -}
 
 -- | Applicative ping-pong, which always executes both effect, but can be
 -- statically analysed.
