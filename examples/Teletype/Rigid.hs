@@ -3,6 +3,7 @@ module Teletype.Rigid where
 
 import Prelude hiding (getLine, putStrLn)
 import qualified Prelude as IO
+import qualified Control.Monad as IO
 import Control.Selective
 import Control.Selective.Rigid.Free
 
@@ -62,8 +63,7 @@ pingPongS = whenS (fmap ("ping"==) getLine) (putStrLn "pong")
 -- | Monadic ping-pong, which has the desired behaviour, but cannot be
 -- statically analysed.
 pingPongM :: IO ()
-pingPongM = IO.getLine >>= \s -> if s == "ping" then IO.putStrLn "pong" else pure ()
-{- HLINT ignore "Use when" -}
+pingPongM = IO.getLine >>= \s -> IO.when (s == "ping") (IO.putStrLn "pong")
 
 -- | Applicative ping-pong, which always executes both effect, but can be
 -- statically analysed.
