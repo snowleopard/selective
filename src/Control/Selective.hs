@@ -1,6 +1,8 @@
 {-# LANGUAGE CPP, LambdaCase, TupleSections, DeriveTraversable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DerivingVia #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Control.Selective
@@ -27,7 +29,7 @@ module Control.Selective (
     SelectA (..), SelectM (..), Over (..), Under (..), Validation (..),
 
     -- * Miscellaneous
-    swapEither, ComposeEither (..)
+    swapEither, ComposeEither (..), ComposeTraversable (..)
     ) where
 
 import Control.Applicative
@@ -490,6 +492,20 @@ choose between 'Just', which doesn't work since we have no function @a -> b@,
 and 'Nothing' which corresponds to the behaviour of 'selectA'.
 
 -}
+
+{- | Compose a 'Selective' (outside) with a 'Traversable' (inside) to get a 'Selective'.
+
+The composed functor 'ComposeTraversable f g' will traverse each @g@ structure and short-circuit when encountering a 'Left e'.
+Then the outer @f@ will 'select' which actions to run.
+-}
+newtype ComposeTraversable f g a = ComposeTraversable
+    { getComposeTraversable :: f (g a) }
+    deriving (Functor)
+
+deriving via (Compose f g) instance (Applicative f, Applicative g) => Applicative (ComposeTraversable f g)
+
+instance (Traversable g, Applicative g, Selective f) => Selective (ComposeTraversable f g) where
+    select (ComposeTraversable eab) (ComposeTraversable fab) = ComposeTraversable $ select (sequenceA <$> eab) (sequenceA <$> fab)
 
 -- Monad instances
 
