@@ -349,11 +349,7 @@ allS :: Selective f => (a -> f Bool) -> [a] -> f Bool
 allS p = foldr ((<&&>) . p) (pure True)
 
 -- | Generalised folding with the short-circuiting behaviour.
-foldS :: (Selective f, Foldable t, Monoid a
-#if !MIN_VERSION_base(4,11,0)
-  , Semigroup a
-#endif
-    ) => t (f (Either e a)) -> f (Either e a)
+foldS :: (Selective f, Foldable t, Monoid a) => t (f (Either e a)) -> f (Either e a)
 foldS = foldr andAlso (pure (Right mempty))
 
 -- Instances
@@ -538,11 +534,7 @@ instance Applicative f => Applicative (ComposeEither f e) where
     pure a                              = ComposeEither (pure $ Right a)
     ComposeEither x <*> ComposeEither y = ComposeEither ((<*>) <$> x <*> y)
 
-instance (Selective f, Monoid e
-#if !MIN_VERSION_base(4,11,0)
-  , Semigroup e
-#endif
-    ) => Alternative (ComposeEither f e) where
+instance (Selective f, Monoid e) => Alternative (ComposeEither f e) where
     empty                               = ComposeEither (pure $ Left mempty)
     ComposeEither x <|> ComposeEither y = ComposeEither (x `orElse` y)
 
@@ -559,7 +551,7 @@ This has two issues:
 1) A generic 'failIfLeft' if not possible, although many actual instances should
    be able to implement it.
 
-2) More importantly, this requires duplication of work: if we failed becauase we
+2) More importantly, this requires duplication of work: if we failed because we
    happened to parse a 'Left' value in the first parser, then we need to rerun
    it, obtain a 'Left' once again, and then execute the second parser. Again, a
    specific instance may be able to cache the result and reuse it without
