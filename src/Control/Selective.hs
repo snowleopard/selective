@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP, LambdaCase, TupleSections, DeriveTraversable #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, DerivingVia #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 -----------------------------------------------------------------------------
 -- |
@@ -394,10 +394,7 @@ instance Monad f => Selective (SelectM f) where
 -- | Static analysis of selective functors with over-approximation.
 newtype Over m a = Over { getOver :: m }
     deriving (Eq, Functor, Ord, Show)
-
-instance Monoid m => Applicative (Over m) where
-    pure _            = Over mempty
-    Over x <*> Over y = Over (mappend x y)
+    deriving Applicative via (Const m)
 
 -- select = selectA
 instance Monoid m => Selective (Over m) where
@@ -406,10 +403,7 @@ instance Monoid m => Selective (Over m) where
 -- | Static analysis of selective functors with under-approximation.
 newtype Under m a = Under { getUnder :: m }
     deriving (Eq, Functor, Ord, Show, Foldable, Traversable)
-
-instance Monoid m => Applicative (Under m) where
-    pure _              = Under mempty
-    Under x <*> Under y = Under (mappend x y)
+    deriving Applicative via (Const m)
 
 -- select = selectT
 instance Monoid m => Selective (Under m) where
@@ -528,11 +522,7 @@ toArrow (ArrowMonad f) = arr ((),) >>> first f >>> arr (uncurry ($))
 ---------------------------------- Alternative ---------------------------------
 -- | Composition of a functor @f@ with the 'Either' monad.
 newtype ComposeEither f e a = ComposeEither (f (Either e a))
-    deriving Functor
-
-instance Applicative f => Applicative (ComposeEither f e) where
-    pure a                              = ComposeEither (pure $ Right a)
-    ComposeEither x <*> ComposeEither y = ComposeEither ((<*>) <$> x <*> y)
+    deriving (Functor, Applicative) via Compose f (Either e)
 
 instance (Selective f, Monoid e) => Alternative (ComposeEither f e) where
     empty                               = ComposeEither (pure $ Left mempty)
