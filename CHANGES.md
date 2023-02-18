@@ -1,7 +1,8 @@
 # Change log
 
-## 0.5.1
+## 0.6
 
+* Stop supporting GHC <= 8.6. See #62.
 * Add `Control.Selective.Trans.Except` transformer. See #39.
 
 ## 0.5
