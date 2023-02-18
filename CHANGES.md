@@ -2,6 +2,7 @@
 
 ## 0.6
 
+* Make the `Lift` instance lazier. See #63.
 * Stop supporting GHC <= 8.6. See #62.
 * Add `Control.Selective.Trans.Except` transformer. See #39.
 

@@ -371,8 +371,8 @@ instance Applicative f => Selective (SelectA f) where
 
 -- Note: Validation e a ~ Lift (Under e) a
 instance Selective f => Selective (Lift f) where
+    select (Pure (Right x)) _         = Pure x -- Lazy in the second argument
     select              x   (Pure  y) = either y id <$> x
-    select (Pure (Right x)) _         = Pure x
     select (Pure (Left  x)) (Other y) = Other $ ($x) <$> y
     select (Other       x ) (Other y) = Other $   x  <*? y
 
