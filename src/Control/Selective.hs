@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Control.Selective
--- Copyright  : (c) Andrey Mokhov 2018-2022
+-- Copyright  : (c) Andrey Mokhov 2018-2023
 -- License    : MIT (see the file LICENSE)
 -- Maintainer : andrey.mokhov@gmail.com
 -- Stability  : experimental
@@ -301,7 +301,14 @@ fromMaybeS x mx = select (maybe (Left ()) Right <$> mx) (const <$> x)
 
 -- | Return the first @Right@ value. If both are @Left@'s, accumulate errors.
 orElse :: (Selective f, Semigroup e) => f (Either e a) -> f (Either e a) -> f (Either e a)
-orElse x y = branch x (flip appendLeft <$> y) (pure Right)
+orElse x y = select (prepare <$> x) (combine <$> y)
+  where
+    prepare :: Either e a -> Either e (Either e a)
+    prepare = fmap Right
+
+    combine :: Semigroup e => Either e a -> e -> Either e a
+    combine (Left ey) ex = Left (ex <> ey)
+    combine (Right a) _  = Right a
 
 -- | Accumulate the @Right@ values, or return the first @Left@.
 andAlso :: (Selective f, Semigroup a) => f (Either e a) -> f (Either e a) -> f (Either e a)
@@ -310,11 +317,6 @@ andAlso x y = swapEither <$> orElse (swapEither <$> x) (swapEither <$> y)
 -- | Swap @Left@ and @Right@.
 swapEither :: Either a b -> Either b a
 swapEither = either Right Left
-
--- | Append two semigroup values or return the @Right@ one.
-appendLeft :: Semigroup a => a -> Either a b -> Either a b
-appendLeft a1 (Left a2) = Left (a1 <> a2)
-appendLeft _  (Right b) = Right b
 
 -- | Keep checking an effectful condition while it holds.
 whileS :: Selective f => f Bool -> f ()
