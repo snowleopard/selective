@@ -29,16 +29,12 @@ import Control.Monad.Fix (MonadFix)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Zip (MonadZip)
 import Data.Functor.Classes
+import Data.Functor.Contravariant (Contravariant)
 import Data.Functor.Identity
 #if MIN_VERSION_base(4,13,0)
 -- MonadFail is imported already
 #else
-#if MIN_VERSION_base(4,9,0)
 import Control.Monad.Fail
-#endif
-#endif
-#if MIN_VERSION_base(4,12,0)
-import Data.Functor.Contravariant (Contravariant)
 #endif
 
 import qualified Control.Monad.Trans.Except as T
@@ -50,15 +46,8 @@ import Control.Monad.Signatures
 -- | A newtype around 'T.ExceptT' from @transformers@.
 newtype ExceptT e m a = ExceptT { unwrap :: T.ExceptT e m a }
   deriving
-    ( Functor, Monad, MonadTrans, MonadFix, Foldable, Eq1, Ord1, Read1, Show1
-    , MonadZip, MonadIO, MonadPlus, Eq, Ord, Read, Show
-#if MIN_VERSION_base(4,9,0)
-    , MonadFail
-#endif
-#if MIN_VERSION_base(4,12,0)
-    , Contravariant
-#endif
-    )
+    ( Functor, Monad, MonadTrans, MonadFix, MonadFail, Foldable, Eq1, Ord1, Read1
+    , Show1, MonadZip, MonadIO, MonadPlus, Eq, Ord, Read, Show, Contravariant )
 
 instance Traversable f => Traversable (ExceptT e f) where
     traverse f (ExceptT efa) = ExceptT <$> traverse f efa
@@ -102,11 +91,7 @@ wrap = ExceptT
 
 type Except e = ExceptT e Identity
 
-#if MIN_VERSION_transformers(0,5,6)
 except :: Monad m => Either e a -> ExceptT e m a
-#else
-except :: Either e a -> Except e a
-#endif
 except = ExceptT . T.except
 
 runExcept :: Except e a -> Either e a
