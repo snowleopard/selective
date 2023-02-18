@@ -94,14 +94,7 @@ instance (Selective f, Monoid e) => Alternative (ExceptT e f) where
     empty = ExceptT $ T.ExceptT $ pure $ Left mempty
 
     ExceptT (T.ExceptT x) <|> ExceptT (T.ExceptT y) =
-        ExceptT $ T.ExceptT $ select (prepare <$> x) (combine <$> y)
-      where
-        prepare :: Either e a -> Either e (Either e a)
-        prepare = fmap Right
-
-        combine :: Monoid e => Either e a -> e -> Either e a
-        combine (Left ey) ex = Left (ex <> ey)
-        combine (Right a) _  = Right a
+        ExceptT $ T.ExceptT $ orElse x y
 
 -- | Inject an 'T.ExceptT' value into the newtype wrapper.
 wrap :: T.ExceptT e m a -> ExceptT e m a

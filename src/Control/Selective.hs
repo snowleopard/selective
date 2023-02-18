@@ -307,7 +307,7 @@ orElse x y = select (prepare <$> x) (combine <$> y)
     prepare = fmap Right
 
     combine :: Semigroup e => Either e a -> e -> Either e a
-    combine (Left e2) e1 = Left (e1 <> e2)
+    combine (Left ey) ex = Left (ex <> ey)
     combine (Right a) _  = Right a
 
 -- | Accumulate the @Right@ values, or return the first @Left@.
