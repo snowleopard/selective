@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        ghc: ['9.2', '9.0', '8.10', '8.8', '8.6']
+        ghc: ['9.4.4', '9.2', '9.0', '8.10', '8.8', '8.6']
         include:
         - os: windows-latest
         - os: macOS-latest
@@ -31,7 +31,7 @@ jobs:
     - name: Get GHC libdir
       id: get-ghc-libdir
       run: |
-        echo "::set-output name=libdir::$(ghc --print-libdir)"
+        echo "name=libdir::$(ghc --print-libdir)" >> $GITHUB_OUTPUT
       shell: bash
     - run: cabal v2-freeze --enable-tests
     - uses: actions/cache@v2

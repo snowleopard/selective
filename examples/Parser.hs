@@ -40,17 +40,17 @@ item = Parser $ \case
     (c:cs) -> [(c,cs)]
 
 sat :: (Char -> Bool) -> Parser Char
-sat p = do { c <- item; if p c then return c else zero }
+sat p = do { c <- item; if p c then pure c else zero }
 
 char :: Char -> Parser Char
 char c = sat (==c)
 
 string :: String -> Parser String
-string []     = return ""
+string []     = pure ""
 string (c:cs) = do
     _ <- char c
     _ <- string cs
-    return (c:cs)
+    pure (c:cs)
 
 bin :: Parser Int
 bin = undefined

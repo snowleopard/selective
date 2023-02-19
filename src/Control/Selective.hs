@@ -274,7 +274,7 @@ matchS (Cases cs _) x f = foldr (\c -> eliminate c (f c)) (Left <$> x) cs
 matchM :: Monad m => Cases a -> m a -> (a -> m b) -> m (Either a b)
 matchM (Cases _ p) mx f = do
     x <- mx
-    if p x then Right <$> f x else return (Left x)
+    if p x then Right <$> f x else pure (Left x)
 
 -- TODO: Add a type-safe version based on @KnownNat@.
 -- | A restricted version of monadic bind. Fails with an error if the 'Bounded'

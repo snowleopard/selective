@@ -2,6 +2,7 @@
 
 ## 0.6
 
+* Start supporting GHC 9.4. See #66.
 * Add `ComposeTraversable`. See #65.
 * Make the `Applicative` instance of `ComposeEither` more interesting by relying
   on the `Selective f` constraint. See #64.

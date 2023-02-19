@@ -51,11 +51,11 @@ getPure (Pure a) = Just a
 getPure (Apply f x) = do
     pf <- getPure f
     px <- getPure x
-    return (pf px)
+    pure (pf px)
 getPure (Select x y) = do
     px <- getPure x
     py <- getPure y
-    return (either py id px)
+    pure (either py id px)
 
 getEffects :: Query a -> ([Prompt], [FilePath])
 getEffects (Terminal p) = ([p], [] )
