@@ -27,7 +27,7 @@ module Control.Selective (
     SelectA (..), SelectM (..), Over (..), Under (..), Validation (..),
 
     -- * Miscellaneous
-    swapEither, ComposeEither (..)
+    swapEither, ComposeEither (..), ComposeTraversable (..)
     ) where
 
 import Control.Applicative
@@ -519,10 +519,27 @@ instance ArrowChoice a => Selective (ArrowMonad a) where
 toArrow :: Arrow a => ArrowMonad a (i -> o) -> a i o
 toArrow (ArrowMonad f) = arr ((),) >>> first f >>> arr (uncurry ($))
 
----------------------------------- Alternative ---------------------------------
+------------------------------ ComposeTraversable ------------------------------
+-- | Composition of a selective functor @f@ and an applicative traversable
+-- functor @g@.
+newtype ComposeTraversable f g a = ComposeTraversable (f (g a))
+    deriving (Functor, Applicative) via Compose f g
+
+instance (Selective f, Applicative g, Traversable g) => Selective (ComposeTraversable f g) where
+    select (ComposeTraversable x) (ComposeTraversable f) = ComposeTraversable $
+        select (prepare <$> x) (combine <$> f)
+      where
+        prepare :: Traversable g => g (Either a b) -> Either a (g b)
+        prepare = sequenceA
+
+        combine :: Traversable g => g (a -> b) -> a -> g b
+        combine = sequenceA
+
+--------------------------------- ComposeEither --------------------------------
 -- | Composition of a selective functor @f@ with the 'Either' monad.
 newtype ComposeEither f e a = ComposeEither (f (Either e a))
     deriving Functor via Compose f (Either e)
+    deriving Selective via ComposeTraversable f (Either e)
 
 instance Selective f => Applicative (ComposeEither f e) where
     pure = ComposeEither . pure . Right
@@ -536,17 +553,7 @@ instance Selective f => Applicative (ComposeEither f e) where
         combine :: Either e a -> (a -> b) -> Either e b
         combine = flip fmap
 
-instance Selective f => Selective (ComposeEither f e) where
-    select (ComposeEither x) (ComposeEither f) = ComposeEither $
-        select (prepare <$> x) (combine <$> f)
-      where
-        prepare :: Either e (Either a b) -> Either a (Either e b)
-        prepare = either (Right . Left) (fmap Right)
-
-        combine :: Either e (a -> b) -> a -> Either e b
-        combine (Left e)  _ = Left e
-        combine (Right f) a = Right (f a)
-
+---------------------------------- Alternative ---------------------------------
 instance (Selective f, Monoid e) => Alternative (ComposeEither f e) where
     empty                               = ComposeEither (pure $ Left mempty)
     ComposeEither x <|> ComposeEither y = ComposeEither (x `orElse` y)
