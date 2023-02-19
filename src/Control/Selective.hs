@@ -54,6 +54,8 @@ import GHC.Conc (STM)
 import qualified Control.Monad.Trans.RWS.Strict    as S
 import qualified Control.Monad.Trans.State.Strict  as S
 import qualified Control.Monad.Trans.Writer.Strict as S
+import Control.Monad.Trans.Except (ExceptT)
+import qualified Control.Monad.Trans.Except
 
 -- | Selective applicative functors. You can think of 'select' as a selective
 -- function application: when given a value of type 'Left' @a@, you __must apply__
@@ -420,7 +422,16 @@ instance Selective ZipList where select = selectA
 
 -- | Selective instance for the standard applicative functor Validation. This is
 -- a good example of a non-trivial selective functor which is not a monad.
-data Validation e a = Failure e | Success a deriving (Eq, Functor, Ord, Show)
+data Validation e a = Failure e | Success a
+    deriving (Eq, Functor, Ord, Show, Foldable, Traversable)
+
+-- instance Foldable (Validation e) where
+--     foldMap _ (Failure _) = mempty
+--     foldMap f (Success a) = f a
+
+-- instance Traversable (Validation e) where
+--     traverse _ (Failure e) = pure $ Failure e
+--     traverse f (Success a) = Success <$> f a
 
 instance Semigroup e => Applicative (Validation e) where
     pure = Success
@@ -501,6 +512,9 @@ instance             Selective (ST s)     where select = selectM
 instance             Selective STM        where select = selectM
 
 instance                        Selective (ContT      r m) where select = selectM
+-- | Note that there is an instance for an isomorphic functor 'Control.Selective.Trans.Except'
+--   which does not need the 'Monad m' constraint.
+instance            Monad m  => Selective (ExceptT    e m) where select = selectM
 instance            Monad m  => Selective (MaybeT       m) where select = selectM
 instance (Monoid w, Monad m) => Selective (RWST   r w s m) where select = selectM
 instance (Monoid w, Monad m) => Selective (S.RWST r w s m) where select = selectM

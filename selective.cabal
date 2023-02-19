@@ -35,7 +35,8 @@ library
                         Control.Selective.Multi,
                         Control.Selective.Rigid.Free,
                         Control.Selective.Rigid.Freer,
-                        Control.Selective.Trans.Except
+                        Control.Selective.Trans.Except,
+                        Control.Selective.Trans.Validation
     build-depends:      base         >= 4.9     && < 5,
                         containers   >= 0.5.5.1 && < 0.7,
                         transformers >= 0.4.2.0 && < 0.7
