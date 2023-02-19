@@ -520,9 +520,32 @@ toArrow :: Arrow a => ArrowMonad a (i -> o) -> a i o
 toArrow (ArrowMonad f) = arr ((),) >>> first f >>> arr (uncurry ($))
 
 ---------------------------------- Alternative ---------------------------------
--- | Composition of a functor @f@ with the 'Either' monad.
+-- | Composition of a selective functor @f@ with the 'Either' monad.
 newtype ComposeEither f e a = ComposeEither (f (Either e a))
-    deriving (Functor, Applicative) via Compose f (Either e)
+    deriving Functor via Compose f (Either e)
+
+instance Selective f => Applicative (ComposeEither f e) where
+    pure = ComposeEither . pure . Right
+
+    ComposeEither f <*> ComposeEither a = ComposeEither $
+        select (prepare <$> f) (combine <$> a)
+      where
+        prepare :: Either e (a -> b) -> Either (a -> b) (Either e b)
+        prepare = either (Right . Left) Left
+
+        combine :: Either e a -> (a -> b) -> Either e b
+        combine = flip fmap
+
+instance Selective f => Selective (ComposeEither f e) where
+    select (ComposeEither x) (ComposeEither f) = ComposeEither $
+        select (prepare <$> x) (combine <$> f)
+      where
+        prepare :: Either e (Either a b) -> Either a (Either e b)
+        prepare = either (Right . Left) (fmap Right)
+
+        combine :: Either e (a -> b) -> a -> Either e b
+        combine (Left e)  _ = Left e
+        combine (Right f) a = Right (f a)
 
 instance (Selective f, Monoid e) => Alternative (ComposeEither f e) where
     empty                               = ComposeEither (pure $ Left mempty)

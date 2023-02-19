@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP, GeneralizedNewtypeDeriving, DeriveTraversable, DerivingVia #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Control.Selective.Trans.Except
@@ -23,7 +23,7 @@
 -----------------------------------------------------------------------------
 module Control.Selective.Trans.Except where
 
-import Control.Applicative (Alternative (empty, (<|>)))
+import Control.Applicative (Alternative)
 import Control.Monad (MonadPlus)
 import Control.Monad.Fix (MonadFix)
 import Control.Monad.IO.Class (MonadIO)
@@ -43,47 +43,14 @@ import Control.Monad.Trans.Class
 import Control.Selective
 import Control.Monad.Signatures
 
--- | A newtype around 'T.ExceptT' from @transformers@.
-newtype ExceptT e m a = ExceptT { unwrap :: T.ExceptT e m a }
+-- | A newtype wrapper around 'T.ExceptT' from @transformers@ that provides less
+-- restrictive 'Applicative', 'Selective' and 'Alternative' instances.
+newtype ExceptT e f a = ExceptT { unwrap :: T.ExceptT e f a }
   deriving
-    ( Functor, Monad, MonadTrans, MonadFix, MonadFail, Foldable, Eq1, Ord1, Read1
-    , Show1, MonadZip, MonadIO, MonadPlus, Eq, Ord, Read, Show, Contravariant )
-
-instance Traversable f => Traversable (ExceptT e f) where
-    traverse f (ExceptT efa) = ExceptT <$> traverse f efa
-
--- | No @'Monad' f@ constraint is needed. If the first argument to '<*>' results
--- in a @Left e@, the second argument is not executed.
-instance Selective f => Applicative (ExceptT e f) where
-    pure = ExceptT . T.ExceptT . pure . Right
-
-    ExceptT (T.ExceptT f) <*> ExceptT (T.ExceptT a) =
-        ExceptT $ T.ExceptT $ select (prepare <$> f) (combine <$> a)
-      where
-        prepare :: Either e (a -> b) -> Either (a -> b) (Either e b)
-        prepare = either (Right . Left) Left
-
-        combine :: Either e a -> (a -> b) -> Either e b
-        combine = flip fmap
-
--- | No @'Monad' f@ constraint is needed.
-instance Selective f => Selective (ExceptT e f) where
-    select (ExceptT (T.ExceptT x)) (ExceptT (T.ExceptT f)) =
-        ExceptT $ T.ExceptT $ select (prepare <$> x) (combine <$> f)
-      where
-        prepare :: Either e (Either a b) -> Either a (Either e b)
-        prepare = either (Right . Left) (fmap Right)
-
-        combine :: Either e (a -> b) -> a -> Either e b
-        combine (Left e)  _ = Left e
-        combine (Right f) a = Right (f a)
-
--- | No @'Monad' f@ constraint is needed.
-instance (Selective f, Monoid e) => Alternative (ExceptT e f) where
-    empty = ExceptT $ T.ExceptT $ pure $ Left mempty
-
-    ExceptT (T.ExceptT x) <|> ExceptT (T.ExceptT y) =
-        ExceptT $ T.ExceptT $ orElse x y
+    ( Functor, Foldable, Traversable, Monad, Contravariant, Eq, Ord, Read, Show
+    , MonadTrans, MonadFix, MonadFail, MonadZip, MonadIO, MonadPlus, Eq1, Ord1
+    , Read1, Show1 )
+  deriving (Applicative, Selective, Alternative) via (ComposeEither f e)
 
 -- | Inject an 'T.ExceptT' value into the newtype wrapper.
 wrap :: T.ExceptT e m a -> ExceptT e m a
