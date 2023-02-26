@@ -38,7 +38,6 @@ import Control.Monad.Fail
 #endif
 
 import qualified Control.Monad.Trans.Except as T
-import Control.Monad.Trans.Class
 
 import Control.Selective
 import Control.Monad.Signatures
@@ -48,9 +47,44 @@ import Control.Monad.Signatures
 newtype ExceptT e f a = ExceptT { unwrap :: T.ExceptT e f a }
   deriving
     ( Functor, Foldable, Traversable, Monad, Contravariant, Eq, Ord, Read, Show
-    , MonadTrans, MonadFix, MonadFail, MonadZip, MonadIO, MonadPlus, Eq1, Ord1
-    , Read1, Show1 )
+    , MonadFix, MonadFail, MonadZip, MonadIO, MonadPlus, Eq1, Ord1, Read1, Show1 )
   deriving (Applicative, Selective, Alternative) via (ComposeEither f e)
+
+{- Why don't we provide a `MonadTrans (ExceptT e)` instance?
+
+   Recall the definition of the MonadTrans type class:
+
+     class (forall m. Monad m => Monad (t m)) => MonadTrans t where
+         lift :: Monad m => m a -> t m a
+
+   If we instantiate `t` to `ExceptT e` in the constraint, we get
+
+     forall m. Monad m => Monad (ExceptT e m)
+
+   but the `Applicative (ExceptT e m)` instance comes with the `Selective m`
+   constraint, and since Selective is not a superclass of Monad, we're stuck.
+   In other words, `ExceptT` is really not a universal monad transformer: it
+   works only for monads `m` that also happen to have a `Selective m` instance.
+
+   I can see three possible solutions but none of them has a chance of working
+   in practice:
+
+     * Change the constraint in the definition of MonadTrans to
+
+         forall m. (Selective m, Monad m) => Monad (ExceptT e m)
+
+     * Make Selective a superclass of Monad
+     * Revert the "Applicative is a superclass of Monad" proposal (lol!)
+
+   And so we just don't provide `MonadTrans (ExceptT e)` instance.
+
+   We could provide a SelectiveTrans instance instead, where
+
+     class (forall f. Selective f => Selective (t f)) => SelectiveTrans t where
+         lift :: Selective f => f a -> t f a
+
+   Sounds fun!
+-}
 
 -- | Inject an 'T.ExceptT' value into the newtype wrapper.
 wrap :: T.ExceptT e m a -> ExceptT e m a
