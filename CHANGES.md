@@ -1,6 +1,6 @@
 # Change log
 
-## 0.6.1
+## 0.7
 
 * Drop `MonadTrans (ExceptT e)` instance to allow `transformers-0.6.1`.
   See #70.
