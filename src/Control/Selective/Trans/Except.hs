@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP, GeneralizedNewtypeDeriving, DeriveTraversable, DerivingVia #-}
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Control.Selective.Trans.Except
@@ -45,9 +46,10 @@ import Control.Monad.Signatures
 -- | A newtype wrapper around 'T.ExceptT' from @transformers@ that provides less
 -- restrictive 'Applicative', 'Selective' and 'Alternative' instances.
 newtype ExceptT e f a = ExceptT { unwrap :: T.ExceptT e f a }
-  deriving
-    ( Functor, Foldable, Traversable, Monad, Contravariant, Eq, Ord, Read, Show
-    , MonadFix, MonadFail, MonadZip, MonadIO, MonadPlus, Eq1, Ord1, Read1, Show1 )
+  deriving stock (Functor, Foldable, Traversable, Eq, Ord, Read, Show)
+  deriving newtype
+    (Monad, Contravariant, MonadFix, MonadFail, MonadZip, MonadIO, MonadPlus
+    , Eq1, Ord1, Read1, Show1 ) -- These require -Wno-redundant-constraints
   deriving (Applicative, Selective, Alternative) via (ComposeEither f e)
 
 {- Why don't we provide a `MonadTrans (ExceptT e)` instance?

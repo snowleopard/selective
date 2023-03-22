@@ -1,5 +1,9 @@
 # Change log
 
+## 0.8
+
+* Start supporting GHC 9.6. See #72.
+
 ## 0.7
 
 * Drop `MonadTrans (ExceptT e)` instance to allow `transformers-0.6.1`.
