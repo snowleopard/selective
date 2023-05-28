@@ -297,7 +297,14 @@ whenS x y = select (bool (Right ()) (Left ()) <$> x) (const <$> y)
 
 -- | A lifted version of 'Data.Maybe.fromMaybe'.
 fromMaybeS :: Selective f => f a -> f (Maybe a) -> f a
-fromMaybeS x mx = select (maybe (Left ()) Right <$> mx) (const <$> x)
+fromMaybeS fNothing fMaybe =
+    select (toEither <$> fMaybe) (toUnitFunction <$> fNothing)
+  where
+    toEither :: Maybe a -> Either () a
+    toEither Nothing  = Left ()
+    toEither (Just a) = Right a
+    toUnitFunction :: a -> () -> a
+    toUnitFunction x () = x
 
 -- | Return the first @Right@ value. If both are @Left@'s, accumulate errors.
 orElse :: (Selective f, Semigroup e) => f (Either e a) -> f (Either e a) -> f (Either e a)
