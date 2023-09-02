@@ -287,5 +287,5 @@ Yes! Here is what selective functors cannot do: `join :: Selective f => f (f a) 
 
 ## Further reading
 
-* A paper introducing selective functors: https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf.
+* An ICFP'19 paper introducing selective functors: https://doi.org/10.1145/3341694.
 * An older blog post introducing selective functors: https://blogs.ncl.ac.uk/andreymokhov/selective.
