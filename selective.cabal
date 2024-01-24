@@ -71,7 +71,7 @@ test-suite main
     type:               exitcode-stdio-1.0
     main-is:            Main.hs
     build-depends:      base                   >= 4.7     && < 5,
-                        containers             >= 0.5.5.1 && < 0.7,
+                        containers             >= 0.5.5.1 && < 0.8,
                         QuickCheck             >= 2.8     && < 2.15,
                         selective,
                         transformers           >= 0.4.2.0 && < 0.7
