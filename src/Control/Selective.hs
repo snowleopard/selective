@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module     : Control.Selective
--- Copyright  : (c) Andrey Mokhov 2018-2023
+-- Copyright  : (c) Andrey Mokhov 2018-2024
 -- License    : MIT (see the file LICENSE)
 -- Maintainer : andrey.mokhov@gmail.com
 -- Stability  : experimental
