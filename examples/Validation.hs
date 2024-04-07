@@ -3,8 +3,7 @@ module Validation where
 
 import Control.Selective
 
--- See Section 2.2 of the paper:
--- https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf
+-- See Section 2.2 of the paper: https://dl.acm.org/doi/10.1145/3341694.
 
 type Radius = Word
 type Width  = Word

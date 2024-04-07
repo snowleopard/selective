@@ -5,8 +5,7 @@ import Control.Applicative
 import Control.Monad
 import Control.Selective
 
--- See Section 7.2 of the paper:
--- https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf
+-- See Section 7.2 of the paper: https://dl.acm.org/doi/10.1145/3341694.
 
 newtype Parser a = Parser { parse :: String -> [(a, String)] }
 
