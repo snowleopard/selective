@@ -4,8 +4,7 @@ module Build where
 import Control.Selective
 import Control.Selective.Rigid.Free
 
--- See Section 3 of the paper:
--- https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf
+-- See Section 3 of the paper: https://dl.acm.org/doi/10.1145/3341694.
 
 -- | Selective build tasks.
 -- See "Build Systems à la Carte": https://dl.acm.org/citation.cfm?id=3236774.

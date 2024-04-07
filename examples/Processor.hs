@@ -16,8 +16,7 @@ import Prelude hiding (read, log)
 import qualified Control.Monad.Trans.State as S
 import qualified Data.Map.Strict as Map
 
--- See Section 5.3 of the paper:
--- https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf
+-- See Section 5.3 of the paper: https://dl.acm.org/doi/10.1145/3341694.
 -- Note that we have changed the naming.
 
 -- | A standard @MonadState@ class extended with the 'Selective' interface.

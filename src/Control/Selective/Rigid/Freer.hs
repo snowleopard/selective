@@ -9,8 +9,7 @@
 --
 -- This is a library for /selective applicative functors/, or just
 -- /selective functors/ for short, an abstraction between applicative functors
--- and monads, introduced in this paper:
--- https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf.
+-- and monads, introduced in this paper: https://dl.acm.org/doi/10.1145/3341694.
 --
 -- This module defines /freer rigid selective functors/. Rigid selective
 -- functors are those that satisfy the property @\<*\> = apS@. Compared to the

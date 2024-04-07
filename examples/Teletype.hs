@@ -7,8 +7,7 @@ import qualified Control.Monad as IO
 import Control.Selective
 import Control.Selective.Free
 
--- See Section 5.2 of the paper:
--- https://www.staff.ncl.ac.uk/andrey.mokhov/selective-functors.pdf
+-- See Section 5.2 of the paper: https://dl.acm.org/doi/10.1145/3341694.
 
 -- | The classic @Teletype@ base functor.
 data TeletypeF a = Read (String -> a) | Write String a deriving Functor
