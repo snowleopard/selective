@@ -1,6 +1,6 @@
 # Change log
 
-## 0.8
+## 0.7.0.1
 
 * Start supporting GHC 9.6. See #72.
 
