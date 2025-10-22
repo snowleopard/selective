@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        ghc: ['9.8.2', '9.6.3', '9.4.7', '9.2.8', '9.0.2', '8.10.7', '8.8.4', '8.6.5']
+        ghc: ['9.12', '9.10', '9.8.2', '9.6.3', '9.4.7', '9.2.8', '9.0.2', '8.10.7', '8.8.4', '8.6.5']
         include:
         - os: windows-latest
         # Testing on MacOS is disabled until GitHub actions support 'allow-failure'
@@ -24,7 +24,7 @@ jobs:
 
     steps:
     - run: git config --global core.autocrlf false
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: haskell-actions/setup@v2
       id: setup-haskell
       with:
@@ -35,7 +35,7 @@ jobs:
         echo "name=libdir::$(ghc --print-libdir)" >> $GITHUB_OUTPUT
       shell: bash
     - run: cabal v2-freeze --enable-tests
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       with:
         path: ${{ steps.setup-haskell.outputs.cabal-store }}
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ steps.get-ghc-libdir.outputs.libdir }}-${{ hashFiles('cabal.project.freeze') }}
